@@ -7,12 +7,12 @@
 | Target | https://getpocket.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | getpocket.com |
-| Test date | 2026-09-27 01:21 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:31 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
+Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,8 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 | 18 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 20 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 21 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 22 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
 
 ## Detailed findings
 
@@ -129,7 +131,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=YQkH_odwWd6t5jf8ay7uZ7SdgCl7gOnggLxglPtPf-A; facebook-domain-verification=7onzfhlxkl6r3tyrkywbqx1ybt66jx; google-site-verification=Ip41qYBewmXa5vTZEKlBpwrqymJbbzzNXCDd5eyQryk
+- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=YQkH_odwWd6t5jf8ay7uZ7SdgCl7gOnggLxglPtPf-A; stripe-verification=12da43cd3189cf99e5c3ecdfdae9c97c7d4230aed93a22ae62892f0cee02; google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -147,7 +149,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 3.169.121.32 carries PTR server-3-169-121-32.tpe53.r.cloudfront.net. for getpocket.com.
+- **Detail:** 3.169.121.10 carries PTR server-3-169-121-10.tpe53.r.cloudfront.net. for getpocket.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -168,6 +170,18 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - **Detail:** Response headers on getpocket.com identify the edge as CloudFront / Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
+### 21. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of getpocket.com is http://ocsp.r2m04.amazontrust.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 22. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of getpocket.com discloses a 1-hop fronting chain (1.1 0f404778de8d409768bdb3cfccbb4140.cloudfront.net (CloudFront)); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -175,38 +189,38 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "domain": "getpocket.com",
   "dns": {
     "a": [
-      "3.169.121.32",
       "3.169.121.10",
-      "3.169.121.118",
-      "3.169.121.84"
+      "3.169.121.84",
+      "3.169.121.32",
+      "3.169.121.118"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx3.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx2.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)"
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx3.googlemail.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-1605.awsdns-08.co.uk.",
-      "ns-351.awsdns-43.com.",
+      "ns-1518.awsdns-61.org.",
       "ns-704.awsdns-24.net.",
-      "ns-1518.awsdns-61.org."
+      "ns-1605.awsdns-08.co.uk.",
+      "ns-351.awsdns-43.com."
     ],
     "caa": [],
     "spf": [
       "apple-domain-verification=YQkH_odwWd6t5jf8ay7uZ7SdgCl7gOnggLxglPtPf-A",
-      "docusign=e569f89d-0082-4ffd-8973-5c7f739cdd02",
-      "facebook-domain-verification=7onzfhlxkl6r3tyrkywbqx1ybt66jx",
-      "google-site-verification=Ip41qYBewmXa5vTZEKlBpwrqymJbbzzNXCDd5eyQryk",
       "stripe-verification=12da43cd3189cf99e5c3ecdfdae9c97c7d4230aed93a22ae62892f0cee028e0c",
-      "v=spf1 include:sendgrid.net include:_spf.google.com include:helpscoutemail.com include:mail.zendesk.com ip4:63.245.208.103 ~all",
       "google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE",
+      "google-site-verification=Ip41qYBewmXa5vTZEKlBpwrqymJbbzzNXCDd5eyQryk",
+      "v=spf1 include:sendgrid.net include:_spf.google.com include:helpscoutemail.com include:mail.zendesk.com ip4:63.245.208.103 ~all",
+      "google-site-verification=O73K4GuIvQ3SbegpcgVVBVm-ob8wnBQAd4V8KdXf-oI",
+      "facebook-domain-verification=7onzfhlxkl6r3tyrkywbqx1ybt66jx",
       "atlassian-domain-verification=ZKdUkLuFwGhwbs6AqGb09CzrQ1EGoENusL8drKXt3+3DVnPgvbvEKhpaA0w3Crhd",
-      "google-site-verification=BznukNV2feXYAk09zg1tD-zMQPL_wHoVvfbHa8g2g18",
-      "google-site-verification=O73K4GuIvQ3SbegpcgVVBVm-ob8wnBQAd4V8KdXf-oI"
+      "docusign=e569f89d-0082-4ffd-8973-5c7f739cdd02",
+      "google-site-verification=BznukNV2feXYAk09zg1tD-zMQPL_wHoVvfbHa8g2g18"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dmarc_agg@dmarc.250ok.net; fo=1; sp=none; aspf=r;"
@@ -245,7 +259,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     }
   },
   "ports": {
-    "ip": "3.169.121.32",
+    "ip": "3.169.121.10",
     "open": []
   },
   "https": {
@@ -299,10 +313,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   },
   "apex_txt": [
     "apple-domain-verification=YQkH_odwWd6t5jf8ay7uZ7SdgCl7gOnggLxglPtPf-A",
-    "facebook-domain-verification=7onzfhlxkl6r3tyrkywbqx1ybt66jx",
-    "google-site-verification=Ip41qYBewmXa5vTZEKlBpwrqymJbbzzNXCDd5eyQryk",
     "stripe-verification=12da43cd3189cf99e5c3ecdfdae9c97c7d4230aed93a22ae62892f0cee02",
-    "google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE"
+    "google-site-verification=zfNlIIbTnH55o0_E1S6GQdIQl6jtefL-vdk_xCyBQrE",
+    "google-site-verification=Ip41qYBewmXa5vTZEKlBpwrqymJbbzzNXCDd5eyQryk",
+    "google-site-verification=O73K4GuIvQ3SbegpcgVVBVm-ob8wnBQAd4V8KdXf-oI"
   ],
   "tls2": {
     "alpn": "",
@@ -320,6 +334,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.r2m04.amazontrust.com/r2m04.crl"
+      ],
+      "san": [
+        "getpocket.com",
+        "readitlater.com",
+        "pocket.co",
+        "www.getpocket.com",
+        "l.getpocket.com",
+        "www.readitlater.com",
+        "aproductiveyear.com",
+        "readitlaterlist.com",
+        "www.readitlaterlist.com",
+        "api.getpocket.com",
+        "web-prod.getpocket.com"
       ],
       "subject_dn": "311630140603550403130d676574706f636b65742e636f6d",
       "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3034",
@@ -348,7 +375,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "x12": {
     "status": 302,
     "ptr": [
-      "server-3-169-121-32.tpe53.r.cloudfront.net."
+      "server-3-169-121-10.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -386,8 +413,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "Fastly"
     ]
   },
-  "elapsed_s": 13.8,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.r2m04.amazontrust.com",
+    "via": "1.1 0f404778de8d409768bdb3cfccbb4140.cloudfront.net (CloudFront)"
+  },
+  "elapsed_s": 16.1,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -401,4 +432,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

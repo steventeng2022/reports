@@ -7,12 +7,12 @@
 | Target | https://bigthink.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | bigthink.com |
-| Test date | 2026-09-27 01:11 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:19 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
+Total findings: **29** (High: 0, Medium: 0, Low: 4, Info: 25)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,13 +36,15 @@ Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
 | 18 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 19 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 20 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 21 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
-| 22 | info | HTML3 | Third-party <iframe> embedded in root document | CWE-643 |
-| 23 | info | HTML4 | Meta generator tag discloses site technology | CWE-200 |
-| 24 | info | HTML7 | Insecure http:// references inside an HTTPS document | CWE-319 |
-| 25 | info | HTML11 | Document references many third-party domains | CWE-200 |
-| 26 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
-| 27 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 21 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 22 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
+| 23 | info | HTML3 | Third-party <iframe> embedded in root document | CWE-643 |
+| 24 | info | HTML4 | Meta generator tag discloses site technology | CWE-200 |
+| 25 | info | HTML7 | Insecure http:// references inside an HTTPS document | CWE-319 |
+| 26 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 27 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 28 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 29 | info | HTML19 | data: URIs present in root document | CWE-200 |
 
 ## Detailed findings
 
@@ -55,13 +57,13 @@ Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.29.239:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.66.171.144:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.29.239:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.66.171.144:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -160,7 +162,7 @@ Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
 ### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=IQ0Q3-snTXtmIPmqxY4XEk-ucnIk9H_LTPldZQ384-o; facebook-domain-verification=imnsr6iaawlgvto58dd99ywxgdfkmr; brave-ledger-verification=91274b2f4b86d4e567f1bfac3af2939e17f3789e9149f42a54e22b
+- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=oQMq_G3Amhi22taxA9iFT-dk_zHARxA27Z0jygBZzo; google-site-verification=IQ0Q3-snTXtmIPmqxY4XEk-ucnIk9H_LTPldZQ384-o; facebook-domain-verification=imnsr6iaawlgvto58dd99ywxgdfkmr
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -175,47 +177,59 @@ Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
 - **Detail:** robots.txt lists 1 disallow path(s), e.g. Sitemap:
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 21. [INFO] Error-page technology fingerprint (`ERR1`)
+### 21. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+
+- **CWE:** CWE-922
+- **Detail:** Response for https://bigthink.com/ carries Cache-Control: max-age=300, must-revalidate; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
+
+### 22. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkin3ys9jb491i.html -> 404; error page/headers match: WordPress, Cloudflare.
+- **Detail:** GET /xkbtx2ttt64wgw.html -> 404; error page/headers match: WordPress, Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
-### 22. [INFO] Third-party <iframe> embedded in root document (`HTML3`)
+### 23. [INFO] Third-party <iframe> embedded in root document (`HTML3`)
 
 - **CWE:** CWE-643
 - **Detail:** Root document of bigthink.com embeds 1 cross-origin iframe(s), e.g. https://www.googletagmanager.com/ns.html?id=GTM-MZ6VMC5&#038;gtm_auth=avan2_2yHip-38aoyEUe7w&#038;gtm_preview=env-1&#038;gtm_cookies_win=x; embedded origins are framed inside the page with its trust context.
 - **Recommendation:** Review embedded origins and consider sandbox attributes.
 
-### 23. [INFO] Meta generator tag discloses site technology (`HTML4`)
+### 24. [INFO] Meta generator tag discloses site technology (`HTML4`)
 
 - **CWE:** CWE-200
 - **Detail:** Root document of bigthink.com declares generator: WordPress 7.1.2; generator tags fingerprint the site builder/CMS for targeted attacks.
 - **Recommendation:** Remove the generator meta tag or keep it consistent with the deployed version.
 
-### 24. [INFO] Insecure http:// references inside an HTTPS document (`HTML7`)
+### 25. [INFO] Insecure http:// references inside an HTTPS document (`HTML7`)
 
 - **CWE:** CWE-319
 - **Detail:** Root document of bigthink.com references 3 distinct http:// URL(s) (e.g. http://schema.org, http://www.w3.org/1999/xlink, http://www.w3.org/2000/svg); using them drops to unencrypted transport.
 - **Recommendation:** Use https:// references or relative URLs.
 
-### 25. [INFO] Document references many third-party domains (`HTML11`)
+### 26. [INFO] Document references many third-party domains (`HTML11`)
 
 - **CWE:** CWE-200
 - **Detail:** Root document of bigthink.com references 16 distinct third-party registrable domains (e.g. w3.org, googletagmanager.com, facebook.com, schema.org, instagram.com); each is a supply-chain/trust dependency of the page.
 - **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
 
-### 26. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+### 27. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
 
 - **CWE:** CWE-200
 - **Detail:** The root response of bigthink.com carries alt-svc h3=":443"; ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
 - **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
 
-### 27. [INFO] Edge/CDN layer identified from response headers (`H26`)
+### 28. [INFO] Edge/CDN layer identified from response headers (`H26`)
 
 - **CWE:** CWE-200
 - **Detail:** Response headers on bigthink.com identify the edge as CloudFront / Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 29. [INFO] data: URIs present in root document (`HTML19`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of bigthink.com references 2 data: URI payload(s); inline data resources bypass the normal fetch/CORS path and should be inventoried.
+- **Recommendation:** Review inline data payloads (especially scripts/iframes) as part of the asset inventory.
 
 ## Evidence (raw response observations)
 
@@ -224,20 +238,20 @@ Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
   "domain": "bigthink.com",
   "dns": {
     "a": [
-      "104.20.29.239",
-      "172.66.171.144"
+      "172.66.171.144",
+      "104.20.29.239"
     ],
     "aaaa": [
-      "2606:4700:10::ac42:ab90",
-      "2606:4700:10::6814:1def"
+      "2606:4700:10::6814:1def",
+      "2606:4700:10::ac42:ab90"
     ],
     "cname": null,
     "mx": [
+      "alt2.aspmx.l.google.com (pref 20)",
       "alt1.aspmx.l.google.com (pref 20)",
       "aspmx3.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx.l.google.com (pref 10)"
+      "aspmx.l.google.com (pref 10)",
+      "aspmx2.googlemail.com (pref 30)"
     ],
     "ns": [
       "liv.ns.cloudflare.com.",
@@ -245,35 +259,35 @@ Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
     ],
     "caa": [
       "0 issue \"ssl.com\"",
-      "0 issuewild \"letsencrypt.org\"",
-      "0 issuewild \"ssl.com\"",
-      "0 issue \"comodoca.com\"",
-      "0 issue \"letsencrypt.org\"",
-      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
       "0 issuewild \"amazon.com\"",
-      "0 issuewild \"comodoca.com\"",
-      "0 issue \"amazon.com\"",
-      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issuewild \"ssl.com\"",
+      "0 issuewild \"letsencrypt.org\"",
       "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
-      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\""
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issue \"comodoca.com\"",
+      "0 issuewild \"comodoca.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\""
     ],
     "spf": [
+      "_globalsign-domain-verification=oQMq_G3Amhi22taxA9iFT-dk_zHARxA27Z0jygBZzo",
       "google-site-verification=IQ0Q3-snTXtmIPmqxY4XEk-ucnIk9H_LTPldZQ384-o",
       "facebook-domain-verification=imnsr6iaawlgvto58dd99ywxgdfkmr",
-      "brave-ledger-verification=91274b2f4b86d4e567f1bfac3af2939e17f3789e9149f42a54e22b6c6a4ddfa5",
-      "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
-      "ZOOM_verify_skjT3dzGm8H9XEy1EOhYI2",
-      "p6wbgj4mp14fnw67x42pd3bjjtk60ppk",
-      "anthropic-domain-verification-3yr2nb=R61RWTRp7eKATMAWS6ysnSgTL",
-      "e4bo424u3f58fnv2geanpla4r5",
       "google-site-verification=Ag1fG5O40z3867zln2At8HXynDGkVy-PFYrn4TV43n8",
-      "_globalsign-domain-verification=oQMq_G3Amhi22taxA9iFT-dk_zHARxA27Z0jygBZzo",
-      "google-site-verification=mrT_skiiLc7lMHOIVrlqYIfL_7dqokcf255Bv4E7Dqg",
+      "apple-domain-verification=Y0jnqEg4a6CbdYpz",
+      "p6wbgj4mp14fnw67x42pd3bjjtk60ppk",
       "_globalsign-domain-verification=1bIUeFQan6DwxRMFkfSsKamrhvJLH8zU49c1PDyHi5",
-      "MS=ms59457489",
+      "e4bo424u3f58fnv2geanpla4r5",
+      "google-site-verification=mrT_skiiLc7lMHOIVrlqYIfL_7dqokcf255Bv4E7Dqg",
       "atlassian-domain-verification=Sy2DdmSX6vjBKYnPktlBtM0HVxilSLu427CbTKyytLpHVd9daKw3DMdjJ0ZLLP4V",
       "v=spf1 a mx include:servers.mcsv.net include:_spf.google.com include:mailgun.org -all",
-      "apple-domain-verification=Y0jnqEg4a6CbdYpz"
+      "MS=ms59457489",
+      "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
+      "ZOOM_verify_skjT3dzGm8H9XEy1EOhYI2",
+      "brave-ledger-verification=91274b2f4b86d4e567f1bfac3af2939e17f3789e9149f42a54e22b6c6a4ddfa5",
+      "anthropic-domain-verification-3yr2nb=R61RWTRp7eKATMAWS6ysnSgTL"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dmarc@bigthink.com"
@@ -303,7 +317,7 @@ Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
     }
   },
   "ports": {
-    "ip": "104.20.29.239",
+    "ip": "172.66.171.144",
     "open": [
       8080,
       8443
@@ -361,11 +375,11 @@ Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "_globalsign-domain-verification=oQMq_G3Amhi22taxA9iFT-dk_zHARxA27Z0jygBZzo",
     "google-site-verification=IQ0Q3-snTXtmIPmqxY4XEk-ucnIk9H_LTPldZQ384-o",
     "facebook-domain-verification=imnsr6iaawlgvto58dd99ywxgdfkmr",
-    "brave-ledger-verification=91274b2f4b86d4e567f1bfac3af2939e17f3789e9149f42a54e22b",
-    "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
-    "anthropic-domain-verification-3yr2nb=R61RWTRp7eKATMAWS6ysnSgTL"
+    "google-site-verification=Ag1fG5O40z3867zln2At8HXynDGkVy-PFYrn4TV43n8",
+    "apple-domain-verification=Y0jnqEg4a6CbdYpz"
   ],
   "tls2": {
     "alpn": "",
@@ -383,6 +397,10 @@ Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/we1/LCLN8rQ4qe0.crl"
+      ],
+      "san": [
+        "bigthink.com",
+        "v1.bigthink.com"
       ],
       "subject_dn": "311530130603550403130c6269677468696e6b2e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
@@ -428,8 +446,11 @@ Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
       "Fastly"
     ]
   },
-  "elapsed_s": 44.4,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "data_uris": 2
+  },
+  "elapsed_s": 40.8,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -443,4 +464,5 @@ Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

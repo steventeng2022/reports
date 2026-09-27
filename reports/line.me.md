@@ -7,12 +7,12 @@
 | Target | https://line.me/ |
 | Bug bounty program | LINE |
 | Listed scope domain | line.me |
-| Test date | 2026-09-27 01:26 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:36 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 17 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 19 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
+| 20 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 21 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 22 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -127,7 +130,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Ri-G6bf49-iTkhhxR6TAWnk0_yfslPvcvsQrPa8Usvc; facebook-domain-verification=35wnsqkba1tqtxca6q5xlxrxcul4qd
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=35wnsqkba1tqtxca6q5xlxrxcul4qd; google-site-verification=Ri-G6bf49-iTkhhxR6TAWnk0_yfslPvcvsQrPa8Usvc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -160,6 +163,24 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** /.well-known/security.txt on line.me is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
 - **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
 
+### 20. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of line.me contains wildcard SAN entry(ies) *.line.me; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 21. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of line.me is http://ocsp.globalsign.com/gsgccr46ovtlsca2025; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 22. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of line.me declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -172,22 +193,22 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx2-common.line-apps.com (pref 100)",
-      "mx3-common.line-apps.com (pref 100)",
+      "mx1-common.line-apps.com (pref 100)",
       "mx-common.line-apps.com (pref 10)",
-      "mx1-common.line-apps.com (pref 100)"
+      "mx2-common.line-apps.com (pref 100)",
+      "mx3-common.line-apps.com (pref 100)"
     ],
     "ns": [
+      "ans2.linecorp.com.",
       "ns1.naver.jp.",
       "ns2.naver.jp.",
-      "ans2.linecorp.com.",
       "ans1.linecorp.com."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=Ri-G6bf49-iTkhhxR6TAWnk0_yfslPvcvsQrPa8Usvc",
+      "v=spf1 include:naver.com include:spf.naver.jp ip4:203.104.136.0/24 ip4:147.92.128.0/17 include:_spfblock_ext.line.me include:bulk-spf.yahoo.co.jp ~all",
       "facebook-domain-verification=35wnsqkba1tqtxca6q5xlxrxcul4qd",
-      "v=spf1 include:naver.com include:spf.naver.jp ip4:203.104.136.0/24 ip4:147.92.128.0/17 include:_spfblock_ext.line.me include:bulk-spf.yahoo.co.jp ~all"
+      "google-site-verification=Ri-G6bf49-iTkhhxR6TAWnk0_yfslPvcvsQrPa8Usvc"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=s; rua=mailto:dl_dmarc@linecorp.com; pct=100"
@@ -270,8 +291,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=Ri-G6bf49-iTkhhxR6TAWnk0_yfslPvcvsQrPa8Usvc",
-    "facebook-domain-verification=35wnsqkba1tqtxca6q5xlxrxcul4qd"
+    "facebook-domain-verification=35wnsqkba1tqtxca6q5xlxrxcul4qd",
+    "google-site-verification=Ri-G6bf49-iTkhhxR6TAWnk0_yfslPvcvsQrPa8Usvc"
   ],
   "tls2": {
     "alpn": "",
@@ -288,6 +309,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "bc_ca": null,
       "bc_pathlen": null,
       "crl_urls": null,
+      "san": [
+        "*.line.me",
+        "line.me"
+      ],
       "subject_dn": "310b3009060355040613024a50310e300c06035504081305546f6b796f311330110603550407130a436869796f64612d6b7531173015060355040a130e4c5920436f72706f726174696f6e3112301006035504030c092a2e6c696e652e6d65",
       "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312a302806035504031321476c6f62616c5369676e2047434320523436204f5620544c532043412032303235",
       "not_before": "20260814010631",
@@ -346,8 +371,14 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "x16": {
     "root_status": 302
   },
-  "elapsed_s": 8.8,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.line.me"
+    ],
+    "ocsp_http": "http://ocsp.globalsign.com/gsgccr46ovtlsca2025"
+  },
+  "elapsed_s": 9.4,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -361,4 +392,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

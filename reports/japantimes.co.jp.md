@@ -7,12 +7,12 @@
 | Target | https://japantimes.co.jp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | japantimes.co.jp |
-| Test date | 2026-09-27 01:25 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:35 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
+Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,8 @@ Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
 | 18 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
 | 19 | info | H25 | server-timing response header exposed | CWE-200 |
 | 20 | info | HTML14 | Public root document marked noindex | CWE-200 |
+| 21 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 22 | info | HTML19 | data: URIs present in root document | CWE-200 |
 
 ## Detailed findings
 
@@ -111,7 +113,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=5pcy0pvd7m24zu1w4ubtyeknqyfuje; google-site-verification=OVsEXNIYtD3q7DB4ONtD6aIgxQJxn1_iCfDUwvNUfKc; facebook-domain-verification=r8gah1byp39t4nahiwxnot4u53yqkq
+- **Detail:** Apex TXT records with verification/token content: seculio-domain-verification-code=cced926da9a967819c54899c6b1c1e9b767853dbb371fd2; google-site-verification=OVsEXNIYtD3q7DB4ONtD6aIgxQJxn1_iCfDUwvNUfKc; facebook-domain-verification=5pcy0pvd7m24zu1w4ubtyeknqyfuje
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -129,7 +131,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
 ### 15. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xku659fyyb462i.html -> 403; error page/headers match: Cloudflare.
+- **Detail:** GET /xko98kbidppkb6.html -> 403; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -153,7 +155,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
 ### 19. [INFO] server-timing response header exposed (`H25`)
 
 - **CWE:** CWE-200
-- **Detail:** The root response of japantimes.co.jp sends server-timing (chlray;desc="a416b7775e20fdcb"); server/edge processing metrics are disclosed to any client.
+- **Detail:** The root response of japantimes.co.jp sends server-timing (chlray;desc="a4171e4669cb6010"); server/edge processing metrics are disclosed to any client.
 - **Recommendation:** Restrict server-timing to authenticated/debug contexts if the internals are sensitive.
 
 ### 20. [INFO] Public root document marked noindex (`HTML14`)
@@ -161,6 +163,18 @@ Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
 - **CWE:** CWE-200
 - **Detail:** The root document of japantimes.co.jp is marked noindex (meta robots or X-Robots-Tag); a public homepage that is not indexable is a posture anomaly worth reviewing.
 - **Recommendation:** Confirm the noindex directive is intentional.
+
+### 21. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of japantimes.co.jp contains wildcard SAN entry(ies) *.japantimes.co.jp; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 22. [INFO] data: URIs present in root document (`HTML19`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of japantimes.co.jp references 1 data: URI payload(s); inline data resources bypass the normal fetch/CORS path and should be inventoried.
+- **Recommendation:** Review inline data payloads (especially scripts/iframes) as part of the asset inventory.
 
 ## Evidence (raw response observations)
 
@@ -174,19 +188,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
       "172.67.68.125"
     ],
     "aaaa": [
+      "2606:4700:20::ac43:447d",
       "2606:4700:20::681a:203",
-      "2606:4700:20::681a:303",
-      "2606:4700:20::ac43:447d"
+      "2606:4700:20::681a:303"
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx5.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)",
       "aspmx4.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)",
+      "aspmx.l.google.com (pref 10)",
+      "aspmx5.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
+      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx3.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)"
+      "aspmx2.googlemail.com (pref 30)"
     ],
     "ns": [
       "jobs.ns.cloudflare.com.",
@@ -194,21 +208,21 @@ Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
     ],
     "caa": [],
     "spf": [
-      "facebook-domain-verification=5pcy0pvd7m24zu1w4ubtyeknqyfuje",
-      "google-site-verification=OVsEXNIYtD3q7DB4ONtD6aIgxQJxn1_iCfDUwvNUfKc",
+      "seculio-domain-verification-code=cced926da9a967819c54899c6b1c1e9b767853dbb371fd25ceccef303a2f4a48",
       "amazonses:H0epEk/2RCbxjGx9LYL76J+SVsW3rElYTcoRKLqpEkk=",
-      "facebook-domain-verification=r8gah1byp39t4nahiwxnot4u53yqkq",
+      "google-site-verification=OVsEXNIYtD3q7DB4ONtD6aIgxQJxn1_iCfDUwvNUfKc",
+      "MS=ms30674565",
+      "facebook-domain-verification=5pcy0pvd7m24zu1w4ubtyeknqyfuje",
+      "amazonses:qy3myq3Na6f6laO4ymQ6wTBbEeNbYwzl8OEZ/AQ7KvE=",
+      "google-site-verification=1215qpicd1-TYtNffu-BXSUiKYlcsFdF-Spoth0OrPo",
+      "google-site-verification=JNsW-oJ2eTFMcjLBuoEFm8uIDiIFV4HLfcn1qW2RVc4",
+      "amazonses:Um3JNqgFvpbJ0RMzxm6MUYFQGggi7E1t8AMQnI9s2rg=",
+      "amazonses:89wQUYQh+QnyoMv88QVXR9JAEsUpPhSpuVbRMSzQorc=",
+      "google-site-verification=1FA9Fq43BnO-e1rRm5_NUzT0udJpr1FYuEkyMxgIhQ4",
       "v=spf1  +ip4:52.199.201.172 +ip4:54.65.41.140 +ip4:50.56.113.200 +ip4:52.192.48.178 +ip4:52.198.58.73 +ip4:54.92.1.143 +ip4:153.127.53.24 +ip4:54.150.202.78 +ip4:54.248.16.180 +ip4:54.238.200.210 +ip4:54.178.143.1 +ip4:210.158.219.147 include:_spf.google.",
       "com include:spf.japan",
       "times.co.jp ~all",
-      "google-site-verification=JNsW-oJ2eTFMcjLBuoEFm8uIDiIFV4HLfcn1qW2RVc4",
-      "google-site-verification=1FA9Fq43BnO-e1rRm5_NUzT0udJpr1FYuEkyMxgIhQ4",
-      "google-site-verification=1215qpicd1-TYtNffu-BXSUiKYlcsFdF-Spoth0OrPo",
-      "MS=ms30674565",
-      "amazonses:Um3JNqgFvpbJ0RMzxm6MUYFQGggi7E1t8AMQnI9s2rg=",
-      "amazonses:qy3myq3Na6f6laO4ymQ6wTBbEeNbYwzl8OEZ/AQ7KvE=",
-      "seculio-domain-verification-code=cced926da9a967819c54899c6b1c1e9b767853dbb371fd25ceccef303a2f4a48",
-      "amazonses:89wQUYQh+QnyoMv88QVXR9JAEsUpPhSpuVbRMSzQorc="
+      "facebook-domain-verification=r8gah1byp39t4nahiwxnot4u53yqkq"
     ],
     "dmarc": [
       "v=DMARC1; p=none"
@@ -228,7 +242,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
       "japantimes.co.jp",
       "*.japantimes.co.jp"
     ],
-    "days_left": 33,
+    "days_left": 32,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -295,11 +309,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "facebook-domain-verification=5pcy0pvd7m24zu1w4ubtyeknqyfuje",
+    "seculio-domain-verification-code=cced926da9a967819c54899c6b1c1e9b767853dbb371fd2",
     "google-site-verification=OVsEXNIYtD3q7DB4ONtD6aIgxQJxn1_iCfDUwvNUfKc",
-    "facebook-domain-verification=r8gah1byp39t4nahiwxnot4u53yqkq",
-    "google-site-verification=JNsW-oJ2eTFMcjLBuoEFm8uIDiIFV4HLfcn1qW2RVc4",
-    "google-site-verification=1FA9Fq43BnO-e1rRm5_NUzT0udJpr1FYuEkyMxgIhQ4"
+    "facebook-domain-verification=5pcy0pvd7m24zu1w4ubtyeknqyfuje",
+    "google-site-verification=1215qpicd1-TYtNffu-BXSUiKYlcsFdF-Spoth0OrPo",
+    "google-site-verification=JNsW-oJ2eTFMcjLBuoEFm8uIDiIFV4HLfcn1qW2RVc4"
   ],
   "tls2": {
     "alpn": "",
@@ -317,6 +331,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/we1/4GA79upiEbo.crl"
+      ],
+      "san": [
+        "japantimes.co.jp",
+        "*.japantimes.co.jp"
       ],
       "subject_dn": "31193017060355040313106a6170616e74696d65732e636f2e6a70",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
@@ -351,11 +369,17 @@ Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
   },
   "x16": {
     "root_status": 403,
-    "server_timing": "chlray;desc=\"a416b7775e20fdcb\"",
+    "server_timing": "chlray;desc=\"a4171e4669cb6010\"",
     "noindex": true
   },
-  "elapsed_s": 12.1,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.japantimes.co.jp"
+    ],
+    "data_uris": 1
+  },
+  "elapsed_s": 12.9,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -369,4 +393,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

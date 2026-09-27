@@ -7,12 +7,12 @@
 | Target | https://automattic.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | automattic.com |
-| Test date | 2026-09-27 01:10 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
+Total findings: **29** (High: 0, Medium: 0, Low: 6, Info: 23)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -42,7 +42,9 @@ Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
 | 24 | info | HTML11 | Document references many third-party domains | CWE-200 |
 | 25 | info | H25 | server-timing response header exposed | CWE-200 |
 | 26 | info | WK3 | JWKS (JSON Web Key Set) published | CWE-200 |
-| 27 | info | CT1 | 15 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 27 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 28 | info | HTML19 | data: URIs present in root document | CWE-200 |
+| 29 | info | CT1 | 15 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 
 ## Detailed findings
 
@@ -115,13 +117,13 @@ Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
 ### 11. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (prosklj2celqzj.automattic.com and gjqko1pekcl28i.automattic.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (wz7qa17mkqm0pc.automattic.com and s5m99rfupsu0wr.automattic.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=F4jw0P5BvBnjqDSVJEhYv3LEU2WLuqChlBLJEYA2SO0; atlassian-domain-verification=HLvi8VknRfLwuOZ7TmiaKM8GgOgai45SxxeWZddVaOBMgWielc; google-site-verification=l3pF3D6Nfuk18StNUFWXaEEIVTjBWWHvvZYP9sXEAcc
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=F4jw0P5BvBnjqDSVJEhYv3LEU2WLuqChlBLJEYA2SO0; figma-domain-verification=a2e41510ac6b0c5745595c76770385bfd602709c6d04e80ef830c9; yahoo-verification-key=8dNdxvmgAf9M2eCeh79q5CpzcsN5GkkT9db3Z5Rr3Sk=
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -145,13 +147,13 @@ Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
 ### 16. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
-- **Detail:** Response for https://automattic.com/ carries Cache-Control: max-age=299, must-revalidate (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
+- **Detail:** Response for https://automattic.com/ carries Cache-Control: max-age=300, must-revalidate (plus ETag/Last-Modified freshness fields); shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
 ### 17. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkvq0r8dtpqcy4.html -> 404; error page/headers match: Nginx, WordPress.
+- **Detail:** GET /xk416llq99l395.html -> 404; error page/headers match: Nginx, WordPress.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 18. [LOW] HSTS does not cover subdomains (`H21`)
@@ -199,7 +201,7 @@ Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
 ### 25. [INFO] server-timing response header exposed (`H25`)
 
 - **CWE:** CWE-200
-- **Detail:** The root response of automattic.com sends server-timing (a8c-cdn, dc;desc=sin, cache;desc=HIT;dur=3.0); server/edge processing metrics are disclosed to any client.
+- **Detail:** The root response of automattic.com sends server-timing (a8c-cdn, dc;desc=sin, cache;desc=HIT;dur=2.0); server/edge processing metrics are disclosed to any client.
 - **Recommendation:** Restrict server-timing to authenticated/debug contexts if the internals are sensitive.
 
 ### 26. [INFO] JWKS (JSON Web Key Set) published (`WK3`)
@@ -208,7 +210,19 @@ Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
 - **Detail:** /.well-known/jwks.json on automattic.com is live; the JWT signing-verification key set is publicly disclosed.
 - **Recommendation:** Confirm the published JWKS matches the deployed signing keys (rotation hygiene).
 
-### 27. [INFO] 15 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 27. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of automattic.com contains wildcard SAN entry(ies) *.automattic.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 28. [INFO] data: URIs present in root document (`HTML19`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of automattic.com references 2 data: URI payload(s); inline data resources bypass the normal fetch/CORS path and should be inventoried.
+- **Recommendation:** Review inline data payloads (especially scripts/iframes) as part of the asset inventory.
+
+### 29. [INFO] 15 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -221,33 +235,33 @@ Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
   "domain": "automattic.com",
   "dns": {
     "a": [
-      "192.0.78.24",
-      "192.0.78.25"
+      "192.0.78.25",
+      "192.0.78.24"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx-ams.automattic.com (pref 10)",
-      "mx-dfw.automattic.com (pref 10)"
+      "mx-dfw.automattic.com (pref 10)",
+      "mx-ams.automattic.com (pref 10)"
     ],
     "ns": [
+      "ns2.automattic.com.",
       "ns4.automattic.com.",
       "ns3.automattic.com.",
-      "ns1.automattic.com.",
-      "ns2.automattic.com."
+      "ns1.automattic.com."
     ],
     "caa": [
       "0 issue \"letsencrypt.org\""
     ],
     "spf": [
       "google-site-verification=F4jw0P5BvBnjqDSVJEhYv3LEU2WLuqChlBLJEYA2SO0",
-      "spf2.0/mfrom a mx ?all",
-      "v=spf1 include:_spf.automattic.com include:mail.zendesk.com include:mg-spf.greenhouse.io include:sendgrid.net include:39653948.spf04.hubspotemail.net ~all",
+      "figma-domain-verification=a2e41510ac6b0c5745595c76770385bfd602709c6d04e80ef830c9c482fc9e20-1768211767",
+      "yahoo-verification-key=8dNdxvmgAf9M2eCeh79q5CpzcsN5GkkT9db3Z5Rr3Sk=",
       "atlassian-domain-verification=HLvi8VknRfLwuOZ7TmiaKM8GgOgai45SxxeWZddVaOBMgWielcwit/LmLXXPJm6G",
+      "v=spf1 include:_spf.automattic.com include:mail.zendesk.com include:mg-spf.greenhouse.io include:sendgrid.net include:39653948.spf04.hubspotemail.net ~all",
+      "spf2.0/mfrom a mx ?all",
       "google-site-verification=l3pF3D6Nfuk18StNUFWXaEEIVTjBWWHvvZYP9sXEAcc",
       "gradle-verification=1AG8E2HVI4P8EOH4BK5URAEO6JVML",
-      "yahoo-verification-key=8dNdxvmgAf9M2eCeh79q5CpzcsN5GkkT9db3Z5Rr3Sk=",
-      "figma-domain-verification=a2e41510ac6b0c5745595c76770385bfd602709c6d04e80ef830c9c482fc9e20-1768211767",
       "anthropic-domain-verification-q5pmy9=Tj43pQ6DCN1JcMx95QuvpbFG3"
     ],
     "dmarc": [
@@ -278,7 +292,7 @@ Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
     }
   },
   "ports": {
-    "ip": "192.0.78.24",
+    "ip": "192.0.78.25",
     "open": []
   },
   "https": {
@@ -352,10 +366,10 @@ Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
   "wildcard_dns": true,
   "apex_txt": [
     "google-site-verification=F4jw0P5BvBnjqDSVJEhYv3LEU2WLuqChlBLJEYA2SO0",
+    "figma-domain-verification=a2e41510ac6b0c5745595c76770385bfd602709c6d04e80ef830c9",
+    "yahoo-verification-key=8dNdxvmgAf9M2eCeh79q5CpzcsN5GkkT9db3Z5Rr3Sk=",
     "atlassian-domain-verification=HLvi8VknRfLwuOZ7TmiaKM8GgOgai45SxxeWZddVaOBMgWielc",
-    "google-site-verification=l3pF3D6Nfuk18StNUFWXaEEIVTjBWWHvvZYP9sXEAcc",
-    "gradle-verification=1AG8E2HVI4P8EOH4BK5URAEO6JVML",
-    "yahoo-verification-key=8dNdxvmgAf9M2eCeh79q5CpzcsN5GkkT9db3Z5Rr3Sk="
+    "google-site-verification=l3pF3D6Nfuk18StNUFWXaEEIVTjBWWHvvZYP9sXEAcc"
   ],
   "tls2": {
     "alpn": "",
@@ -373,6 +387,10 @@ Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
       "bc_pathlen": null,
       "crl_urls": [
         "http://ye1.c.lencr.org/102.crl"
+      ],
+      "san": [
+        "*.automattic.com",
+        "automattic.com"
       ],
       "subject_dn": "311730150603550403130e6175746f6d61747469632e636f6d",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303594531",
@@ -428,11 +446,17 @@ Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
   "x16": {
     "root_status": 200,
     "alt_svc": "clear",
-    "server_timing": "a8c-cdn, dc;desc=sin, cache;desc=HIT;dur=3.0",
+    "server_timing": "a8c-cdn, dc;desc=sin, cache;desc=HIT;dur=2.0",
     "jwks": true
   },
-  "elapsed_s": 26.2,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.automattic.com"
+    ],
+    "data_uris": 2
+  },
+  "elapsed_s": 29.6,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -446,4 +470,5 @@ Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

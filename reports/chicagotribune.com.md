@@ -7,8 +7,8 @@
 | Target | https://chicagotribune.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | chicagotribune.com |
-| Test date | 2026-09-27 01:13 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:21 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -142,7 +142,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=7DJm-cs-QXsih9c8YkgDHUv-fEdopAZ-xU8Z2M3oDnc; google-site-verification=KgZD5A9gpsayiGlRAoeE7bgSRBjgujWL4U-Kz_4YS-M; google-site-verification=WZ1oTeEoyp2ivPsaJjoK2C9YLNIFyuuI3WpcG387MIM
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=7DJm-cs-QXsih9c8YkgDHUv-fEdopAZ-xU8Z2M3oDnc; globalsign-domain-verification=KaParXxs1OHDy7o8CMbPpHBN-2m_mzwdPqKMMQ66a6; knowbe4-site-verification=90309b4eacebd82470e924deb428c541
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -194,48 +194,48 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
     "cname": null,
     "mx": [
       "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "ns-1929.awsdns-49.co.uk.",
-      "ns-318.awsdns-39.com.",
       "ns-670.awsdns-19.net.",
-      "ns-1494.awsdns-58.org."
+      "ns-1494.awsdns-58.org.",
+      "ns-318.awsdns-39.com."
     ],
     "caa": [],
     "spf": [
-      "8fhvtdhi65bc45gilg1icj1b8f",
-      "dc5c2772ba0747a1b324e08489986f72",
       "google-site-verification=7DJm-cs-QXsih9c8YkgDHUv-fEdopAZ-xU8Z2M3oDnc",
-      "google-site-verification=KgZD5A9gpsayiGlRAoeE7bgSRBjgujWL4U-Kz_4YS-M",
-      "t26qk4mlm75j2yzsjlcj89w3tr8qml1t",
+      "globalsign-domain-verification=KaParXxs1OHDy7o8CMbPpHBN-2m_mzwdPqKMMQ66a6",
+      "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
+      "8fhvtdhi65bc45gilg1icj1b8f",
+      "iehg8ub4pkj0fr1muk30236f2h",
+      "dc5c2772ba0747a1b324e08489986f72",
       "7e2evqs0fhns3181r2qr7a85h7",
+      "qhsioljhf61egi221dmpq75l97",
+      "00D6A000000u2db=1TBRP00000001P7",
+      "google-site-verification=tCFWENjSprayvXVGaRbGtnlL1DMiF3qL6KwnvJTUdDE",
+      "v=spf1 include:_spf.google.com include:spf.protection.outlook.com include:de._spf.fagms.net include:sendgrid.net ip4:198.21.3.53 ip4:159.183.220.8 exists:%{i}.spf.sitel.iphmx.com ip4:52.6.112.187 include:navigacloud.com -all",
+      "google-site-verification=W2rzDizmU_fC811E9mwZ2NCwDCPmzcG1LR8chZdf5Rs",
+      "google-site-verification=7YyRyZ2VOIw6bJi4MEx8_EsHZbGoghhN5nfHVivraY4",
+      "google-site-verification=KgZD5A9gpsayiGlRAoeE7bgSRBjgujWL4U-Kz_4YS-M",
+      "bntlt7a869guderdu33t64dms5",
+      "google-site-verification=fXz0UUCS6jEN-J8qKswb90LlksOYFKoXQw8fHoUwjsE",
+      "google-site-verification=R1gNl6zO56wI3fvU3rTP5_TVgm9XQX30rXJa2XJzp6I",
+      "tollbit-domain-verification=fa0b71753f77d48596d9c864ee65b7243d54641a266abed5cbff240c5388e88f",
+      "fuh70icl95j9uk98vh9in27a1v",
+      "t26qk4mlm75j2yzsjlcj89w3tr8qml1t",
+      "facebook-domain-verification=ie1u288563hms698676bmsocuqkst5",
       "google-site-verification=WZ1oTeEoyp2ivPsaJjoK2C9YLNIFyuuI3WpcG387MIM",
+      "jrrp75hmjgof937m48dfr168tf",
+      "_globalsign-domain-verification=eRi2ZQZJ99fAou8jrSC06eUJpasrvj8YgWl21vaW5G",
+      "google-site-verification=IIMYhaHdVMjr0knA13JlUko59o7aG_WfsRumyBjbOx8",
       "q8qte811etl3vh7t2kjtj5hvef",
       "hucq9oebjdhnpo231ru64sqlu4",
       "MS=ms20138954",
-      "globalsign-domain-verification=KaParXxs1OHDy7o8CMbPpHBN-2m_mzwdPqKMMQ66a6",
-      "google-site-verification=IIMYhaHdVMjr0knA13JlUko59o7aG_WfsRumyBjbOx8",
-      "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
-      "bntlt7a869guderdu33t64dms5",
-      "google-site-verification=tCFWENjSprayvXVGaRbGtnlL1DMiF3qL6KwnvJTUdDE",
-      "_globalsign-domain-verification=eRi2ZQZJ99fAou8jrSC06eUJpasrvj8YgWl21vaW5G",
-      "google-site-verification=W2rzDizmU_fC811E9mwZ2NCwDCPmzcG1LR8chZdf5Rs",
-      "jrrp75hmjgof937m48dfr168tf",
-      "google-site-verification=7YyRyZ2VOIw6bJi4MEx8_EsHZbGoghhN5nfHVivraY4",
-      "google-site-verification=fXz0UUCS6jEN-J8qKswb90LlksOYFKoXQw8fHoUwjsE",
-      "bw=uBsTlw0gfXBTobeK+x5MDbbYw7z/+6e8St20HrxOzAUC",
-      "v=spf1 include:_spf.google.com include:spf.protection.outlook.com include:de._spf.fagms.net include:sendgrid.net ip4:198.21.3.53 ip4:159.183.220.8 exists:%{i}.spf.sitel.iphmx.com ip4:52.6.112.187 include:navigacloud.com -all",
-      "google-site-verification=R1gNl6zO56wI3fvU3rTP5_TVgm9XQX30rXJa2XJzp6I",
-      "iehg8ub4pkj0fr1muk30236f2h",
-      "1d9ebbcd0e404243947cfbbcd8f50291",
-      "fuh70icl95j9uk98vh9in27a1v",
-      "tollbit-domain-verification=fa0b71753f77d48596d9c864ee65b7243d54641a266abed5cbff240c5388e88f",
-      "00D6A000000u2db=1TBRP00000001P7",
-      "qhsioljhf61egi221dmpq75l97",
       "4qa0gtiqqj7c3qb8ign7j5veae",
-      "facebook-domain-verification=ie1u288563hms698676bmsocuqkst5"
+      "bw=uBsTlw0gfXBTobeK+x5MDbbYw7z/+6e8St20HrxOzAUC",
+      "1d9ebbcd0e404243947cfbbcd8f50291"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100"
@@ -319,10 +319,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
   },
   "apex_txt": [
     "google-site-verification=7DJm-cs-QXsih9c8YkgDHUv-fEdopAZ-xU8Z2M3oDnc",
-    "google-site-verification=KgZD5A9gpsayiGlRAoeE7bgSRBjgujWL4U-Kz_4YS-M",
-    "google-site-verification=WZ1oTeEoyp2ivPsaJjoK2C9YLNIFyuuI3WpcG387MIM",
     "globalsign-domain-verification=KaParXxs1OHDy7o8CMbPpHBN-2m_mzwdPqKMMQ66a6",
-    "google-site-verification=IIMYhaHdVMjr0knA13JlUko59o7aG_WfsRumyBjbOx8"
+    "knowbe4-site-verification=90309b4eacebd82470e924deb428c541",
+    "google-site-verification=tCFWENjSprayvXVGaRbGtnlL1DMiF3qL6KwnvJTUdDE",
+    "google-site-verification=W2rzDizmU_fC811E9mwZ2NCwDCPmzcG1LR8chZdf5Rs"
   ],
   "tls2": {
     "alpn": "",
@@ -340,6 +340,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
       "bc_pathlen": null,
       "crl_urls": [
         "http://ye1.c.lencr.org/105.crl"
+      ],
+      "san": [
+        "chicagotribune.com",
+        "www.chicagotribune.com"
       ],
       "subject_dn": "311b3019060355040313126368696361676f74726962756e652e636f6d",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303594531",
@@ -402,8 +406,9 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
       "Fastly"
     ]
   },
-  "elapsed_s": 32.7,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {},
+  "elapsed_s": 34.9,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -417,4 +422,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 6, Info: 16)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://economist.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | economist.com |
-| Test date | 2026-09-27 01:18 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:26 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
+Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,6 +37,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 20 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
 | 21 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 22 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 23 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -148,7 +150,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=-IZ_bGbCMjxT7R9muUSQC8U2CmTbX4Jl-xXf5kkqzeA; atlassian-domain-verification=ijxvw3ZV5ymQqnxv80sk3KF8m68Y5zejPUmA24aR3X1gDYFZLr; google-site-verification=J-5vS04lUpwFu33fb1lVeIiM0fhsBtzi5O-C3lhtPfU
+- **Detail:** Apex TXT records with verification/token content: stripe-verification=89A5BEC017BC1A0474BEB086C5CD9ED1C5064FEC53663120E30568AD843E; _globalsign-domain-verification=_MvaGBHROp0lO8jfRBlUhVvNlSY3UqwMW2MKrFQD0j; google-site-verification=w_R93wx06QyNfts4iAvHnfcVpRQkm-WpiBg_xs26kxk
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -175,6 +177,18 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - **Detail:** The root response of economist.com carries alt-svc h3=":443"; ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
 - **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
 
+### 22. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of economist.com contains wildcard SAN entry(ies) *.economist.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 23. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of economist.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -188,73 +202,73 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "dns3.p02.nsone.net.",
-      "dns2.p02.nsone.net.",
       "dns1.p02.nsone.net.",
-      "dns4.p02.nsone.net."
+      "dns4.p02.nsone.net.",
+      "dns2.p02.nsone.net.",
+      "dns3.p02.nsone.net."
     ],
     "caa": [
-      "0 issue \"godaddy.com\"",
-      "0 issue \"awstrust.com\"",
       "0 issue \"amazontrust.com\"",
       "0 issue \"amazonaws.com\"",
+      "0 issue \"pki.goog\"",
       "0 issue \"amazon.com\"",
       "0 issue \"letsencrypt.org\"",
-      "0 issue \"pki.goog\""
+      "0 issue \"awstrust.com\"",
+      "0 issue \"godaddy.com\""
     ],
     "spf": [
-      "_998iskp70idb7xlds6nagvu9g13yf8d",
-      "v=spf2.0/pra a mx include:spf.rimanggis.com ~all",
-      "google-site-verification=-IZ_bGbCMjxT7R9muUSQC8U2CmTbX4Jl-xXf5kkqzeA",
-      "atlassian-domain-verification=ijxvw3ZV5ymQqnxv80sk3KF8m68Y5zejPUmA24aR3X1gDYFZLr1KJnthnreXeb3O",
-      "google-site-verification=J-5vS04lUpwFu33fb1lVeIiM0fhsBtzi5O-C3lhtPfU",
-      "qb506uja0p70oalro6ufvvqgt8",
-      "google-site-verification=SjXraZgTJjBr9KW8fGa51r5znTl_bHN0l_l-HryKg0c",
-      "google-site-verification=w_R93wx06QyNfts4iAvHnfcVpRQkm-WpiBg_xs26kxk",
-      "UK-federation-domain-verification=d262373b2f27d3cad1db8a568d706c79",
-      "v=spf1 include:_spf.google.com include:amazonses.com include:_spf.salesforce.com include:servers.mcsv.net include:spfa.cpmails.com include:spf1.economist.com ~all",
-      "docusign=b54578ae-aff9-4dea-834d-db831e2aa957",
-      "google-site-verification=QbYbPDNp9mefRCIxiwdP-pwbPHZdRB2ULKa5W-8WJlw",
       "1c1f838c-c20e-4116-b628-2fd519dfc4f3",
-      "duo_sso_verification=M08QexH6Mc7fVPS7jsm3WEdvzoVJZz18LlXKjgCyGE39wQQXycZ0H1VKzu34KD3T",
-      "ca3-b658fbd113a84fc7a2457785e2a028cb",
-      "ca3-3bc5fae524474e949511aadca9ffb68d",
-      "tollbit-domain-verification=a4ca26ee57be1d61750a8376fd838114dfc91be8c429fdf9c09590cba54b046a",
-      "MS=24621E8BD1E72EEF43C436A16E7DA57F77130691",
-      "ca3-397b89c6332644339a66e5474039efb1",
-      "zoho-verification=zb52015705.zmverify.zoho.e",
-      "1password-site-verification=LMMTFIQ3UNB4PHRN4PIDK3XRYY",
-      "datadome-domain-verify=tjdVhvbvz12jNxbmlOOatTgehZm77CeH",
-      "lucidlink-verification=87PF6BE3MBWNVC1A1HSPVEYFBM",
-      "4971555iboa4dcf2se7ndmucc",
-      "cursor-domain-verification-62734j=SxJ3sl8QlA292FmfZ1F5ITe71",
-      "cloudhealth=056432f7-cc47-40f2-a7ff-f94e38ab420e",
-      "new-relic-domain-verification=6ed4883fe01f4350a7c2d6e4b70440ac",
-      "google-site-verification=umYQJmRxpXTIiMNaF4IsR6apNajC4YwAQ0098xDaU3k",
-      "OPE0071241",
-      "google-site-verification=Qb5YYUgxi34zMjL_BuQQ_Najf2Rw51HKl3CRIL43Pcc",
-      "openai-domain-verification=dv-ihHQTdhnTvKLha6AwMHkRkXz",
-      "_globalsign-domain-verification=h7hNxzyjxWcMmQGgdPl1sYiG5V-Bjrl_CsJqpKbIU4",
-      "lucidlink-verification=DF38QZV72ECT76YYFSM1MZQZR8",
-      "_globalsign-domain-verification=_MvaGBHROp0lO8jfRBlUhVvNlSY3UqwMW2MKrFQD0j",
-      "google-site-verification=6JINqi8eBX4Cq2IQuMDqx-zcEVrqIGsUwn67akjL_NQ",
-      "docker-verification=b3049f71-60ff-4ab5-8e4b-af12071ad9ef",
-      "stripe-verification=89A5BEC017BC1A0474BEB086C5CD9ED1C5064FEC53663120E30568AD843E5350",
       "ff9e2be8158dcbdc8f4cc0ff3a7aac77005532d6f7817d8798",
-      "facebook-domain-verification=2i21rtf1fbvf27qxahaf05x68twhjy",
-      "21inh0ishkm6dc2p9vk3qlam0l",
-      "anthropic-domain-verification-zzt4eb=hxHesCzVCR69nkH6qtjvnMN87",
+      "ca3-397b89c6332644339a66e5474039efb1",
+      "4971555iboa4dcf2se7ndmucc",
+      "ca3-3bc5fae524474e949511aadca9ffb68d",
+      "stripe-verification=89A5BEC017BC1A0474BEB086C5CD9ED1C5064FEC53663120E30568AD843E5350",
+      "v=spf2.0/pra a mx include:spf.rimanggis.com ~all",
+      "MS=24621E8BD1E72EEF43C436A16E7DA57F77130691",
+      "_globalsign-domain-verification=_MvaGBHROp0lO8jfRBlUhVvNlSY3UqwMW2MKrFQD0j",
+      "google-site-verification=w_R93wx06QyNfts4iAvHnfcVpRQkm-WpiBg_xs26kxk",
+      "new-relic-domain-verification=6ed4883fe01f4350a7c2d6e4b70440ac",
+      "openai-domain-verification=dv-ihHQTdhnTvKLha6AwMHkRkXz",
+      "google-site-verification=-IZ_bGbCMjxT7R9muUSQC8U2CmTbX4Jl-xXf5kkqzeA",
+      "UK-federation-domain-verification=d262373b2f27d3cad1db8a568d706c79",
       "google-site-verification=dzY0WjX5aDMkfAz45NIzTiq4STvJFQVLKardBINrGdU",
+      "anthropic-domain-verification-zzt4eb=hxHesCzVCR69nkH6qtjvnMN87",
+      "zoho-verification=zb52015705.zmverify.zoho.e",
       "globalsign-domain-verification=YHnWXL-7NA_q79ZvMwQDblw1lRYrh6nXXIoWOab5Fd",
+      "google-site-verification=6JINqi8eBX4Cq2IQuMDqx-zcEVrqIGsUwn67akjL_NQ",
+      "google-site-verification=umYQJmRxpXTIiMNaF4IsR6apNajC4YwAQ0098xDaU3k",
+      "_globalsign-domain-verification=h7hNxzyjxWcMmQGgdPl1sYiG5V-Bjrl_CsJqpKbIU4",
+      "docker-verification=b3049f71-60ff-4ab5-8e4b-af12071ad9ef",
+      "1password-site-verification=LMMTFIQ3UNB4PHRN4PIDK3XRYY",
+      "cloudhealth=056432f7-cc47-40f2-a7ff-f94e38ab420e",
+      "datadome-domain-verify=tjdVhvbvz12jNxbmlOOatTgehZm77CeH",
+      "cursor-domain-verification-62734j=SxJ3sl8QlA292FmfZ1F5ITe71",
+      "miro-verification=f342c1be96026976f75e811e572741cd2b7dc4cf",
+      "qb506uja0p70oalro6ufvvqgt8",
+      "21inh0ishkm6dc2p9vk3qlam0l",
+      "_998iskp70idb7xlds6nagvu9g13yf8d",
+      "v=spf1 include:_spf.google.com include:amazonses.com include:_spf.salesforce.com include:servers.mcsv.net include:spfa.cpmails.com include:spf1.economist.com ~all",
+      "lucidlink-verification=87PF6BE3MBWNVC1A1HSPVEYFBM",
+      "duo_sso_verification=M08QexH6Mc7fVPS7jsm3WEdvzoVJZz18LlXKjgCyGE39wQQXycZ0H1VKzu34KD3T",
+      "google-site-verification=QbYbPDNp9mefRCIxiwdP-pwbPHZdRB2ULKa5W-8WJlw",
+      "OPE0071241",
+      "lucidlink-verification=DF38QZV72ECT76YYFSM1MZQZR8",
       "adobe-idp-site-verification=fe3563308082627876b00fed079b9b07fa742f53e1dbad27a04d4066c84e4e52",
-      "miro-verification=f342c1be96026976f75e811e572741cd2b7dc4cf"
+      "google-site-verification=Qb5YYUgxi34zMjL_BuQQ_Najf2Rw51HKl3CRIL43Pcc",
+      "ca3-b658fbd113a84fc7a2457785e2a028cb",
+      "google-site-verification=SjXraZgTJjBr9KW8fGa51r5znTl_bHN0l_l-HryKg0c",
+      "tollbit-domain-verification=a4ca26ee57be1d61750a8376fd838114dfc91be8c429fdf9c09590cba54b046a",
+      "facebook-domain-verification=2i21rtf1fbvf27qxahaf05x68twhjy",
+      "google-site-verification=J-5vS04lUpwFu33fb1lVeIiM0fhsBtzi5O-C3lhtPfU",
+      "atlassian-domain-verification=ijxvw3ZV5ymQqnxv80sk3KF8m68Y5zejPUmA24aR3X1gDYFZLr1KJnthnreXeb3O",
+      "docusign=b54578ae-aff9-4dea-834d-db831e2aa957"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=quarantine; pct=100; rua=mailto:rua-import-31438@sendforensics.com"
@@ -349,11 +363,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=-IZ_bGbCMjxT7R9muUSQC8U2CmTbX4Jl-xXf5kkqzeA",
-    "atlassian-domain-verification=ijxvw3ZV5ymQqnxv80sk3KF8m68Y5zejPUmA24aR3X1gDYFZLr",
-    "google-site-verification=J-5vS04lUpwFu33fb1lVeIiM0fhsBtzi5O-C3lhtPfU",
-    "google-site-verification=SjXraZgTJjBr9KW8fGa51r5znTl_bHN0l_l-HryKg0c",
-    "google-site-verification=w_R93wx06QyNfts4iAvHnfcVpRQkm-WpiBg_xs26kxk"
+    "stripe-verification=89A5BEC017BC1A0474BEB086C5CD9ED1C5064FEC53663120E30568AD843E",
+    "_globalsign-domain-verification=_MvaGBHROp0lO8jfRBlUhVvNlSY3UqwMW2MKrFQD0j",
+    "google-site-verification=w_R93wx06QyNfts4iAvHnfcVpRQkm-WpiBg_xs26kxk",
+    "new-relic-domain-verification=6ed4883fe01f4350a7c2d6e4b70440ac",
+    "openai-domain-verification=dv-ihHQTdhnTvKLha6AwMHkRkXz"
   ],
   "tls2": {
     "alpn": "",
@@ -371,6 +385,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/we1/-Yj7OYL5Dng.crl"
+      ],
+      "san": [
+        "economist.com",
+        "*.economist.com"
       ],
       "subject_dn": "311630140603550403130d65636f6e6f6d6973742e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
@@ -427,8 +445,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     "root_status": 301,
     "alt_svc": "h3=\":443\"; ma=86400"
   },
-  "elapsed_s": 7.4,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.economist.com"
+    ]
+  },
+  "elapsed_s": 8.0,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -442,4 +465,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

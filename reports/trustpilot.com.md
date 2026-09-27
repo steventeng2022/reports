@@ -7,12 +7,12 @@
 | Target | https://trustpilot.com/ |
 | Bug bounty program | Trustpilot |
 | Listed scope domain | trustpilot.com |
-| Test date | 2026-09-27 01:36 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 17 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 18 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
+| 19 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 20 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 
 ## Detailed findings
 
@@ -114,7 +116,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=QDeDnLx9XehnRUiSDiEMTlo7FC5yIgBaMfhzkg36lQc; anthropic-domain-verification-qga6j9=93jJxdvry3EauO3oQFZvf8dHx; google-site-verification=KdmHR50ME1X0_bgJJO27tI6Y2ZZh_teVRqF8D2vmBSM
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-qga6j9=93jJxdvry3EauO3oQFZvf8dHx; h1-domain-verification=K1j4L82MxUY9ci2JywgBgo6FvxyEvTfYou9bBcQ9j5dK7DUC; atlassian-sending-domain-verification=2448cf59-90a2-4b9f-ab88-6c212605cc8a
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -132,7 +134,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 63.35.41.16 carries PTR ec2-63-35-41-16.eu-west-1.compute.amazonaws.com. for trustpilot.com.
+- **Detail:** 63.33.98.142 carries PTR ec2-63-33-98-142.eu-west-1.compute.amazonaws.com. for trustpilot.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -153,6 +155,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** The quiet handshake to trustpilot.com negotiated TLSv1.2 even though the client offered TLS 1.3; the edge caps at 1.2 (legacy/compatibility configuration).
 - **Recommendation:** Enable TLS 1.3 at the edge.
 
+### 19. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of trustpilot.com contains wildcard SAN entry(ies) *.trustpilot.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 20. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of trustpilot.com is http://ocsp.r2m01.amazontrust.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -160,49 +174,49 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "trustpilot.com",
   "dns": {
     "a": [
+      "63.33.98.142",
       "63.35.41.16",
-      "34.251.1.61",
-      "63.33.98.142"
+      "34.251.1.61"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "aspmx2.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
+      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx3.googlemail.com (pref 30)",
       "aspmx.l.google.com (pref 10)",
       "aspmx5.googlemail.com (pref 30)",
-      "aspmx4.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx2.googlemail.com (pref 30)"
+      "aspmx4.googlemail.com (pref 30)"
     ],
     "ns": [
+      "ns-507.awsdns-63.com.",
       "ns-1859.awsdns-40.co.uk.",
-      "ns-1198.awsdns-21.org.",
       "ns-627.awsdns-14.net.",
-      "ns-507.awsdns-63.com."
+      "ns-1198.awsdns-21.org."
     ],
     "caa": [],
     "spf": [
+      "anthropic-domain-verification-qga6j9=93jJxdvry3EauO3oQFZvf8dHx",
+      "h1-domain-verification=K1j4L82MxUY9ci2JywgBgo6FvxyEvTfYou9bBcQ9j5dK7DUC",
+      "SFMC-51XpMfjNiP4EVyMcp4ez89Vu8Wk1q6Q6LJ68PeRh",
+      "atlassian-sending-domain-verification=2448cf59-90a2-4b9f-ab88-6c212605cc8a",
+      "miro-verification=031ae4a4b2a83d8570b7352bf4c87365ade7cb7b",
+      "onetrust-domain-verification=d9e381bf0e9c411cb5fcff80e6e8a5ad",
+      "apple-domain-verification=MmFgAj5P9HBaVpmv",
+      "docusign=be55314d-2f73-40d6-b69b-81fe9012c808",
+      "jamf-site-verification=hCZILKggaY23aId4VBfmVA",
+      "stripe-verification=5309EE27ADA96F87770018A428B9C43D1E0B0CDC5726252873D4BC67C5871789",
+      "atlassian-domain-verification=Eo0XF2YMZT8L2vGyok0CJob7i4RRe1QrfcDxjjnF0pO7j7V05HsJz2qiVFB/zJ1t",
       "google-site-verification=QDeDnLx9XehnRUiSDiEMTlo7FC5yIgBaMfhzkg36lQc",
       "v=spf1 include:trustpilotservice.com include:_spf.google.com include:u5760.wl.sendgrid.net include:mail.zendesk.com include:cust-spf.exacttarget.com -all",
-      "gJn7h6f2m!!%WT@C%m6ox&4pFfcDjvkBYB4hq*0L2im#W#t^MLKcAlh4*Ddm59e2ricfrPUbb&H3X&h*6AjNI8tXONPH#*PluEY",
-      "anthropic-domain-verification-qga6j9=93jJxdvry3EauO3oQFZvf8dHx",
-      "google-site-verification=KdmHR50ME1X0_bgJJO27tI6Y2ZZh_teVRqF8D2vmBSM",
-      "h1-domain-verification=K1j4L82MxUY9ci2JywgBgo6FvxyEvTfYou9bBcQ9j5dK7DUC",
-      "onetrust-domain-verification=d9e381bf0e9c411cb5fcff80e6e8a5ad",
-      "miro-verification=031ae4a4b2a83d8570b7352bf4c87365ade7cb7b",
-      "calendly-site-verification=VExW0uOVuA35JUxpvM76K50anC81mCpUybq3Ts0aX",
-      "google-site-verification=eX8LrikiWD5mmqtziAD3DYIjGF1AqsK2n-GvJl6jd2Q",
-      "atlassian-domain-verification=Eo0XF2YMZT8L2vGyok0CJob7i4RRe1QrfcDxjjnF0pO7j7V05HsJz2qiVFB/zJ1t",
-      "SFMC-51XpMfjNiP4EVyMcp4ez89Vu8Wk1q6Q6LJ68PeRh",
       "onetrust-domain-verification=f8c9c8fbc2254290a3239ea97107324d",
+      "google-site-verification=eX8LrikiWD5mmqtziAD3DYIjGF1AqsK2n-GvJl6jd2Q",
+      "gJn7h6f2m!!%WT@C%m6ox&4pFfcDjvkBYB4hq*0L2im#W#t^MLKcAlh4*Ddm59e2ricfrPUbb&H3X&h*6AjNI8tXONPH#*PluEY",
       "jetbrains-domain-verification=4x4x2p1njocim1o7bh7dmijxk",
+      "calendly-site-verification=VExW0uOVuA35JUxpvM76K50anC81mCpUybq3Ts0aX",
       "hubspot-developer-verification=MDUzYTcyZDctZTlmYS00YzUxLWE3ZGItMmVlYTM4ZTRlZmJm",
-      "stripe-verification=5309EE27ADA96F87770018A428B9C43D1E0B0CDC5726252873D4BC67C5871789",
-      "docusign=be55314d-2f73-40d6-b69b-81fe9012c808",
-      "apple-domain-verification=MmFgAj5P9HBaVpmv",
-      "jamf-site-verification=hCZILKggaY23aId4VBfmVA",
-      "atlassian-sending-domain-verification=2448cf59-90a2-4b9f-ab88-6c212605cc8a"
+      "google-site-verification=KdmHR50ME1X0_bgJJO27tI6Y2ZZh_teVRqF8D2vmBSM"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:noreply-dmarc@trustpilot.com"
@@ -232,7 +246,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "63.35.41.16",
+    "ip": "63.33.98.142",
     "open": []
   },
   "https": {
@@ -282,10 +296,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=QDeDnLx9XehnRUiSDiEMTlo7FC5yIgBaMfhzkg36lQc",
     "anthropic-domain-verification-qga6j9=93jJxdvry3EauO3oQFZvf8dHx",
-    "google-site-verification=KdmHR50ME1X0_bgJJO27tI6Y2ZZh_teVRqF8D2vmBSM",
     "h1-domain-verification=K1j4L82MxUY9ci2JywgBgo6FvxyEvTfYou9bBcQ9j5dK7DUC",
+    "atlassian-sending-domain-verification=2448cf59-90a2-4b9f-ab88-6c212605cc8a",
+    "miro-verification=031ae4a4b2a83d8570b7352bf4c87365ade7cb7b",
     "onetrust-domain-verification=d9e381bf0e9c411cb5fcff80e6e8a5ad"
   ],
   "tls2": {
@@ -304,6 +318,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.r2m01.amazontrust.com/r2m01.crl"
+      ],
+      "san": [
+        "*.trustpilot.com",
+        "trustpilot.com"
       ],
       "subject_dn": "3119301706035504030c102a2e747275737470696c6f742e636f6d",
       "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3031",
@@ -334,7 +352,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-63-35-41-16.eu-west-1.compute.amazonaws.com."
+      "ec2-63-33-98-142.eu-west-1.compute.amazonaws.com."
     ]
   },
   "x13": {
@@ -364,8 +382,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 48.3,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.trustpilot.com"
+    ],
+    "ocsp_http": "http://ocsp.r2m01.amazontrust.com"
+  },
+  "elapsed_s": 52.0,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -379,4 +403,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

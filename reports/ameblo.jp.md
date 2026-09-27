@@ -7,12 +7,12 @@
 | Target | https://ameblo.jp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ameblo.jp |
-| Test date | 2026-09-27 01:09 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
+Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,7 +36,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 | 18 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
 | 19 | info | H25 | server-timing response header exposed | CWE-200 |
 | 20 | info | HTML12 | preconnect/dns-prefetch declares third-party destinations | CWE-200 |
-| 21 | info | CT1 | 17 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 21 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 22 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 23 | info | CT1 | 17 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -96,13 +98,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 9. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (ndmfsi6ugkh78g.ameblo.jp and 3zqro9lzjrt5jg.ameblo.jp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (d6uxy56a8r845o.ameblo.jp and xzya05ydn2wwyb.ameblo.jp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo; google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8; tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa97
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo; tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa97; google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -156,7 +158,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 19. [INFO] server-timing response header exposed (`H25`)
 
 - **CWE:** CWE-200
-- **Detail:** The root response of ameblo.jp sends server-timing (PASS, fastly;desc="Edge time";dur=162); server/edge processing metrics are disclosed to any client.
+- **Detail:** The root response of ameblo.jp sends server-timing (PASS, fastly;desc="Edge time";dur=159); server/edge processing metrics are disclosed to any client.
 - **Recommendation:** Restrict server-timing to authenticated/debug contexts if the internals are sensitive.
 
 ### 20. [INFO] preconnect/dns-prefetch declares third-party destinations (`HTML12`)
@@ -165,7 +167,19 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - **Detail:** Root document of ameblo.jp declares preconnect/dns-prefetch/modulepreload for 2 third-party registrable domain(s) (e.g. ameba.jp, amebame.com); declared (not yet loaded) destinations widen the expected network topology of the page.
 - **Recommendation:** Review declared third-party destinations as part of the supply-chain inventory.
 
-### 21. [INFO] 17 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 21. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of ameblo.jp contains wildcard SAN entry(ies) *.ameblo.jp; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 22. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of ameblo.jp is http://status.geotrust.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 23. [INFO] 17 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: dev.ameblo.jp, image.portal.ameblo.jp
@@ -178,8 +192,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "domain": "ameblo.jp",
   "dns": {
     "a": [
-      "199.232.210.133",
-      "199.232.214.133"
+      "199.232.214.133",
+      "199.232.210.133"
     ],
     "aaaa": [],
     "cname": null,
@@ -188,30 +202,30 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     ],
     "ns": [
       "ns-2038.awsdns-62.co.uk.",
+      "ns-1218.awsdns-24.org.",
       "ns-863.awsdns-43.net.",
-      "ns-124.awsdns-15.com.",
-      "ns-1218.awsdns-24.org."
+      "ns-124.awsdns-15.com."
     ],
     "caa": [
-      "0 iodef \"mailto:ameba_tools+crt@cyberagent.co.jp\"",
-      "0 issue \"letsencrypt.org\"",
-      "0 issue \"cybertrust.ne.jp\"",
-      "0 issue \"globalsign.com\"",
       "0 issue \"amazon.com\"",
       "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
-      "0 issue \"certainly.com\""
+      "0 issue \"globalsign.com\"",
+      "0 issue \"cybertrust.ne.jp\"",
+      "0 issue \"certainly.com\"",
+      "0 iodef \"mailto:ameba_tools+crt@cyberagent.co.jp\"",
+      "0 issue \"letsencrypt.org\""
     ],
     "spf": [
-      "v=spf1 ip4:216.255.232.136/32 include:spf-a.ameba.jp include:spf.repica.jp -all",
-      "cPu1ZpFdt7xvQjanmhmE12k4AmF0MH",
-      "fastly-domain-delegation-nfkcslan-542735-2022-10-31",
-      "_gmqf0w3hsh1pqlogfw1gkg05zhs88zx",
       "_mnobpm3nakzeekpqy6i72p451qgv326",
-      "fastly-domain-delegation-@X7yV19EoO6Y-2023-06-30",
       "google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo",
-      "google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8",
       "tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa9778f5ed1c8d42",
-      "UHgEILc96z9sKmvYTwgZYiwusQbyqI"
+      "UHgEILc96z9sKmvYTwgZYiwusQbyqI",
+      "google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8",
+      "cPu1ZpFdt7xvQjanmhmE12k4AmF0MH",
+      "fastly-domain-delegation-@X7yV19EoO6Y-2023-06-30",
+      "_gmqf0w3hsh1pqlogfw1gkg05zhs88zx",
+      "fastly-domain-delegation-nfkcslan-542735-2022-10-31",
+      "v=spf1 ip4:216.255.232.136/32 include:spf-a.ameba.jp include:spf.repica.jp -all"
     ],
     "dmarc": [
       "v=DMARC1; p=none"
@@ -241,7 +255,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     }
   },
   "ports": {
-    "ip": "199.232.210.133",
+    "ip": "199.232.214.133",
     "open": []
   },
   "https": {
@@ -317,8 +331,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "wildcard_dns": true,
   "apex_txt": [
     "google-site-verification=26Ps67bWgQGjeNkTT6hV9VEgczhnzjN78yCdM33v-eo",
-    "google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8",
-    "tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa97"
+    "tollbit-domain-verification=e5f400b7a9ee16a9c039d5a7c1ca7587cf4d1c4708b2193bfa97",
+    "google-site-verification=fst_3JQsVLfa2f0Df-x-KdG2tW23U3jDz09k6iF__y8"
   ],
   "tls2": {
     "alpn": "",
@@ -336,6 +350,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "bc_pathlen": null,
       "crl_urls": [
         "http://cdp.geotrust.com/GeoTrustTLSRSACAG1.crl"
+      ],
+      "san": [
+        "*.ameblo.jp",
+        "ameblo.jp"
       ],
       "subject_dn": "310b3009060355040613024a50310e300c06035504081305546f6b796f311330110603550407130a536869627579612d6b7531193017060355040a131043796265724167656e742c20496e632e3114301206035504030c0b2a2e616d65626c6f2e6a70",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e6331193017060355040b13107777772e64696769636572742e636f6d311f301d0603550403131647656f547275737420544c5320525341204341204731",
@@ -394,14 +412,20 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   },
   "x16": {
     "root_status": 200,
-    "server_timing": "PASS, fastly;desc=\"Edge time\";dur=162",
+    "server_timing": "PASS, fastly;desc=\"Edge time\";dur=159",
     "preconnect": [
       "ameba.jp",
       "amebame.com"
     ]
   },
-  "elapsed_s": 44.2,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.ameblo.jp"
+    ],
+    "ocsp_http": "http://status.geotrust.com"
+  },
+  "elapsed_s": 46.8,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -415,4 +439,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

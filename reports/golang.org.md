@@ -7,12 +7,12 @@
 | Target | https://golang.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | golang.org |
-| Test date | 2026-09-27 01:22 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:32 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
+Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,7 +34,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 17 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
 | 18 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
-| 19 | info | CT1 | 100 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 20 | info | CT1 | 100 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -120,7 +121,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (y1et1qogxwllpl.golang.org and i2qoutqig828ln.golang.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (s7t7ihpr0ujq6t.golang.org and vk3f6u536l2y67.golang.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -153,7 +154,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - **Detail:** The root response of golang.org carries alt-svc h3=":443"; ma=2592000,h3-29=":443"; ma=2592000; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
 - **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
 
-### 19. [INFO] 100 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 19. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of golang.org contains wildcard SAN entry(ies) *.aiplatform-notebook.cloud.google.com, *.aiplatform-training.cloud.google.com, *.backupdr.cloud.google.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 20. [INFO] 100 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -173,16 +180,16 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 2)",
+      "alt2.aspmx.l.google.com (pref 2)",
       "alt3.aspmx.l.google.com (pref 2)",
-      "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 2)"
+      "alt1.aspmx.l.google.com (pref 2)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "ns4.google.com.",
-      "ns3.google.com.",
       "ns2.google.com.",
-      "ns1.google.com."
+      "ns4.google.com.",
+      "ns1.google.com.",
+      "ns3.google.com."
     ],
     "caa": [
       "0 issue \"pki.goog\"",
@@ -639,6 +646,28 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "crl_urls": [
         "http://c.pki.goog/wr2/oBFYYahzgVI.crl"
       ],
+      "san": [
+        "misc-sni.google.com",
+        "*.aiplatform-notebook.cloud.google.com",
+        "*.aiplatform-training.cloud.google.com",
+        "*.backupdr.cloud.google.com",
+        "*.backupdr.cloud.google",
+        "*.backupdr-staging.cloud.google.com",
+        "*.backupdr-staging.cloud.google",
+        "*.backupdr-autopush.cloud.google.com",
+        "*.backupdr-autopush.cloud.google",
+        "*.backupdr-dev.cloud.google.com",
+        "*.backupdr-dev.cloud.google",
+        "*.backupdr-sandbox.cloud.google.com",
+        "*.backupdr-sandbox.cloud.google",
+        "*.brocaproject.com",
+        "brocaproject.com",
+        "*.composer.cloud.google.com",
+        "*.composer.cloud.google",
+        "*.composer-staging.cloud.google.com",
+        "*.composer-staging.cloud.google",
+        "*.composer-qa.cloud.google.com"
+      ],
       "subject_dn": "311c301a060355040313136d6973632d736e692e676f6f676c652e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303575232",
       "not_before": "20260910192223",
@@ -682,8 +711,17 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "root_status": 301,
     "alt_svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
   },
-  "elapsed_s": 13.7,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.aiplatform-notebook.cloud.google.com",
+      "*.aiplatform-training.cloud.google.com",
+      "*.backupdr.cloud.google.com",
+      "*.backupdr.cloud.google",
+      "*.backupdr-staging.cloud.google.com"
+    ]
+  },
+  "elapsed_s": 15.7,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -697,4 +735,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

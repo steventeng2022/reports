@@ -7,12 +7,12 @@
 | Target | https://kobo.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | kobo.com |
-| Test date | 2026-09-27 01:26 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:36 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
+Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,8 +35,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 | 17 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 18 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 19 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 20 | info | CT1 | 84 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 21 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 20 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 21 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 22 | info | CT1 | 84 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 23 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -149,7 +151,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=asza9zmotc5y3jf2vvxuox1fh4zwal; google-site-verification=TPfQLJMxDmDJ7QLK1G7_9WKCyT33Zd4OKl8Y3xcVUmA; status-page-domain-verification=9t2wdqtpqygk
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=asza9zmotc5y3jf2vvxuox1fh4zwal; google-site-verification=fubvUR2vWX0-_N-3h9Q6fR9el0Vi-OPTf-ysDQ2alrU; google-site-verification=TMvqQdCrWZE_zq_PIvMaWObopFipEhVGM3-NQ1D5qfY
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -164,13 +166,25 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 - **Detail:** robots.txt lists 95 disallow path(s), e.g. /Book/AddToLibrary/, /Book/AddPreviewToLibrary/, /Purchase/Buy, /*/purchase/buy/*, /ShoppingCartWidget/Add
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 20. [INFO] 84 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 20. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of kobo.com contains wildcard SAN entry(ies) *.kobo.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 21. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of kobo.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
+### 22. [INFO] 84 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: argocd.ops.kobo.com, dataops-rabbitmq-stage.ops.kobo.com, dev.kobo.com, dummy.ops.kobo.com, ext-repository2.ops.kobo.com, ops.kobo.com, retool-hd.ops.kobo.com, shop.kobo.com, status.kobo.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 21. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 23. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: dev.kobo.com; content may still be served via virtual-host fallback.
@@ -192,33 +206,33 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "kobo-com.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
-      "ns-cloud-e1.googledomains.com.",
       "ns-cloud-e3.googledomains.com.",
       "ns-cloud-e2.googledomains.com.",
-      "ns-cloud-e4.googledomains.com."
+      "ns-cloud-e4.googledomains.com.",
+      "ns-cloud-e1.googledomains.com."
     ],
     "caa": [
-      "0 issuewild \"letsencrypt.org\"",
+      "0 issuewild \"pki.goog\"",
       "0 issuewild \"sectigo.com\"",
-      "0 issuewild \"pki.goog\""
+      "0 issuewild \"letsencrypt.org\""
     ],
     "spf": [
       "facebook-domain-verification=asza9zmotc5y3jf2vvxuox1fh4zwal",
-      "fastly-domain-delegation-fddelt00540045-10-22-25",
+      "17c61b51fd3e47faa7bbb0cb888ecbb0",
+      "ca3-763497e7b6ed42dab28acd1f86e299cf",
+      "google-site-verification=fubvUR2vWX0-_N-3h9Q6fR9el0Vi-OPTf-ysDQ2alrU",
+      "google-site-verification=TMvqQdCrWZE_zq_PIvMaWObopFipEhVGM3-NQ1D5qfY",
+      "eI4nDhTkhHLFkVn2I0H86PYkbQzHr26YA6ndMom0SKIrZENOFNfL3EFFlWHcp+r4uBL1NDg63BxMrflvKQkl+w==",
+      "google-site-verification=3aKt7utuf138msKSFHlGaxHSWaUfmh7xexzcZNtlSN0",
       "google-site-verification=TPfQLJMxDmDJ7QLK1G7_9WKCyT33Zd4OKl8Y3xcVUmA",
       "status-page-domain-verification=9t2wdqtpqygk",
-      "MS=ms57345456",
-      "ca3-763497e7b6ed42dab28acd1f86e299cf",
-      "v=spf1 mx include:spf1.kobo.com include:spf.protection.outlook.com include:_spf.alchemer.eu include:stspg-customer.com include:_spf.mlsend.com include:shops.shopify.com include:mail.zendesk.com include:amazonses.com ~all",
-      "google-site-verification=3aKt7utuf138msKSFHlGaxHSWaUfmh7xexzcZNtlSN0",
       "google-site-verification=Q25CMQs0FyZeTBTcsd2e3pVmeINoplPPcC0OyZp-cYw",
-      "google-site-verification=SN46x048vtTZTeC4pcKIeVtbSbhp22YtkZIaMnlEWKY",
+      "fastly-domain-delegation-fddelt00540045-10-22-25",
       "cloudflare_dashboard_sso=9953105deb781640ed8a6f7e927897bf",
-      "google-site-verification=TMvqQdCrWZE_zq_PIvMaWObopFipEhVGM3-NQ1D5qfY",
+      "v=spf1 mx include:spf1.kobo.com include:spf.protection.outlook.com include:_spf.alchemer.eu include:stspg-customer.com include:_spf.mlsend.com include:shops.shopify.com include:mail.zendesk.com include:amazonses.com ~all",
       "hj-ownership=fvkv30Fnyx78b9M",
-      "17c61b51fd3e47faa7bbb0cb888ecbb0",
-      "google-site-verification=fubvUR2vWX0-_N-3h9Q6fR9el0Vi-OPTf-ysDQ2alrU",
-      "eI4nDhTkhHLFkVn2I0H86PYkbQzHr26YA6ndMom0SKIrZENOFNfL3EFFlWHcp+r4uBL1NDg63BxMrflvKQkl+w=="
+      "MS=ms57345456",
+      "google-site-verification=SN46x048vtTZTeC4pcKIeVtbSbhp22YtkZIaMnlEWKY"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:kobo-DMARC_Report@mail.rakuten.com,mailto:dmarc-report-a@rx.rakuten.co.jp"
@@ -343,10 +357,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
   },
   "apex_txt": [
     "facebook-domain-verification=asza9zmotc5y3jf2vvxuox1fh4zwal",
-    "google-site-verification=TPfQLJMxDmDJ7QLK1G7_9WKCyT33Zd4OKl8Y3xcVUmA",
-    "status-page-domain-verification=9t2wdqtpqygk",
+    "google-site-verification=fubvUR2vWX0-_N-3h9Q6fR9el0Vi-OPTf-ysDQ2alrU",
+    "google-site-verification=TMvqQdCrWZE_zq_PIvMaWObopFipEhVGM3-NQ1D5qfY",
     "google-site-verification=3aKt7utuf138msKSFHlGaxHSWaUfmh7xexzcZNtlSN0",
-    "google-site-verification=Q25CMQs0FyZeTBTcsd2e3pVmeINoplPPcC0OyZp-cYw"
+    "google-site-verification=TPfQLJMxDmDJ7QLK1G7_9WKCyT33Zd4OKl8Y3xcVUmA"
   ],
   "tls2": {
     "alpn": "",
@@ -364,6 +378,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/we1/tX2H5hSFwqE.crl"
+      ],
+      "san": [
+        "kobo.com",
+        "*.kobo.com"
       ],
       "subject_dn": "3111300f060355040313086b6f626f2e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
@@ -419,8 +437,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
   "x16": {
     "root_status": 302
   },
-  "elapsed_s": 6.0,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.kobo.com"
+    ]
+  },
+  "elapsed_s": 5.9,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -434,4 +457,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

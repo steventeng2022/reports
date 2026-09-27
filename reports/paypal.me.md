@@ -7,33 +7,37 @@
 | Target | https://paypal.me/ |
 | Bug bounty program | PayPal |
 | Listed scope domain | paypal.me |
-| Test date | 2026-09-27 01:29 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
-| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
-| 3 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | P8 | Missing security.txt | CWE-1038 |
-| 12 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
-| 13 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
-| 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 18 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 2 | info | PRT8080 | Alternate web service (port 8080) reachable | CWE-200 |
+| 3 | info | PRT8443 | Alternate web service (port 8443) reachable | CWE-200 |
+| 4 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 5 | low | H1b | Weak HSTS (max-age < 1 year) | CWE-319 |
+| 6 | low | H2 | Missing CSP header | CWE-1021 |
+| 7 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 8 | low | H4 | No clickjacking protection | CWE-1023 |
+| 9 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 10 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 11 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 12 | info | H6 | Server technology disclosure | CWE-200 |
+| 13 | info | P8 | Missing security.txt | CWE-1038 |
+| 14 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 15 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 16 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 20 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 21 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 22 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
 
 ## Detailed findings
 
@@ -43,116 +47,140 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
 - **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Technology fingerprint (`TECH1`)
+### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 162.159.141.96:8080 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
+
+- **CWE:** CWE-200
+- **Detail:** TCP connect to 162.159.141.96:8443 succeeded (state-only check, no payload sent).
+- **Recommendation:** If the service is not required publicly, close the port or restrict by network.
+
+### 4. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
 - **Detail:** Detected: Server: Varnish
 - **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 3. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
+### 5. [LOW] Weak HSTS (max-age < 1 year) (`H1b`)
 
 - **CWE:** CWE-319
 - **Detail:** HSTS present but max-age=300 (< 31536000).
 - **Context:** https response, /
 - **Recommendation:** Increase max-age to at least 31536000; add includeSubDomains/preload.
 
-### 4. [LOW] Missing CSP header (`H2`)
+### 6. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
 - **Context:** https response, /
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
+### 7. [LOW] Missing X-Content-Type-Options (`H3`)
 
 - **CWE:** CWE-1194
 - **Detail:** No nosniff directive; browsers may MIME-sniff responses.
 - **Context:** https response, /
 - **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 6. [LOW] No clickjacking protection (`H4`)
+### 8. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
 - **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
 - **Context:** https response, /
 - **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 9. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
 - **Context:** https response, /
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 8. [INFO] Missing Permissions-Policy (`H7`)
+### 10. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
 - **Context:** https response, /
 - **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+### 11. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
 - **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 10. [INFO] Server technology disclosure (`H6`)
+### 12. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
 - **Detail:** Header reveals: Varnish
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-### 11. [INFO] Missing security.txt (`P8`)
+### 13. [INFO] Missing security.txt (`P8`)
 
 - **CWE:** CWE-1038
 - **Detail:** No .well-known/security.txt found (RFC 9116).
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 12. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+### 14. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
 
 - **CWE:** CWE-223
 - **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
 - **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
 
-### 13. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+### 15. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
 
 - **CWE:** CWE-223
 - **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
 - **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
 
-### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 16. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but paypal.me is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 17. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 3 disallow path(s), e.g. User-agent:, User-agent:, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 16. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 18. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
 - **Detail:** Response for https://paypal.me/ carries Cache-Control: max-age=86400; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for paypal.me, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 18. [INFO] Edge/CDN layer identified from response headers (`H26`)
+### 20. [INFO] Edge/CDN layer identified from response headers (`H26`)
 
 - **CWE:** CWE-200
 - **Detail:** Response headers on paypal.me identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 21. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of paypal.me is http://ocsp.digicert.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 22. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of paypal.me discloses a 1-hop fronting chain (1.1 varnish); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
 
 ## Evidence (raw response observations)
 
@@ -161,30 +189,30 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
   "domain": "paypal.me",
   "dns": {
     "a": [
-      "151.101.65.21",
+      "162.159.141.96",
       "151.101.129.21",
-      "162.159.141.96"
+      "151.101.65.21"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "mx1.paypalcorp.com (pref 10)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "mx1.paypalcorp.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
-      "alt3.aspmx.l.google.com (pref 10)"
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "pdns100.ultradns.com.",
       "pdns100.ultradns.net.",
       "ns2-pchnet.paypal.com.",
-      "ns1-pchnet.paypal.com."
+      "ns1-pchnet.paypal.com.",
+      "pdns100.ultradns.com."
     ],
     "caa": [],
     "spf": [
-      "4tq9gwcyb51hm86yvjr684dhkqh9b1xy",
-      "v=spf1 -all"
+      "v=spf1 -all",
+      "4tq9gwcyb51hm86yvjr684dhkqh9b1xy"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com"
@@ -195,101 +223,116 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ok",
     "chain": "trusted",
     "version": "TLSv1.3",
-    "cipher": "TLS_AES_128_GCM_SHA256",
-    "subject": "jurisdictionCountryName=US, jurisdictionStateOrProvinceName=Delaware, businessCategory=Private Organization, serialNumber=3014267, countryName=US, stateOrProvinceName=California, localityName=San Jose, organizationName=PayPal, Inc., commonName=www.paypal.com",
-    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert EV RSA CA G2",
-    "notBefore": "Aug 28 00:00:00 2026 GMT",
-    "notAfter": "Mar 14 23:59:59 2027 GMT",
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "subject": "countryName=US, stateOrProvinceName=California, localityName=San Jose, organizationName=PayPal, Inc., commonName=paypal.com",
+    "issuer": "countryName=US, organizationName=DigiCert Inc, commonName=DigiCert Global G2 TLS RSA SHA256 2020 CA1",
+    "notBefore": "May 11 00:00:00 2026 GMT",
+    "notAfter": "Nov 25 23:59:59 2026 GMT",
     "san": [
-      "www.paypal.com",
-      "articles.braintreepayments.com",
-      "assets.braintreegateway.com",
-      "braintreecharge.com",
-      "braintreefinancial.com",
+      "paypal.com",
       "braintreepayments.com",
-      "braintreepaymentsolutions.com",
-      "brand.braintreepayments.com",
-      "business.paypal.com",
-      "c.paypal.com",
-      "c6.paypal.com",
-      "checkout.paypal.com",
-      "connect.paypal.com",
-      "content.paypalobjects.com",
-      "cors.api.paypal.com",
-      "creditapply.paypal.com",
-      "de.paypal-qrc.com",
-      "demo.paypal.com",
-      "developer.braintreepayments.com",
-      "developer.paypal.com",
-      "developers.braintreepayments.com",
-      "docs.paypal.ai",
-      "es.paypal-qrc.com",
+      "buyindiaonline.com",
+      "cash2india.com",
+      "curv.cc",
+      "curv.co",
       "fastlane.paypal.com",
-      "financing.paypal.com",
-      "fpdbs.paypal.com",
-      "fr.paypal-qrc.com",
-      "help.braintreepayments.com",
-      "history.paypal.com",
-      "id.braintreegateway.com",
-      "id.hyperwallet.com",
-      "id.joinhoney.com",
-      "id.paypal.com",
-      "id.venmo.com",
-      "id.xoom.com",
-      "id.zettle.com",
-      "id6.venmo.com",
-      "it.paypal-qrc.com",
-      "js.braintreegateway.com",
-      "login.paypal.com",
-      "m.paypal.co.uk",
-      "m.paypal.com",
-      "m.paypal.com.au",
-      "m.paypal.es",
-      "m.paypal.fr",
-      "m.paypal.it",
-      "mobile.paypal.com",
-      "now.id.venmo.com",
-      "now.venmo.com",
-      "onboarding.paypal.com",
-      "p.paypal.com",
+      "paypal-australia.com.au",
+      "paypal-business.co.uk",
+      "paypal-business.com.au",
+      "paypal-businesscenter.com",
+      "paypal-communications.com",
+      "paypal-corp.com",
+      "paypal-danmark.dk",
+      "PAYPAL-DEUTSCHLAND.DE",
+      "paypal-donations.co.uk",
+      "paypal-donations.com",
+      "paypal-experience.com",
+      "paypal-gifts.com",
+      "paypal-globalshops.com",
+      "paypal-information.com",
+      "paypal-knowledge-test.com",
+      "paypal-knowledge.com",
+      "paypal-latam.com",
+      "paypal-marketing.ca",
+      "paypal-marketing.co.uk",
+      "PAYPAL-MARKETING.PL",
+      "paypal-media.com",
+      "paypal-mena.com",
+      "paypal-mktg.com",
+      "paypal-nakit.com",
+      "paypal-norge.no",
+      "paypal-optimizer.com",
+      "paypal-partners.com",
+      "paypal-passport.com",
+      "paypal-prepagata.com",
+      "paypal-promo.es",
+      "paypal-support.com",
+      "paypal-sverige.se",
+      "paypal-turkiye.com",
+      "paypal-workplace.com",
+      "paypal.ai",
+      "paypal.at",
+      "paypal.be",
+      "paypal.biz",
+      "paypal.ca",
+      "paypal.ch",
+      "paypal.cl",
+      "PAYPAL.CO",
+      "paypal.co.id",
+      "paypal.co.il",
+      "paypal.co.in",
+      "paypal.co.nz",
+      "paypal.co.th",
+      "paypal.co.uk",
+      "paypal.co.za",
+      "paypal.com.ar",
+      "paypal.com.au",
+      "paypal.com.br",
+      "paypal.com.cn",
+      "paypal.com.hk",
+      "paypal.com.mx",
+      "PAYPAL.COM.MY",
+      "paypal.com.pe",
+      "paypal.com.sa",
+      "paypal.com.sg",
+      "paypal.com.tr",
+      "paypal.com.tw",
+      "paypal.com.ve",
+      "paypal.de",
+      "paypal.dk",
+      "paypal.es",
+      "paypal.eu",
+      "paypal.fi",
+      "paypal.fr",
+      "paypal.ie",
+      "paypal.in",
+      "paypal.it",
+      "paypal.jp",
+      "paypal.lu",
       "paypal.me",
-      "pep.paypal.com",
-      "pics.paypal.com",
-      "pointofsale-s.paypal.com",
-      "pp-au.paypal.com",
-      "pp-eu.paypal.com",
-      "pp-in.paypal.com",
-      "pp-us.paypal.com",
-      "py.pl",
-      "qwac.paypal.com",
-      "safebreach.paypal.com",
-      "secure.paypal.com",
-      "securepayments.paypal.com",
-      "ssp.paypal.com",
-      "sspserv.paypal.com",
-      "support.braintreepayments.com",
-      "t.paypal.com",
-      "transfer.paypal.com",
-      "uk.paypal-qrc.com",
-      "us.paypal-qrc-seller-supplies.com",
-      "us.paypal-qrc.com",
-      "www-st.paypal.com",
-      "www.braintreecharge.com",
-      "www.braintreefinancial.com",
-      "www.braintreepayments.com",
-      "www.braintreepaymentsolutions.com",
-      "www.brand.braintreepayments.com",
-      "www.fastlane.paypal.com",
-      "www.paypal-gifts.com",
+      "paypal.nl",
+      "paypal.no",
+      "paypal.ph",
+      "paypal.pl",
+      "paypal.pt",
+      "paypal.se",
+      "paypal.vn",
+      "paypalbenefits.com",
+      "paypalgivingfund.org",
+      "paypalobjects.com",
+      "pypl.com",
+      "sandbox.paypal.com",
+      "simility.com",
+      "thepaypalblog.com",
+      "www.curv.cc",
+      "www.curv.co",
       "www.paypal.ai",
       "www.paypal.biz",
-      "www.paypal.me",
-      "www.paypalobjects.com",
-      "www.py.pl",
-      "www.xo.paypal.com",
-      "zettleintegrations.paypal.com"
+      "www.paypal.com",
+      "www.simility.com",
+      "xoom.com"
     ],
-    "days_left": 168,
+    "days_left": 59,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -299,8 +342,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     }
   },
   "ports": {
-    "ip": "151.101.65.21",
-    "open": []
+    "ip": "162.159.141.96",
+    "open": [
+      8080,
+      8443
+    ]
   },
   "https": {
     "status": 301,
@@ -361,18 +407,40 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.digicert.com",
-      "serial": 12182327588129939832482939330808372368,
+      "serial": 4798075584132047144148270449582636256,
       "cert_version": 3,
       "bc_ca": null,
       "bc_pathlen": null,
       "crl_urls": [
-        "http://crl3.digicert.com/DigiCertEVRSACAG2.crl",
-        "http://crl4.digicert.com/DigiCertEVRSACAG2.crl"
+        "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
+        "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
       ],
-      "subject_dn": "31133011060b2b0601040182373c0201031302555331193017060b2b0601040182373c020102130844656c6177617265311d301b060355040f0c1450726976617465204f7267616e697a6174696f6e3110300e0603550405130733303134323637310b3009060355040613025553311330110603550408130a43616c69666f726e69613111300f0603550407130853616e204a6f736531153013060355040a130c50617950616c2c20496e632e311730150603550403130e7777772e70617970616c2e636f6d",
-      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63311e301c06035504031315446967694365727420455620525341204341204732",
-      "not_before": "20260828000000",
-      "not_after": "20270314235959"
+      "san": [
+        "paypal.com",
+        "braintreepayments.com",
+        "buyindiaonline.com",
+        "cash2india.com",
+        "curv.cc",
+        "curv.co",
+        "fastlane.paypal.com",
+        "paypal-australia.com.au",
+        "paypal-business.co.uk",
+        "paypal-business.com.au",
+        "paypal-businesscenter.com",
+        "paypal-communications.com",
+        "paypal-corp.com",
+        "paypal-danmark.dk",
+        "PAYPAL-DEUTSCHLAND.DE",
+        "paypal-donations.co.uk",
+        "paypal-donations.com",
+        "paypal-experience.com",
+        "paypal-gifts.com",
+        "paypal-globalshops.com"
+      ],
+      "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e69613111300f0603550407130853616e204a6f736531153013060355040a130c50617950616c2c20496e632e311330110603550403130a70617970616c2e636f6d",
+      "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
+      "not_before": "20260511000000",
+      "not_after": "20261125235959"
     },
     "ocsp": "explicit-status"
   },
@@ -402,12 +470,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "root_status": 301,
     "hsts": "max-age=300",
     "crl": {
-      "url": "http://crl3.digicert.com/DigiCertEVRSACAG2.crl",
+      "url": "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
       "status": 200
     }
   },
   "x15": {
-    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher": "TLS_AES_256_GCM_SHA384",
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
@@ -417,8 +485,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "Fastly"
     ]
   },
-  "elapsed_s": 25.8,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.digicert.com",
+    "via": "1.1 varnish"
+  },
+  "elapsed_s": 25.5,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -432,4 +504,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

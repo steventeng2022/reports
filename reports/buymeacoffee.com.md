@@ -7,12 +7,12 @@
 | Target | https://buymeacoffee.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | buymeacoffee.com |
-| Test date | 2026-09-27 01:12 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:20 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
+Total findings: **26** (High: 0, Medium: 0, Low: 3, Info: 23)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -40,6 +40,8 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 | 22 | info | HTML10 | Plaintext email addresses in the document | CWE-200 |
 | 23 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
 | 24 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 25 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 26 | info | HTML16 | Inline event handlers in root document | CWE-79 |
 
 ## Detailed findings
 
@@ -144,7 +146,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=hyCVJ8W7SxMjC8KmEMHKG8-wW5xmxKjXeEmXJrzpExA; google-site-verification=TIGAwXGV7VUvZMvzZIjonnusU0xoWFxrVdQsHpXoOmM; google-site-verification=Gk69bY-P6pmMA4wl0KEDuG1Dzfn75oftGeS7yRq3q64
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=QDPWgc777mEpYLh-P8xkDhrZ7eTgFM-Wu1FRxvZN8WU; google-site-verification=ifeov4jZgnjj51jCdnmTbFvdqQqsgdDp_Gp0On-pkrY; google-site-verification=hyCVJ8W7SxMjC8KmEMHKG8-wW5xmxKjXeEmXJrzpExA
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -168,7 +170,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 ### 20. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkkbn83kgtx578.html -> 404; error page/headers match: Cloudflare.
+- **Detail:** GET /xk9wmec94ggwe4.html -> 404; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 21. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
@@ -195,6 +197,18 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 - **Detail:** Response headers on buymeacoffee.com identify the edge as CloudFront; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
+### 25. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of buymeacoffee.com contains wildcard SAN entry(ies) *.buymeacoffee.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 26. [INFO] Inline event handlers in root document (`HTML16`)
+
+- **CWE:** CWE-79
+- **Detail:** The root document of buymeacoffee.com contains 17 inline event handler attribute(s); each is a DOM-level execution point that SRI does not constrain.
+- **Recommendation:** Move handlers to external scripts where feasible and keep them covered by CSP.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -203,53 +217,53 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
   "dns": {
     "a": [
       "104.26.2.199",
-      "172.67.75.15",
-      "104.26.3.199"
+      "104.26.3.199",
+      "172.67.75.15"
     ],
     "aaaa": [
       "2606:4700:20::681a:3c7",
-      "2606:4700:20::681a:2c7",
-      "2606:4700:20::ac43:4b0f"
+      "2606:4700:20::ac43:4b0f",
+      "2606:4700:20::681a:2c7"
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 1)",
+      "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "ruth.ns.cloudflare.com.",
       "alexis.ns.cloudflare.com."
     ],
     "caa": [
-      "0 issue \"ssl.com\"",
-      "0 issue \"comodoca.com\"",
-      "0 issuewild \"amazontrust.com\"",
-      "0 issuewild \"letsencrypt.org\"",
-      "0 issuewild \"ssl.com\"",
-      "0 issuewild \"comodoca.com\"",
-      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
-      "0 issuewild \"amazon.com\"",
-      "0 issue \"letsencrypt.org\"",
-      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
-      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
-      "0 issuewild \"awstrust.com\"",
       "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
-      "0 issuewild \"amazonaws.com\""
+      "0 issue \"comodoca.com\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issuewild \"comodoca.com\"",
+      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issuewild \"amazontrust.com\"",
+      "0 issuewild \"amazonaws.com\"",
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issue \"ssl.com\"",
+      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issuewild \"awstrust.com\"",
+      "0 issuewild \"ssl.com\"",
+      "0 issuewild \"amazon.com\""
     ],
     "spf": [
-      "google-site-verification=hyCVJ8W7SxMjC8KmEMHKG8-wW5xmxKjXeEmXJrzpExA",
-      "google-site-verification=TIGAwXGV7VUvZMvzZIjonnusU0xoWFxrVdQsHpXoOmM",
-      "google-site-verification=Gk69bY-P6pmMA4wl0KEDuG1Dzfn75oftGeS7yRq3q64",
-      "google-site-verification=ifeov4jZgnjj51jCdnmTbFvdqQqsgdDp_Gp0On-pkrY",
-      "stripe-verification=95acda8ff8a80c42943efa2c7448080559bbc484c590986e6de261e0be32886e",
       "google-site-verification=QDPWgc777mEpYLh-P8xkDhrZ7eTgFM-Wu1FRxvZN8WU",
-      "google-site-verification=Fn2a1Bqwf6vLSjrwNWeC0o9Jg2wTqr7vmLWO4erTNhE",
-      "google-site-verification=JsoWgaqx0JNxka54pxwpHThXrmnQlN7-XIxgPQnlFhY",
+      "google-site-verification=ifeov4jZgnjj51jCdnmTbFvdqQqsgdDp_Gp0On-pkrY",
+      "google-site-verification=hyCVJ8W7SxMjC8KmEMHKG8-wW5xmxKjXeEmXJrzpExA",
       "facebook-domain-verification=uowjjaddqox3ne3zo53s8y2pt6p1pv",
+      "google-site-verification=Gk69bY-P6pmMA4wl0KEDuG1Dzfn75oftGeS7yRq3q64",
+      "google-site-verification=Fn2a1Bqwf6vLSjrwNWeC0o9Jg2wTqr7vmLWO4erTNhE",
+      "stripe-verification=95acda8ff8a80c42943efa2c7448080559bbc484c590986e6de261e0be32886e",
       "v=spf1 include:mlrcloud.com include:_spf.google.com include:amazonses.com include:spf.mtasv.net -all",
+      "google-site-verification=TIGAwXGV7VUvZMvzZIjonnusU0xoWFxrVdQsHpXoOmM",
+      "google-site-verification=JsoWgaqx0JNxka54pxwpHThXrmnQlN7-XIxgPQnlFhY",
       "yahoo-verification-key=XyesRIG5Fcz2JwspA3lVgCvQXOvyCJVBJXRkyQ9dV04="
     ],
     "dmarc": [
@@ -337,11 +351,11 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=hyCVJ8W7SxMjC8KmEMHKG8-wW5xmxKjXeEmXJrzpExA",
-    "google-site-verification=TIGAwXGV7VUvZMvzZIjonnusU0xoWFxrVdQsHpXoOmM",
-    "google-site-verification=Gk69bY-P6pmMA4wl0KEDuG1Dzfn75oftGeS7yRq3q64",
+    "google-site-verification=QDPWgc777mEpYLh-P8xkDhrZ7eTgFM-Wu1FRxvZN8WU",
     "google-site-verification=ifeov4jZgnjj51jCdnmTbFvdqQqsgdDp_Gp0On-pkrY",
-    "stripe-verification=95acda8ff8a80c42943efa2c7448080559bbc484c590986e6de261e0be32"
+    "google-site-verification=hyCVJ8W7SxMjC8KmEMHKG8-wW5xmxKjXeEmXJrzpExA",
+    "facebook-domain-verification=uowjjaddqox3ne3zo53s8y2pt6p1pv",
+    "google-site-verification=Gk69bY-P6pmMA4wl0KEDuG1Dzfn75oftGeS7yRq3q64"
   ],
   "tls2": {
     "alpn": "",
@@ -359,6 +373,10 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
       "bc_pathlen": null,
       "crl_urls": [
         "http://ye1.c.lencr.org/122.crl"
+      ],
+      "san": [
+        "*.buymeacoffee.com",
+        "buymeacoffee.com"
       ],
       "subject_dn": "31193017060355040313106275796d6561636f666665652e636f6d",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303594531",
@@ -407,8 +425,14 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
       "CloudFront"
     ]
   },
-  "elapsed_s": 19.2,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.buymeacoffee.com"
+    ],
+    "inline_handlers": 17
+  },
+  "elapsed_s": 12.0,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -422,4 +446,5 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://smugmug.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | smugmug.com |
-| Test date | 2026-09-27 01:34 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
+Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 | 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 20 | info | SRV1 | Server header discloses a product version | CWE-200 |
+| 21 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 22 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 23 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -129,13 +132,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (yprg9wmjph7ou4.smugmug.com and 9lggnzllivugvr.smugmug.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (c9qq8mr8hzzfit.smugmug.com and r65spxunk6bil8.smugmug.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: lovable_verification=mUkuMoOCniK09G3hpvMK; status-page-domain-verification=2z6n94xyr5tj; anthropic-domain-verification-ytcjx3=3JXEHEGUIDVMUMf0uDxrNCHeS
+- **Detail:** Apex TXT records with verification/token content: h1-domain-verification=WGuGC3hnnTu7E31Y7R7KZfvJtMDib9GK1dfYdJ3Uko1oBnKJ; easydmarc-verification:c41a276a-ac1c-4df4-afb0-24d13abb4082; miro-verification=57e9f2368bcc8d66648f3d731cb9a81eda2d084b
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -147,7 +150,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 100.52.94.3 carries PTR ec2-100-52-94-3.compute-1.amazonaws.com. for smugmug.com.
+- **Detail:** 32.193.115.37 carries PTR ec2-32-193-115-37.compute-1.amazonaws.com. for smugmug.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -168,6 +171,24 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - **Detail:** Server header on smugmug.com is 'awselb/2.0' and includes a version number, which narrows targeted vulnerability research.
 - **Recommendation:** Serve a generic Server value without the version.
 
+### 21. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of smugmug.com contains wildcard SAN entry(ies) *.smugmug.pro, *.smugmug.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 22. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of smugmug.com is http://ocsp.r2m01.amazontrust.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 23. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of smugmug.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -175,40 +196,40 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "domain": "smugmug.com",
   "dns": {
     "a": [
-      "100.52.94.3",
+      "32.193.115.37",
       "3.83.200.95",
-      "32.193.115.37"
+      "100.52.94.3"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "alt3.aspmx.l.google.com (pref 10)",
       "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-1569.awsdns-04.co.uk.",
-      "ns-160.awsdns-20.com.",
+      "ns-798.awsdns-35.net.",
       "ns-1488.awsdns-58.org.",
-      "ns-798.awsdns-35.net."
+      "ns-160.awsdns-20.com.",
+      "ns-1569.awsdns-04.co.uk."
     ],
     "caa": [],
     "spf": [
-      "lovable_verification=mUkuMoOCniK09G3hpvMK",
-      "v=spf1 include:_spf.smugmug_com._d.easydmarc.pro ~all",
-      "docusign=db2c269a-ec4f-4e67-ae5f-1ef42b248990",
-      "status-page-domain-verification=2z6n94xyr5tj",
-      "anthropic-domain-verification-ytcjx3=3JXEHEGUIDVMUMf0uDxrNCHeS",
-      "easydmarc-verification:c41a276a-ac1c-4df4-afb0-24d13abb4082",
-      "miro-verification=57e9f2368bcc8d66648f3d731cb9a81eda2d084b",
-      "asv=b9dfbae46b15612f6607a68ae19a7e2e",
       "h1-domain-verification=WGuGC3hnnTu7E31Y7R7KZfvJtMDib9GK1dfYdJ3Uko1oBnKJ",
       "TAILSCALE-2SnWDnM6RXvoBqRCJXyE",
-      "atlassian-domain-verification=TgOLLHFpQq2Vo30Hxzddllz1ji7PkMt0vV2E5B3rUCP2ICBlTYaOx4ns/CDzkVnf",
+      "easydmarc-verification:c41a276a-ac1c-4df4-afb0-24d13abb4082",
+      "miro-verification=57e9f2368bcc8d66648f3d731cb9a81eda2d084b",
+      "lovable_verification=mUkuMoOCniK09G3hpvMK",
+      "docusign=db2c269a-ec4f-4e67-ae5f-1ef42b248990",
+      "status-page-domain-verification=2z6n94xyr5tj",
+      "v=spf1 include:_spf.smugmug_com._d.easydmarc.pro ~all",
+      "asv=b9dfbae46b15612f6607a68ae19a7e2e",
+      "anthropic-domain-verification-ytcjx3=3JXEHEGUIDVMUMf0uDxrNCHeS",
+      "google-site-verification=-nck5ImlodD2x9hVKFtLY2lgmH0nTzkkhqrYMGTbATQ",
       "h1-domain-verification=VswTbgZa19ikLScJDExi1oP55pEEtqbzNnXMsNAbRLGQ5pwf",
-      "google-site-verification=-nck5ImlodD2x9hVKFtLY2lgmH0nTzkkhqrYMGTbATQ"
+      "atlassian-domain-verification=TgOLLHFpQq2Vo30Hxzddllz1ji7PkMt0vV2E5B3rUCP2ICBlTYaOx4ns/CDzkVnf"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;rua=mailto:c707497ded@rua.easydmarc.us;ruf=mailto:c707497ded@ruf.easydmarc.us;fo=1;"
@@ -240,7 +261,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     }
   },
   "ports": {
-    "ip": "100.52.94.3",
+    "ip": "32.193.115.37",
     "open": []
   },
   "https": {
@@ -293,11 +314,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "lovable_verification=mUkuMoOCniK09G3hpvMK",
-    "status-page-domain-verification=2z6n94xyr5tj",
-    "anthropic-domain-verification-ytcjx3=3JXEHEGUIDVMUMf0uDxrNCHeS",
+    "h1-domain-verification=WGuGC3hnnTu7E31Y7R7KZfvJtMDib9GK1dfYdJ3Uko1oBnKJ",
     "easydmarc-verification:c41a276a-ac1c-4df4-afb0-24d13abb4082",
-    "miro-verification=57e9f2368bcc8d66648f3d731cb9a81eda2d084b"
+    "miro-verification=57e9f2368bcc8d66648f3d731cb9a81eda2d084b",
+    "lovable_verification=mUkuMoOCniK09G3hpvMK",
+    "status-page-domain-verification=2z6n94xyr5tj"
   ],
   "tls2": {
     "alpn": "",
@@ -316,6 +337,12 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "crl_urls": [
         "http://crl.r2m01.amazontrust.com/r2m01.crl"
       ],
+      "san": [
+        "smugmug.com",
+        "*.smugmug.pro",
+        "smugmug.pro",
+        "*.smugmug.com"
+      ],
       "subject_dn": "311430120603550403130b736d75676d75672e636f6d",
       "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3031",
       "not_before": "20251127000000",
@@ -326,7 +353,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "x12": {
     "status": 502,
     "ptr": [
-      "ec2-100-52-94-3.compute-1.amazonaws.com."
+      "ec2-32-193-115-37.compute-1.amazonaws.com."
     ]
   },
   "x13": {
@@ -355,8 +382,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "x16": {
     "root_status": 502
   },
-  "elapsed_s": 40.0,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.smugmug.pro",
+      "*.smugmug.com"
+    ],
+    "ocsp_http": "http://ocsp.r2m01.amazontrust.com"
+  },
+  "elapsed_s": 41.7,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -370,4 +404,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

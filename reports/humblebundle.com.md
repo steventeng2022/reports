@@ -7,12 +7,12 @@
 | Target | https://humblebundle.com/ |
 | Bug bounty program | Humble Bundle |
 | Listed scope domain | humblebundle.com |
-| Test date | 2026-09-27 01:23 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:33 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
+Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,6 +37,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 | 19 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
 | 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 21 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 22 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 23 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -49,13 +51,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.148.24:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.39.232:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.148.24:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.39.232:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -142,7 +144,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=wdm0otx2q7qvw96ccu1owi6jskfcfc; onetrust-domain-verification=cb1b850aa57c4e15892be12da4bf7a12; adobe-idp-site-verification=13cfb5c99c1f82bcb8ede2dffbe417f301a9d9d0974e2d74f962
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=cd8dab640ab786a9457c8757f4188cd682dd687a694d1d9c251e; docker-verification=b71517e6-ec41-4428-9b08-868900eb670f; stripe-verification=c2842c33f8fc5e720f16a4bb16e1b87ca4f882d9b69859b43b7e8d5402b3
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -175,6 +177,18 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - **Detail:** /sitemap.xml on humblebundle.com lists 3 <loc> URL(s) across 4 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
+### 22. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of humblebundle.com contains wildcard SAN entry(ies) *.humblebundle.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 23. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of humblebundle.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -182,15 +196,15 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "domain": "humblebundle.com",
   "dns": {
     "a": [
-      "172.64.148.24",
-      "104.18.39.232"
+      "104.18.39.232",
+      "172.64.148.24"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
       "alt3.aspmx.l.google.com (pref 10)",
       "alt4.aspmx.l.google.com (pref 10)"
     ],
@@ -200,24 +214,24 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     ],
     "caa": [],
     "spf": [
-      "facebook-domain-verification=wdm0otx2q7qvw96ccu1owi6jskfcfc",
-      "onetrust-domain-verification=cb1b850aa57c4e15892be12da4bf7a12",
-      "adobe-idp-site-verification=13cfb5c99c1f82bcb8ede2dffbe417f301a9d9d0974e2d74f96237e450346dd6",
-      "google-site-verification=IfUeqKHD-u_nuMQAmbpn8lmad9EhutZPomxSbD-W_GQ",
-      "anthropic-domain-verification-gc83va=tK3mN2nye0g8jjMswcPA6kRII",
-      "google-site-verification=W9_zrs_kg4u4rMv2jE-9dyMSq-yMqvsWvja142BoeyY",
-      "tollbit-domain-verification=8297291091d8421385402c9ecc91341273a40e67ee0bfde027abd79c643f079e",
       "adobe-idp-site-verification=cd8dab640ab786a9457c8757f4188cd682dd687a694d1d9c251e9ef54140a0ec",
-      "stripe-verification=c2842c33f8fc5e720f16a4bb16e1b87ca4f882d9b69859b43b7e8d5402b3e871",
-      "v=spf1 include:_spf.smtp.com include:_spf.google.com include:mail.zendesk.com ~all",
-      "MS=ms63769922",
-      "ZOOM_verify_BSJTEHAWrFKP2r4NfFxgHg",
-      "airtable-verification=1437f276d8460af3a52ac49067a34ac5",
       "docker-verification=b71517e6-ec41-4428-9b08-868900eb670f",
-      "wrike-verification=NjM1NTEyNjo2NTcwNTk4ODI3NmI0YjliYzRiOGQyYjgwMWQ2NTg4NGIwMjFjOWJjYWUyMzY1NGRiNGYzMzM5NmJlNTk2NzM4",
-      "google-site-verification=cwvfG5J-CLZHt57KuTqTcqxInEvu9iIYvyuQSth2L7U",
       "docusign=ce585a69-7a3c-45d9-b457-6883634525a7",
+      "stripe-verification=c2842c33f8fc5e720f16a4bb16e1b87ca4f882d9b69859b43b7e8d5402b3e871",
+      "facebook-domain-verification=wdm0otx2q7qvw96ccu1owi6jskfcfc",
+      "ZOOM_verify_BSJTEHAWrFKP2r4NfFxgHg",
+      "google-site-verification=IfUeqKHD-u_nuMQAmbpn8lmad9EhutZPomxSbD-W_GQ",
+      "adobe-idp-site-verification=13cfb5c99c1f82bcb8ede2dffbe417f301a9d9d0974e2d74f96237e450346dd6",
+      "MS=ms63769922",
+      "anthropic-domain-verification-gc83va=tK3mN2nye0g8jjMswcPA6kRII",
+      "tollbit-domain-verification=8297291091d8421385402c9ecc91341273a40e67ee0bfde027abd79c643f079e",
       "google-site-verification=Jmxtf21HtWxcN5_rNf8s9vfKFavPVve4Wn8f0B5WKSY",
+      "google-site-verification=W9_zrs_kg4u4rMv2jE-9dyMSq-yMqvsWvja142BoeyY",
+      "wrike-verification=NjM1NTEyNjo2NTcwNTk4ODI3NmI0YjliYzRiOGQyYjgwMWQ2NTg4NGIwMjFjOWJjYWUyMzY1NGRiNGYzMzM5NmJlNTk2NzM4",
+      "v=spf1 include:_spf.smtp.com include:_spf.google.com include:mail.zendesk.com ~all",
+      "onetrust-domain-verification=cb1b850aa57c4e15892be12da4bf7a12",
+      "airtable-verification=1437f276d8460af3a52ac49067a34ac5",
+      "google-site-verification=cwvfG5J-CLZHt57KuTqTcqxInEvu9iIYvyuQSth2L7U",
       "atlassian-domain-verification=QUsZX4LdPWTYZgx09JhShFot27EJnUl/5CyxXFsiGebXl2QD8Fh3zzfkYZJe42Ic"
     ],
     "dmarc": [
@@ -248,7 +262,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     }
   },
   "ports": {
-    "ip": "172.64.148.24",
+    "ip": "104.18.39.232",
     "open": [
       8080,
       8443
@@ -310,11 +324,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "adobe-idp-site-verification=cd8dab640ab786a9457c8757f4188cd682dd687a694d1d9c251e",
+    "docker-verification=b71517e6-ec41-4428-9b08-868900eb670f",
+    "stripe-verification=c2842c33f8fc5e720f16a4bb16e1b87ca4f882d9b69859b43b7e8d5402b3",
     "facebook-domain-verification=wdm0otx2q7qvw96ccu1owi6jskfcfc",
-    "onetrust-domain-verification=cb1b850aa57c4e15892be12da4bf7a12",
-    "adobe-idp-site-verification=13cfb5c99c1f82bcb8ede2dffbe417f301a9d9d0974e2d74f962",
-    "google-site-verification=IfUeqKHD-u_nuMQAmbpn8lmad9EhutZPomxSbD-W_GQ",
-    "anthropic-domain-verification-gc83va=tK3mN2nye0g8jjMswcPA6kRII"
+    "google-site-verification=IfUeqKHD-u_nuMQAmbpn8lmad9EhutZPomxSbD-W_GQ"
   ],
   "tls2": {
     "alpn": "",
@@ -332,6 +346,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/we1/Yh_eO4rxBDg.crl"
+      ],
+      "san": [
+        "humblebundle.com",
+        "*.humblebundle.com"
       ],
       "subject_dn": "311930170603550403131068756d626c6562756e646c652e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
@@ -389,8 +407,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 9.3,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.humblebundle.com"
+    ]
+  },
+  "elapsed_s": 9.4,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -404,4 +427,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

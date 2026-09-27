@@ -7,12 +7,12 @@
 | Target | https://elmundo.es/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | elmundo.es |
-| Test date | 2026-09-27 01:18 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
+Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,6 +37,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 | 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 21 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 22 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 23 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 
 ## Detailed findings
 
@@ -149,7 +151,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=V40iSs6vN6O1kFq-Egky0AmbTyIly-EukOcOWjuyT30; atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebj; google-site-verification=5DcZ3fJzOj0f4QBZPhxEO6lT09vXcIu-hy35RDXHkc4
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebj; google-site-verification=5DcZ3fJzOj0f4QBZPhxEO6lT09vXcIu-hy35RDXHkc4; globalsign-domain-verification=KHdzCZD_oMiYp479wH9wCSZsMlbwL6t2W0nwUGP2eU
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -176,6 +178,18 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 - **Detail:** The elmundo.es certificate lists an AIA OCSP responder (http://ocsp.sectigo.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
+### 22. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of elmundo.es contains wildcard SAN entry(ies) *.elmundo.es; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 23. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of elmundo.es is http://ocsp.sectigo.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -193,22 +207,22 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
       "elmundo-es.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns1-02.azure-dns.com.",
-      "ns4-02.azure-dns.info.",
       "ns3-02.azure-dns.org.",
+      "ns4-02.azure-dns.info.",
+      "ns1-02.azure-dns.com.",
       "ns2-02.azure-dns.net."
     ],
     "caa": [],
     "spf": [
-      "v=spf1 mx ip4:212.80.144.25 a:mailing.unidadeditorial.es ip4:193.110.128.182 ip4:93.90.16.107 ip4:212.80.144.192 include:t.contactlab.it include:amazonses.com include:spf.protection.outlook.com include:spf.mail.netclient.no ip4:13.81.124.182 -all",
-      "google-site-verification=V40iSs6vN6O1kFq-Egky0AmbTyIly-EukOcOWjuyT30",
-      "cMMfg3L6wl5iOp7rf/T1gX1IK075nC4837wyuYxfHi6FEX2glov0GKi/9E3JuKYvv55vdco+0hJsNMW8AQbe4Q==",
-      "f6ecbiuc2h43tvq9vav81rddmt",
-      "atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebjnJx2DWy5zGgbDr",
       "MS=ms46178158",
+      "atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebjnJx2DWy5zGgbDr",
       "google-site-verification=5DcZ3fJzOj0f4QBZPhxEO6lT09vXcIu-hy35RDXHkc4",
       "globalsign-domain-verification=KHdzCZD_oMiYp479wH9wCSZsMlbwL6t2W0nwUGP2eU",
+      "f6ecbiuc2h43tvq9vav81rddmt",
       "adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14cab10c239da0",
+      "v=spf1 mx ip4:212.80.144.25 a:mailing.unidadeditorial.es ip4:193.110.128.182 ip4:93.90.16.107 ip4:212.80.144.192 include:t.contactlab.it include:amazonses.com include:spf.protection.outlook.com include:spf.mail.netclient.no ip4:13.81.124.182 -all",
+      "cMMfg3L6wl5iOp7rf/T1gX1IK075nC4837wyuYxfHi6FEX2glov0GKi/9E3JuKYvv55vdco+0hJsNMW8AQbe4Q==",
+      "google-site-verification=V40iSs6vN6O1kFq-Egky0AmbTyIly-EukOcOWjuyT30",
       "globalsign-domain-verification=7bjinxNsR4XyhujN4NAlLtHAWyALVtjJgzNZciDdZ-"
     ],
     "dmarc": [
@@ -292,11 +306,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=V40iSs6vN6O1kFq-Egky0AmbTyIly-EukOcOWjuyT30",
     "atlassian-domain-verification=T5fbuvw/H/J2eZWKPjYsqChbdQg/OqHtq4MQ1Ak76LJubHwebj",
     "google-site-verification=5DcZ3fJzOj0f4QBZPhxEO6lT09vXcIu-hy35RDXHkc4",
     "globalsign-domain-verification=KHdzCZD_oMiYp479wH9wCSZsMlbwL6t2W0nwUGP2eU",
-    "adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14"
+    "adobe-idp-site-verification=5d984b54fc7397d92bb1b96a40c532b3ad090875dedb22c00a14",
+    "google-site-verification=V40iSs6vN6O1kFq-Egky0AmbTyIly-EukOcOWjuyT30"
   ],
   "tls2": {
     "alpn": "",
@@ -313,6 +327,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
       "bc_ca": null,
       "bc_pathlen": null,
       "crl_urls": null,
+      "san": [
+        "*.elmundo.es",
+        "elmundo.es"
+      ],
       "subject_dn": "3115301306035504030c0c2a2e656c6d756e646f2e6573",
       "issuer_dn": "310b300906035504061302474231183016060355040a130f5365637469676f204c696d69746564313730350603550403132e5365637469676f205075626c6963205365727665722041757468656e7469636174696f6e20434120445620523336",
       "not_before": "20260326000000",
@@ -368,8 +386,14 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 43.9,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.elmundo.es"
+    ],
+    "ocsp_http": "http://ocsp.sectigo.com"
+  },
+  "elapsed_s": 47.7,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -383,4 +407,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

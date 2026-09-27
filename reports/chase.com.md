@@ -7,12 +7,12 @@
 | Target | https://chase.com/ |
 | Bug bounty program | Chase |
 | Listed scope domain | chase.com |
-| Test date | 2026-09-27 01:13 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:21 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,7 +32,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 14 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 15 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 16 | info | H22 | Server answers with HTTP/1.0 | CWE-319 |
-| 17 | info | CT1 | 114 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 18 | info | CT1 | 114 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -120,7 +121,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: sinch-domain-verification=6848bb42-da6f-49cf-8974-920af9cf1806; atlassian-domain-verification=wUjrfh2T73RznZOKmEZfc0mRF92bjC7JyjSgRXg9Yt2e9ZMRZw; atlassian-domain-verification=PZApk1vJjd7scChzBMQy2d4NEwk4Bt26obCVACc7vWiOBVCOxT
+- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification\u003dpD6ozLCGDinP/R+vd5R9hpoPCSOmTFTHfWPK633PXEtEL; wiz-domain-verification=66aa74155d5e84d10ed4b5a786a66f94063cff3b4c7e11d09fb46f02; wiz-domain-verification=68c6d9fa0c4bdd60150d3df50635cd0fcf4af6af079771d90239d10a
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -141,7 +142,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - **Detail:** The root response of chase.com uses HTTP/1.0, the oldest version still in use; modern sites should serve HTTP/1.1 or 2.
 - **Recommendation:** Serve HTTP/1.1 or HTTP/2 from the edge.
 
-### 17. [INFO] 114 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 17. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of chase.com is http://ocsp.digicert.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 18. [INFO] 114 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -154,52 +161,52 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "domain": "chase.com",
   "dns": {
     "a": [
-      "146.143.13.57",
+      "146.143.83.57",
       "146.143.141.57",
-      "146.143.83.57"
+      "146.143.13.57"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "cluster14.us.messagelabs.com (pref 30)",
-      "cluster14.us.messagelabs.com (pref 10)",
       "cluster14a.us.messagelabs.com (pref 40)",
-      "cluster14.us.messagelabs.com (pref 20)"
+      "cluster14.us.messagelabs.com (pref 10)",
+      "cluster14.us.messagelabs.com (pref 20)",
+      "cluster14.us.messagelabs.com (pref 30)"
     ],
     "ns": [
       "ns0140.secondary.cloudflare.com.",
-      "ns1.jpmorganchase.com.",
-      "ns06.jpmorganchase.com.",
+      "ns2.jpmorganchase.com.",
       "ns05.jpmorganchase.com.",
-      "ns0119.secondary.cloudflare.com.",
-      "ns2.jpmorganchase.com."
+      "ns06.jpmorganchase.com.",
+      "ns1.jpmorganchase.com.",
+      "ns0119.secondary.cloudflare.com."
     ],
     "caa": [
-      "0 issue \"entrust.net\"",
-      "0 issue \"digicert.com\""
+      "0 issue \"digicert.com\"",
+      "0 issue \"entrust.net\""
     ],
     "spf": [
-      "sinch-domain-verification=6848bb42-da6f-49cf-8974-920af9cf1806",
-      "atlassian-domain-verification=wUjrfh2T73RznZOKmEZfc0mRF92bjC7JyjSgRXg9Yt2e9ZMRZwafUO6GPJaecYOh",
-      "atlassian-domain-verification=PZApk1vJjd7scChzBMQy2d4NEwk4Bt26obCVACc7vWiOBVCOxTOV4/EB9LMexMnl",
-      "atlassian-domain-verification=Ua2Fovb97Ak39kxh4koulfhVlpieV1PLhaMkdZpzINDMQGlcvLV+ORgL2QmOryw+",
-      "google-site-verification=w00TwyVREI5RpqAT9hqSLZVvZcZi46578G57D1aMGeE",
-      "docusign=b04ddbec-21ac-4d6b-bb8b-3f1a3bca079f",
-      "wiz-domain-verification=ccd3ec907fff510311f6a14b2a659fcb83adea2818bb6e78503239d2877e8657?",
-      "smartsheet-site-validation=JdBS3Kn_332V6dI9U0iq0TV3RZZXTUhL",
-      "airtable-verification=1d59ed5062280d21aeef0c14aaf4f950",
       "atlassian-domain-verification\\u003dpD6ozLCGDinP/R+vd5R9hpoPCSOmTFTHfWPK633PXEtELa5KlVDw4w1Pnn02aTdC",
-      "wiz-domain-verification=a0d8d067bcb1cdd44255d0633a31df3ba13c82e30f27c080519b0b85ba734d32",
-      "_m47rp0d9u3ci4ycif1echp310q0yy09",
-      "onetrust-domain-verification=ccee45576c1e4fbfaa4014725a73344f",
       "wiz-domain-verification=66aa74155d5e84d10ed4b5a786a66f94063cff3b4c7e11d09fb46f027736dbf0",
-      "pendo-domain-verification=1f6e5677-d405-438e-88ba-141766793ce8",
-      "DirectFedAuthUrl=https://idauatg2.jpmorganchase.com/adfs/ls/",
-      "google-site-verification=iZwZzo1YPl0G29U136Suzn4c1VptcA_LkvvdWOYC6B0",
       "wiz-domain-verification=68c6d9fa0c4bdd60150d3df50635cd0fcf4af6af079771d90239d10add2c2967",
-      "google-site-verification=PfSAyrffyVUKXLc1Ew8C2IFPWkjufFSsbboFz_24Qt4",
+      "google-site-verification=w00TwyVREI5RpqAT9hqSLZVvZcZi46578G57D1aMGeE",
+      "atlassian-domain-verification=Ua2Fovb97Ak39kxh4koulfhVlpieV1PLhaMkdZpzINDMQGlcvLV+ORgL2QmOryw+",
+      "docusign=b04ddbec-21ac-4d6b-bb8b-3f1a3bca079f",
       "docusign=500adee6-4cca-451d-bcd8-2813346419c8",
-      "v=spf1 include:tpo.chase.com exists:%{i}.spf.chase.com exists:%{i}.spf.hc4673-96.iphmx.com exists:%{i}.spf.hc4698-8.iphmx.com -all"
+      "_m47rp0d9u3ci4ycif1echp310q0yy09",
+      "atlassian-domain-verification=wUjrfh2T73RznZOKmEZfc0mRF92bjC7JyjSgRXg9Yt2e9ZMRZwafUO6GPJaecYOh",
+      "DirectFedAuthUrl=https://idauatg2.jpmorganchase.com/adfs/ls/",
+      "pendo-domain-verification=1f6e5677-d405-438e-88ba-141766793ce8",
+      "v=spf1 include:tpo.chase.com exists:%{i}.spf.chase.com exists:%{i}.spf.hc4673-96.iphmx.com exists:%{i}.spf.hc4698-8.iphmx.com -all",
+      "google-site-verification=iZwZzo1YPl0G29U136Suzn4c1VptcA_LkvvdWOYC6B0",
+      "sinch-domain-verification=6848bb42-da6f-49cf-8974-920af9cf1806",
+      "airtable-verification=1d59ed5062280d21aeef0c14aaf4f950",
+      "atlassian-domain-verification=PZApk1vJjd7scChzBMQy2d4NEwk4Bt26obCVACc7vWiOBVCOxTOV4/EB9LMexMnl",
+      "smartsheet-site-validation=JdBS3Kn_332V6dI9U0iq0TV3RZZXTUhL",
+      "wiz-domain-verification=a0d8d067bcb1cdd44255d0633a31df3ba13c82e30f27c080519b0b85ba734d32",
+      "onetrust-domain-verification=ccee45576c1e4fbfaa4014725a73344f",
+      "google-site-verification=PfSAyrffyVUKXLc1Ew8C2IFPWkjufFSsbboFz_24Qt4",
+      "wiz-domain-verification=ccd3ec907fff510311f6a14b2a659fcb83adea2818bb6e78503239d2877e8657?"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com;"
@@ -230,7 +237,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     }
   },
   "ports": {
-    "ip": "146.143.13.57",
+    "ip": "146.143.83.57",
     "open": []
   },
   "https": {
@@ -307,11 +314,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     ]
   },
   "apex_txt": [
-    "sinch-domain-verification=6848bb42-da6f-49cf-8974-920af9cf1806",
-    "atlassian-domain-verification=wUjrfh2T73RznZOKmEZfc0mRF92bjC7JyjSgRXg9Yt2e9ZMRZw",
-    "atlassian-domain-verification=PZApk1vJjd7scChzBMQy2d4NEwk4Bt26obCVACc7vWiOBVCOxT",
-    "atlassian-domain-verification=Ua2Fovb97Ak39kxh4koulfhVlpieV1PLhaMkdZpzINDMQGlcvL",
-    "google-site-verification=w00TwyVREI5RpqAT9hqSLZVvZcZi46578G57D1aMGeE"
+    "atlassian-domain-verification\\u003dpD6ozLCGDinP/R+vd5R9hpoPCSOmTFTHfWPK633PXEtEL",
+    "wiz-domain-verification=66aa74155d5e84d10ed4b5a786a66f94063cff3b4c7e11d09fb46f02",
+    "wiz-domain-verification=68c6d9fa0c4bdd60150d3df50635cd0fcf4af6af079771d90239d10a",
+    "google-site-verification=w00TwyVREI5RpqAT9hqSLZVvZcZi46578G57D1aMGeE",
+    "atlassian-domain-verification=Ua2Fovb97Ak39kxh4koulfhVlpieV1PLhaMkdZpzINDMQGlcvL"
   ],
   "tls2": {
     "alpn": "",
@@ -323,13 +330,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.digicert.com",
-      "serial": 10867976606427577069665545680115578464,
+      "serial": 17576578126387475334749915172074751177,
       "cert_version": 3,
       "bc_ca": null,
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl3.digicert.com/DigiCertEVRSACAG2.crl",
         "http://crl4.digicert.com/DigiCertEVRSACAG2.crl"
+      ],
+      "san": [
+        "www.chase.com",
+        "chase.com",
+        "www-ndc.chase.com"
       ],
       "subject_dn": "31133011060b2b0601040182373c0201031302555331193017060b2b0601040182373c020102130844656c6177617265311d301b060355040f0c1450726976617465204f7267616e697a6174696f6e310f300d06035504051306363931303131310b30090603550406130255533111300f060355040813084e657720596f726b3111300f060355040713084e657720596f726b311d301b060355040a0c144a504d6f7267616e204368617365202620436f2e311630140603550403130d7777772e63686173652e636f6d",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63311e301c06035504031315446967694365727420455620525341204341204732",
@@ -372,8 +384,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 54.7,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.digicert.com"
+  },
+  "elapsed_s": 47.9,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -387,4 +402,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

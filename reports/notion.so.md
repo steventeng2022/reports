@@ -7,12 +7,12 @@
 | Target | https://notion.so/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | notion.so |
-| Test date | 2026-09-27 01:28 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:39 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **38** (High: 0, Medium: 9, Low: 2, Info: 27)
+Total findings: **40** (High: 0, Medium: 9, Low: 2, Info: 29)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -53,7 +53,9 @@ Total findings: **38** (High: 0, Medium: 9, Low: 2, Info: 27)
 | 35 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 36 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 37 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
-| 38 | info | CT1 | 70 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 38 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 39 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 40 | info | CT1 | 70 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 
 ## Detailed findings
 
@@ -66,133 +68,133 @@ Total findings: **38** (High: 0, Medium: 9, Low: 2, Info: 27)
 ### 2. [MEDIUM] FTP service (cleartext) reachable (`PRT21`)
 
 - **CWE:** CWE-319
-- **Detail:** TCP connect to 208.103.161.1:21 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:21 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] SSH reachable (`PRT22`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:22 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:22 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [MEDIUM] Telnet service (cleartext) reachable (`PRT23`)
 
 - **CWE:** CWE-319
-- **Detail:** TCP connect to 208.103.161.1:23 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:23 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] SMTP (port 25) reachable (`PRT25`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:25 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:25 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 6. [INFO] DNS service reachable (`PRT53`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:53 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:53 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 7. [INFO] POP3 (cleartext) reachable (`PRT110`)
 
 - **CWE:** CWE-319
-- **Detail:** TCP connect to 208.103.161.1:110 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:110 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 8. [INFO] IMAP (cleartext) reachable (`PRT143`)
 
 - **CWE:** CWE-319
-- **Detail:** TCP connect to 208.103.161.1:143 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:143 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 9. [INFO] IMAPS (port 993) reachable (`PRT993`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:993 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:993 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 10. [INFO] POP3S (port 995) reachable (`PRT995`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:995 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:995 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 11. [MEDIUM] MSSQL (port 1433) reachable (`PRT1433`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:1433 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:1433 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 12. [MEDIUM] MySQL (port 3306) reachable (`PRT3306`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:3306 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:3306 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 13. [INFO] RDP (port 3389) reachable (`PRT3389`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:3389 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:3389 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 14. [MEDIUM] PostgreSQL (port 5432) reachable (`PRT5432`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:5432 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:5432 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 15. [MEDIUM] VNC (port 5900) reachable (`PRT5900`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:5900 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:5900 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 16. [MEDIUM] Redis (port 6379) reachable (`PRT6379`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:6379 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:6379 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 17. [INFO] Alternate web service (port 8000) reachable (`PRT8000`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:8000 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:8000 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 18. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 19. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 20. [INFO] Alternate web service (port 8888) reachable (`PRT8888`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:8888 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:8888 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 21. [INFO] Service (port 9090, e.g. Elasticsearch/debug) reachable (`PRT9090`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:9090 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:9090 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 22. [MEDIUM] Elasticsearch (port 9200) reachable (`PRT9200`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:9200 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:9200 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 23. [MEDIUM] MongoDB (port 27017) reachable (`PRT27017`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 208.103.161.1:27017 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 208.103.161.2:27017 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 24. [INFO] Technology fingerprint (`TECH1`)
@@ -253,7 +255,7 @@ Total findings: **38** (High: 0, Medium: 9, Low: 2, Info: 27)
 ### 32. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=01Xid8U6cE4LuiG2OeRTL-hnDC9MxKvVD6mAgAS51Oo; facebook-domain-verification=2agf76ffad9vxlxya597jrzil7xoxf; google-site-verification=LBOGI6TChsA_9vwaJYLU7RXgunDGAWKG0fcHxiU2-o4
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=_aahlmtDiPlbg224pU3M_8w9Ka-3tcGUmBd6ZW052AU; facebook-domain-verification=2agf76ffad9vxlxya597jrzil7xoxf; google-site-verification=U2r6h9FWkKMadZDxW94daNJ1YUGXP-9_tJ7PUYfYz4c
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 33. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -286,7 +288,19 @@ Total findings: **38** (High: 0, Medium: 9, Low: 2, Info: 27)
 - **Detail:** /sitemap.xml on notion.so lists 169 <loc> URL(s) across 170 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
-### 38. [INFO] 70 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 38. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of notion.so contains wildcard SAN entry(ies) *.notion.so, *.dev.notion.so, *.stg.notion.so; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 39. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of notion.so declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
+### 40. [INFO] 70 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: admin.notion.so, api.mail.dev.notion.so, api.mail.notion.so, api.pgncs.notion.so, app.mail.dev.notion.so, app.mail.notion.so, cspreports.mail.dev.notion.so, cspreports.mail.notion.so, dev.notion.so, development.notion.so
@@ -299,10 +313,10 @@ Total findings: **38** (High: 0, Medium: 9, Low: 2, Info: 27)
   "domain": "notion.so",
   "dns": {
     "a": [
+      "208.103.161.2",
       "208.103.161.1",
       "208.103.161.16",
-      "208.103.161.17",
-      "208.103.161.2"
+      "208.103.161.17"
     ],
     "aaaa": [
       "2602:f79a::2",
@@ -313,17 +327,17 @@ Total findings: **38** (High: 0, Medium: 9, Low: 2, Info: 27)
     "cname": null,
     "mx": [],
     "ns": [
-      "dana.ns.cloudflare.com.",
-      "woz.ns.cloudflare.com."
+      "woz.ns.cloudflare.com.",
+      "dana.ns.cloudflare.com."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=01Xid8U6cE4LuiG2OeRTL-hnDC9MxKvVD6mAgAS51Oo",
+      "google-site-verification=_aahlmtDiPlbg224pU3M_8w9Ka-3tcGUmBd6ZW052AU",
       "facebook-domain-verification=2agf76ffad9vxlxya597jrzil7xoxf",
+      "google-site-verification=U2r6h9FWkKMadZDxW94daNJ1YUGXP-9_tJ7PUYfYz4c",
+      "google-site-verification=01Xid8U6cE4LuiG2OeRTL-hnDC9MxKvVD6mAgAS51Oo",
       "google-site-verification=LBOGI6TChsA_9vwaJYLU7RXgunDGAWKG0fcHxiU2-o4",
       "_eohaffzltripfzavo0ehlmi84k0tkxw",
-      "google-site-verification=U2r6h9FWkKMadZDxW94daNJ1YUGXP-9_tJ7PUYfYz4c",
-      "google-site-verification=_aahlmtDiPlbg224pU3M_8w9Ka-3tcGUmBd6ZW052AU",
       "proxy-ssl.webflow.com",
       "v=spf1 ~all"
     ],
@@ -358,7 +372,7 @@ Total findings: **38** (High: 0, Medium: 9, Low: 2, Info: 27)
     }
   },
   "ports": {
-    "ip": "208.103.161.1",
+    "ip": "208.103.161.2",
     "open": [
       21,
       22,
@@ -475,11 +489,11 @@ Total findings: **38** (High: 0, Medium: 9, Low: 2, Info: 27)
     ]
   },
   "apex_txt": [
-    "google-site-verification=01Xid8U6cE4LuiG2OeRTL-hnDC9MxKvVD6mAgAS51Oo",
+    "google-site-verification=_aahlmtDiPlbg224pU3M_8w9Ka-3tcGUmBd6ZW052AU",
     "facebook-domain-verification=2agf76ffad9vxlxya597jrzil7xoxf",
-    "google-site-verification=LBOGI6TChsA_9vwaJYLU7RXgunDGAWKG0fcHxiU2-o4",
     "google-site-verification=U2r6h9FWkKMadZDxW94daNJ1YUGXP-9_tJ7PUYfYz4c",
-    "google-site-verification=_aahlmtDiPlbg224pU3M_8w9Ka-3tcGUmBd6ZW052AU"
+    "google-site-verification=01Xid8U6cE4LuiG2OeRTL-hnDC9MxKvVD6mAgAS51Oo",
+    "google-site-verification=LBOGI6TChsA_9vwaJYLU7RXgunDGAWKG0fcHxiU2-o4"
   ],
   "tls2": {
     "alpn": "",
@@ -497,6 +511,13 @@ Total findings: **38** (High: 0, Medium: 9, Low: 2, Info: 27)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/we1/pnDlkWlcNeI.crl"
+      ],
+      "san": [
+        "notion.so",
+        "*.notion.so",
+        "*.dev.notion.so",
+        "*.stg.notion.so",
+        "*.www.notion.so"
       ],
       "subject_dn": "31123010060355040313096e6f74696f6e2e736f",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
@@ -561,8 +582,16 @@ Total findings: **38** (High: 0, Medium: 9, Low: 2, Info: 27)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 6.4,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.notion.so",
+      "*.dev.notion.so",
+      "*.stg.notion.so",
+      "*.www.notion.so"
+    ]
+  },
+  "elapsed_s": 5.4,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -576,4 +605,5 @@ Total findings: **38** (High: 0, Medium: 9, Low: 2, Info: 27)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

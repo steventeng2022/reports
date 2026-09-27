@@ -7,30 +7,34 @@
 | Target | https://baidu.com/ |
 | Bug bounty program | Baidu |
 | Listed scope domain | baidu.com |
-| Test date | 2026-09-27 01:13 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
+Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
-| 2 | low | H1 | Missing HSTS header | CWE-319 |
-| 3 | low | H2 | Missing CSP header | CWE-1021 |
-| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 5 | low | H4 | No clickjacking protection | CWE-1023 |
-| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
-| 9 | info | P8 | Missing security.txt | CWE-1038 |
-| 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
-| 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
-| 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 13 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 14 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
-| 15 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
+| 2 | info | TLS9 | Neither TLS 1.2 nor 1.3 handshake succeeded | CWE-327 |
+| 3 | low | H1 | Missing HSTS header | CWE-319 |
+| 4 | low | H2 | Missing CSP header | CWE-1021 |
+| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 6 | low | H4 | No clickjacking protection | CWE-1023 |
+| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 10 | info | P8 | Missing security.txt | CWE-1038 |
+| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
+| 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 16 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 17 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
+| 18 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 19 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 
 ## Detailed findings
 
@@ -40,97 +44,121 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
 - **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [LOW] Missing HSTS header (`H1`)
+### 2. [INFO] Neither TLS 1.2 nor 1.3 handshake succeeded (`TLS9`)
+
+- **CWE:** CWE-327
+- **Detail:** Only legacy protocols (if any) could complete a handshake.
+- **Recommendation:** Upgrade TLS configuration.
+
+### 3. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
 - **Detail:** No Strict-Transport-Security header present. Browsers do not enforce HTTPS for repeat visits.
 - **Context:** https response, /
 - **Recommendation:** Add Strict-Transport-Security with max-age >= 31536000 and preload.
 
-### 3. [LOW] Missing CSP header (`H2`)
+### 4. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
 - **Context:** https response, /
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 4. [LOW] Missing X-Content-Type-Options (`H3`)
+### 5. [LOW] Missing X-Content-Type-Options (`H3`)
 
 - **CWE:** CWE-1194
 - **Detail:** No nosniff directive; browsers may MIME-sniff responses.
 - **Context:** https response, /
 - **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 5. [LOW] No clickjacking protection (`H4`)
+### 6. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
 - **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
 - **Context:** https response, /
 - **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 6. [INFO] Missing Referrer-Policy (`H5`)
+### 7. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
 - **Context:** https response, /
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 7. [INFO] Missing Permissions-Policy (`H7`)
+### 8. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
 - **Context:** https response, /
 - **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
 - **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 9. [INFO] Missing security.txt (`P8`)
+### 10. [INFO] Missing security.txt (`P8`)
 
 - **CWE:** CWE-1038
 - **Detail:** No .well-known/security.txt found (RFC 9116).
 - **Context:** https response, /
 - **Recommendation:** Publish .well-known/security.txt per RFC 9116.
 
-### 10. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
 
 - **CWE:** CWE-223
 - **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
 - **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
 
-### 11. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
+### 12. [INFO] No TLS-RPT record (_smtp._tls) (`MAIL13`)
 
 - **CWE:** CWE-223
 - **Detail:** No TLS-RPT policy for SMTP TLS reporting (RFC 8451/8452).
 - **Recommendation:** Consider TLS-RPT for TLS delivery reporting.
 
-### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
 - **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=qjb28W2jJSrWj04NHpB0CvgK9tle5JkOq-EcyWBgnE; google-site-verification=GHb98-6msqyx_qqjGl5eRatD3QTHyVB6-xQ3gJB5UwM
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 13. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+
+- **CWE:** CWE-200
+- **Detail:** robots.txt lists 133 disallow path(s), e.g. /baidu, /s?, /ulink?, /link?, /home/news/data/
+- **Recommendation:** Review disallowed paths; robots is not access control.
+
+### 15. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for baidu.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 14. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+### 16. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
 
 - **CWE:** CWE-298
 - **Detail:** The baidu.com certificate lists an AIA OCSP responder (http://ocsp.globalsign.com/gsrsaovsslca2018) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
-### 15. [INFO] TLS 1.2 ceiling: 1.3 not negotiated with a modern client (`TLS27`)
+### 17. [INFO] TLS 1.2 ceiling: 1.3 not negotiated with a modern client (`TLS27`)
 
 - **CWE:** CWE-327
 - **Detail:** The quiet handshake to baidu.com negotiated TLSv1.2 even though the client offered TLS 1.3; the edge caps at 1.2 (legacy/compatibility configuration).
 - **Recommendation:** Enable TLS 1.3 at the edge.
+
+### 18. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of baidu.com contains wildcard SAN entry(ies) *.baidu.com, *.baifubao.com, *.baidustatic.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 19. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of baidu.com is http://ocsp.globalsign.com/gsrsaovsslca2018; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
 
 ## Evidence (raw response observations)
 
@@ -139,23 +167,23 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
   "domain": "baidu.com",
   "dns": {
     "a": [
-      "110.242.74.102",
-      "124.237.177.164",
       "111.63.65.103",
+      "124.237.177.164",
+      "110.242.74.102",
       "111.63.65.247"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mx.maillb.baidu.com (pref 10)",
-      "mx.baidu.com (pref 20)"
+      "mx.baidu.com (pref 20)",
+      "mx.maillb.baidu.com (pref 10)"
     ],
     "ns": [
+      "ns2.baidu.com.",
       "dns.baidu.com.",
-      "ns7.baidu.com.",
       "ns4.baidu.com.",
-      "ns3.baidu.com.",
-      "ns2.baidu.com."
+      "ns7.baidu.com.",
+      "ns3.baidu.com."
     ],
     "caa": [],
     "spf": [
@@ -238,12 +266,12 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "SSLv3": false,
       "TLS1.0": false,
       "TLS1.1": false,
-      "TLS1.2": true,
+      "TLS1.2": false,
       "TLS1.3": false
     }
   },
   "ports": {
-    "ip": "110.242.74.102",
+    "ip": "111.63.65.103",
     "open": []
   },
   "https": {
@@ -257,7 +285,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     {
       "origin": "https://evil-auditor.example",
       "acao": "",
-      "acac": ""
+      "acac": "",
+      "error": "ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='baidu.com', port=443): Read timed out. (read timeout=15)\"))"
     },
     {
       "origin": "https://sub.baidu.com",
@@ -279,13 +308,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "/robots.txt": 301,
     "/sitemap.xml": 301,
     "/.well-known/security.txt": 301,
-    "/security.txt": 0,
+    "/security.txt": 301,
     "/.git/HEAD": 301,
     "/.git/config": 301,
-    "/.env": 301,
+    "/.env": 0,
     "/.htaccess": 301,
     "/wp-login.php": 0,
-    "/phpmyadmin/index.php": 301,
+    "/phpmyadmin/index.php": 0,
     "/server-status": 301,
     "/api/": 301
   },
@@ -313,6 +342,28 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
       "crl_urls": [
         "http://crl.globalsign.com/gsrsaovsslca2018.crl"
       ],
+      "san": [
+        "baidu.com",
+        "click.hm.baidu.com",
+        "baifubao.com",
+        "www.baidu.cn",
+        "www.baidu.com.cn",
+        "mct.y.nuomi.com",
+        "apollo.auto",
+        "dwz.cn",
+        "update.pan.baidu.com",
+        "wn.pos.baidu.com",
+        "cm.pos.baidu.com",
+        "log.hm.baidu.com",
+        "*.baidu.com",
+        "*.baifubao.com",
+        "*.baidustatic.com",
+        "*.bdstatic.com",
+        "*.bdimg.com",
+        "*.hao123.com",
+        "*.nuomi.com",
+        "*.chuanke.com"
+      ],
       "subject_dn": "310b300906035504061302434e3110300e060355040813074265696a696e673110300e060355040713074265696a696e67313a3038060355040a13314265696a696e67204261696475204e6574636f6d20536369656e636520546563686e6f6c6f677920436f2e2c204c74642e311230100603550403130962616964752e636f6d",
       "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312630240603550403131d476c6f62616c5369676e20525341204f562053534c2043412032303138",
       "not_before": "20260709023255",
@@ -321,7 +372,23 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     "ocsp": "explicit-status"
   },
   "http2": {
-    "error": "root GET failed"
+    "robots_disallow": [
+      "/baidu",
+      "/s?",
+      "/ulink?",
+      "/link?",
+      "/home/news/data/",
+      "/bh",
+      "/baidu",
+      "/s?",
+      "/shifen/",
+      "/homepage/",
+      "/cpro",
+      "/ulink?",
+      "/link?",
+      "/home/news/data/",
+      "/bh"
+    ]
   },
   "x12": {
     "status": 301
@@ -339,22 +406,31 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
     }
   },
   "x14": {
-    "root_error": "ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='baidu.com', port=443): R",
+    "root_status": 301,
     "crl": {
       "url": "http://crl.globalsign.com/gsrsaovsslca2018.crl",
       "status": 200
     }
   },
   "x15": {
-    "cipher": "ECDHE-RSA-AES128-GCM-SHA256",
-    "cipher_ver": "TLSv1.2",
-    "root_error": "ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='baidu.com', port=443): R"
+    "cipher_error": "TimeoutError('timed out')",
+    "root_status": 301
   },
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 360.8,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.baidu.com",
+      "*.baifubao.com",
+      "*.baidustatic.com",
+      "*.bdstatic.com",
+      "*.bdimg.com"
+    ],
+    "ocsp_http": "http://ocsp.globalsign.com/gsrsaovsslca2018"
+  },
+  "elapsed_s": 288.9,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -368,4 +444,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 4, Info: 11)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

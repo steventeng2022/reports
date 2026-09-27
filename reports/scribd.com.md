@@ -7,12 +7,12 @@
 | Target | https://scribd.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | scribd.com |
-| Test date | 2026-09-27 01:33 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:44 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
+Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 | 15 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
 | 16 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 17 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 18 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 19 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
 
 ## Detailed findings
 
@@ -119,7 +121,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=eURIxHjDOv6GMt8T; globalsign-domain-verification=Bo6R5k9s2Zwdk5OoeybGk6L2EHx_oV1TqLgGiMR4IQ; google-site-verification=Bys0QJsmUcCJ_qCpq6KaSZc2gravmyYLN_EUFENpitg
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=svgb7p4y0mkb2o8bjoufff7qvp8f10; stripe-verification=33707726fea82073ff209aaaeea9f178ca9acdffeb4077b12e4903f92fb9; github-verification=yRBhv3c3EK2QxM9aeLKy8TT2E4NuSZPuGRSCROOP
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -146,6 +148,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - **Detail:** Response headers on scribd.com identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
+### 18. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of scribd.com contains wildcard SAN entry(ies) *.scribd.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 19. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of scribd.com discloses a 1-hop fronting chain (1.1 varnish); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -161,48 +175,48 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxa-00957a01.gslb.pphosted.com (pref 10)",
-      "mxb-00957a01.gslb.pphosted.com (pref 10)"
+      "mxb-00957a01.gslb.pphosted.com (pref 10)",
+      "mxa-00957a01.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns-630.awsdns-14.net.",
-      "ns-474.awsdns-59.com.",
+      "ns-1449.awsdns-53.org.",
       "ns-2000.awsdns-58.co.uk.",
-      "ns-1449.awsdns-53.org."
+      "ns-630.awsdns-14.net.",
+      "ns-474.awsdns-59.com."
     ],
     "caa": [
       "0 issuewild \"amazon.com\"",
+      "0 issuewild \"letsencrypt.org\"",
       "0 issue \"letsencrypt.org\"",
-      "0 issue \"amazon.com\"",
-      "0 issuewild \"letsencrypt.org\""
+      "0 issue \"amazon.com\""
     ],
     "spf": [
-      "v=spf2.0/mfrom v=spf1 include:_s00992988.autospf.email include:mailgun.org ~all",
-      "d726596f-b232-406c-8660-a7b13b279ffa",
-      "apple-domain-verification=eURIxHjDOv6GMt8T",
-      "globalsign-domain-verification=Bo6R5k9s2Zwdk5OoeybGk6L2EHx_oV1TqLgGiMR4IQ",
-      "google-site-verification=Bys0QJsmUcCJ_qCpq6KaSZc2gravmyYLN_EUFENpitg",
-      "MS=ms82626852",
-      "segment-site-verification=EJ46G3zd9xfa1md1S3RxDcsZ9olNj7hf",
-      "spacelift-domain-verification=sjdhfkj3dew",
       "ZOOM_verify_qVwNF9TlQp6oTxlx4v4GaA",
-      "stripe-verification=33707726fea82073ff209aaaeea9f178ca9acdffeb4077b12e4903f92fb9a984",
-      "google-site-verification=GggGFvM_T09I1X94IiW555WcOjp5NmcZm-GVh406J44",
-      "mixpanel-domain-verify=aedfc989-2797-4ab3-99e3-ba642eda5fe9",
-      "an2A85lK4eCI+OVQMZRFZ92bkimP99x1WRAzoj7qp/4=",
-      "anthropic-domain-verification-npy3tx=XrE3YAnz8zeSAImkTUoc1n9eY",
-      "openai-domain-verification=dv-JENRwA8a0uUEogtGOcdZfVk8",
-      "stripe-verification=07e715389ac4f3434a3223a1e6cd2b7680d193d73de136cde05634188cfdf939",
       "facebook-domain-verification=svgb7p4y0mkb2o8bjoufff7qvp8f10",
-      "docusign=fd9b486a-4340-4798-abab-26ce168b0f1b",
-      "v=spf1 include:_s00992988.autospf.email include:mailgun.org ~all",
-      "atlassian-domain-verification=suO/cHhqQzi2PxMPyb8WEZvFWrAq3fuOv1RfohRyRATHt6P05jFpTBAt9kXV8bVw",
-      "cursor-domain-verification-50y66e=D8Uwu2yc3eEBkRMlwCQjSf2gN",
-      "mgverify=0ab08701ae09a23d0bc2c38fae847d8f307797fcb1697237391f8128a9640651",
+      "stripe-verification=33707726fea82073ff209aaaeea9f178ca9acdffeb4077b12e4903f92fb9a984",
       "github-verification=yRBhv3c3EK2QxM9aeLKy8TT2E4NuSZPuGRSCROOP",
+      "v=spf1 include:_s00992988.autospf.email include:mailgun.org ~all",
+      "anthropic-domain-verification-npy3tx=XrE3YAnz8zeSAImkTUoc1n9eY",
+      "docusign=fd9b486a-4340-4798-abab-26ce168b0f1b",
+      "openai-domain-verification=dv-JENRwA8a0uUEogtGOcdZfVk8",
+      "v=spf2.0/mfrom v=spf1 include:_s00992988.autospf.email include:mailgun.org ~all",
+      "MS=ms82626852",
+      "spacelift-domain-verification=sjdhfkj3dew",
+      "google-site-verification=Ouatu7eN_H_KCzvQGZ-_XLCABWvFM1Ofb4b4hd6ERlg",
+      "mgverify=0ab08701ae09a23d0bc2c38fae847d8f307797fcb1697237391f8128a9640651",
+      "atlassian-domain-verification=suO/cHhqQzi2PxMPyb8WEZvFWrAq3fuOv1RfohRyRATHt6P05jFpTBAt9kXV8bVw",
+      "google-site-verification=GggGFvM_T09I1X94IiW555WcOjp5NmcZm-GVh406J44",
+      "stripe-verification=07e715389ac4f3434a3223a1e6cd2b7680d193d73de136cde05634188cfdf939",
+      "d726596f-b232-406c-8660-a7b13b279ffa",
       "openai-domain-verification=dv-eOTOMtNqRWMP9Hwl6UWrtzxb",
+      "google-site-verification=Bys0QJsmUcCJ_qCpq6KaSZc2gravmyYLN_EUFENpitg",
+      "globalsign-domain-verification=Bo6R5k9s2Zwdk5OoeybGk6L2EHx_oV1TqLgGiMR4IQ",
+      "mixpanel-domain-verify=aedfc989-2797-4ab3-99e3-ba642eda5fe9",
       "stripe-verification=27d898303b37a8f26350e9d801f6ad3fa671bfd01b2b4f8951e6f1c90ead34e3",
-      "google-site-verification=Ouatu7eN_H_KCzvQGZ-_XLCABWvFM1Ofb4b4hd6ERlg"
+      "segment-site-verification=EJ46G3zd9xfa1md1S3RxDcsZ9olNj7hf",
+      "apple-domain-verification=eURIxHjDOv6GMt8T",
+      "cursor-domain-verification-50y66e=D8Uwu2yc3eEBkRMlwCQjSf2gN",
+      "an2A85lK4eCI+OVQMZRFZ92bkimP99x1WRAzoj7qp/4="
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@dmarc.250ok.net; ruf=mailto:dmarc_fr@dmarc.250ok.net; fo=1; pct=100; rf=afrf"
@@ -290,11 +304,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "apple-domain-verification=eURIxHjDOv6GMt8T",
-    "globalsign-domain-verification=Bo6R5k9s2Zwdk5OoeybGk6L2EHx_oV1TqLgGiMR4IQ",
-    "google-site-verification=Bys0QJsmUcCJ_qCpq6KaSZc2gravmyYLN_EUFENpitg",
-    "segment-site-verification=EJ46G3zd9xfa1md1S3RxDcsZ9olNj7hf",
-    "spacelift-domain-verification=sjdhfkj3dew"
+    "facebook-domain-verification=svgb7p4y0mkb2o8bjoufff7qvp8f10",
+    "stripe-verification=33707726fea82073ff209aaaeea9f178ca9acdffeb4077b12e4903f92fb9",
+    "github-verification=yRBhv3c3EK2QxM9aeLKy8TT2E4NuSZPuGRSCROOP",
+    "anthropic-domain-verification-npy3tx=XrE3YAnz8zeSAImkTUoc1n9eY",
+    "openai-domain-verification=dv-JENRwA8a0uUEogtGOcdZfVk8"
   ],
   "tls2": {
     "alpn": "",
@@ -312,6 +326,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "bc_pathlen": null,
       "crl_urls": [
         "http://yr1.c.lencr.org/93.crl"
+      ],
+      "san": [
+        "*.scribd.com",
+        "scribd.com"
       ],
       "subject_dn": "3115301306035504030c0c2a2e7363726962642e636f6d",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595231",
@@ -359,8 +377,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
       "Fastly"
     ]
   },
-  "elapsed_s": 18.1,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.scribd.com"
+    ],
+    "via": "1.1 varnish"
+  },
+  "elapsed_s": 20.2,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -374,4 +398,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 3, Info: 14)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

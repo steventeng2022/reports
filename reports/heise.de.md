@@ -7,12 +7,12 @@
 | Target | https://heise.de/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | heise.de |
-| Test date | 2026-09-27 01:23 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:33 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
+Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,6 +37,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 | 19 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 20 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 21 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 22 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -142,7 +143,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: miro-verification=601d1e3e9623fe2102de9d6d215a2380ae5c69bd; google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s; apple-domain-verification=m53iQZB4O1uMxDGR
+- **Detail:** Apex TXT records with verification/token content: miro-verification=601d1e3e9623fe2102de9d6d215a2380ae5c69bd; tollbit-domain-verification=6fd594c990db1742b6cb34f3699d3944885e664c32333cf8cb17; apple-domain-verification=m53iQZB4O1uMxDGR
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -175,6 +176,12 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - **Detail:** /sitemap.xml on heise.de lists 2336 <loc> URL(s); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
+### 22. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of heise.de declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -189,37 +196,37 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     ],
     "cname": null,
     "mx": [
-      "mx03.hornetsecurity.com (pref 30)",
-      "mx02.hornetsecurity.com (pref 20)",
       "mx04.hornetsecurity.com (pref 40)",
-      "mx01.hornetsecurity.com (pref 10)"
+      "mx03.hornetsecurity.com (pref 30)",
+      "mx01.hornetsecurity.com (pref 10)",
+      "mx02.hornetsecurity.com (pref 20)"
     ],
     "ns": [
-      "ns.plusline.de.",
-      "ns2.pop-hannover.net.",
       "ns.pop-hannover.de.",
+      "ns2.pop-hannover.net.",
+      "ns.heise.de.",
       "ns.s.plusline.de.",
-      "ns.heise.de."
+      "ns.plusline.de."
     ],
     "caa": [
       "0 iodef \"mailto:hostmaster@heise.de\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"sectigo.com\"",
       "0 issue \"letsencrypt.org\"",
       "0 issue \"sectigo.com\"",
-      "0 issuewild \"sectigo.com\"",
-      "0 issue \"amazon.com\"",
       "0 issue \"digicert.com\""
     ],
     "spf": [
-      "wUIdRqARf1uNkZkPoWGdYvEmK408vvKC3HKme1h/rnswYDphj9Ytgwt6K1Df1PQnW64Oi3t9c9uKoo989wv8xw==",
-      "brevo-code:e09d9e43d8e705fdcf03fb07346ec6f5",
       "miro-verification=601d1e3e9623fe2102de9d6d215a2380ae5c69bd",
-      "v=spf1 ip4:193.99.144.0/24 ip4:193.99.145.0/24 ip6:2a02:2e0:3fe:1001::/64 ip6:2a00:e68:14:800::/64 ip4:193.100.232.56 ip6:2a00:e68:14:801:bad::beef include:_spfdiv.heise.de include:spf.dsb.net include:spf.hornetsecurity.com ~all",
-      "google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s",
-      "apple-domain-verification=m53iQZB4O1uMxDGR",
-      "c3ViZG9tYWlu",
-      "docusign=b14b0107-39e4-44c2-b48f-944859786474",
-      "google-site-verification=7CvE9FRS3zv0wnl8KzLmVw0TSlQay6qOX_zGFm2wzWw",
       "tollbit-domain-verification=6fd594c990db1742b6cb34f3699d3944885e664c32333cf8cb176da9aac3ab71",
+      "docusign=b14b0107-39e4-44c2-b48f-944859786474",
+      "wUIdRqARf1uNkZkPoWGdYvEmK408vvKC3HKme1h/rnswYDphj9Ytgwt6K1Df1PQnW64Oi3t9c9uKoo989wv8xw==",
+      "apple-domain-verification=m53iQZB4O1uMxDGR",
+      "google-site-verification=7CvE9FRS3zv0wnl8KzLmVw0TSlQay6qOX_zGFm2wzWw",
+      "google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s",
+      "c3ViZG9tYWlu",
+      "v=spf1 ip4:193.99.144.0/24 ip4:193.99.145.0/24 ip6:2a02:2e0:3fe:1001::/64 ip6:2a00:e68:14:800::/64 ip4:193.100.232.56 ip6:2a00:e68:14:801:bad::beef include:_spfdiv.heise.de include:spf.dsb.net include:spf.hornetsecurity.com ~all",
+      "brevo-code:e09d9e43d8e705fdcf03fb07346ec6f5",
       "kT2+bTXGMSIudHQATflucV7vjLhdq9Y18pKTKJxs0O2IebE8seBu4vCAe9MBHYehuRJWwKKt1klytxF4vyuSpA=="
     ],
     "dmarc": [
@@ -303,10 +310,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   },
   "apex_txt": [
     "miro-verification=601d1e3e9623fe2102de9d6d215a2380ae5c69bd",
-    "google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s",
+    "tollbit-domain-verification=6fd594c990db1742b6cb34f3699d3944885e664c32333cf8cb17",
     "apple-domain-verification=m53iQZB4O1uMxDGR",
     "google-site-verification=7CvE9FRS3zv0wnl8KzLmVw0TSlQay6qOX_zGFm2wzWw",
-    "tollbit-domain-verification=6fd594c990db1742b6cb34f3699d3944885e664c32333cf8cb17"
+    "google-site-verification=8kcKAZp-IbbJG7FQzRxIaUXv9Ku4qX0wgMrm_hx_L2s"
   ],
   "tls2": {
     "alpn": "",
@@ -324,6 +331,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "bc_pathlen": null,
       "crl_urls": [
         "http://yr1.c.lencr.org/83.crl"
+      ],
+      "san": [
+        "heise.de"
       ],
       "subject_dn": "3111300f0603550403130868656973652e6465",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595231",
@@ -371,8 +381,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 45.1,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {},
+  "elapsed_s": 45.9,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -386,4 +397,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

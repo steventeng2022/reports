@@ -7,12 +7,12 @@
 | Target | https://adage.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | adage.com |
-| Test date | 2026-09-27 01:08 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
+Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -38,7 +38,8 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 | 20 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 21 | info | H25 | server-timing response header exposed | CWE-200 |
 | 22 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
-| 23 | info | CT1 | 41 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 23 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 24 | info | CT1 | 41 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -137,7 +138,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: lucidlink-verification=J1CHE4K03BM1Q64NFPMW63KC24; google-site-verification=69bymnCN1yRQSpHf-DQz5sLMlqQ0GuCspakaXRLBVZg; google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB; lucidlink-verification=J1CHE4K03BM1Q64NFPMW63KC24; google-site-verification=69bymnCN1yRQSpHf-DQz5sLMlqQ0GuCspakaXRLBVZg
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -155,13 +156,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 ### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 184.26.127.145 carries PTR a184-26-127-145.deploy.static.akamaitechnologies.com. for adage.com.
+- **Detail:** 184.26.127.138 carries PTR a184-26-127-138.deploy.static.akamaitechnologies.com. for adage.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 19. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk4sseojkh4sg6.html -> 403; error page/headers match: Akamai.
+- **Detail:** GET /xkny57or4xkcxl.html -> 403; error page/headers match: Akamai.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -173,7 +174,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 ### 21. [INFO] server-timing response header exposed (`H25`)
 
 - **CWE:** CWE-200
-- **Detail:** The root response of adage.com sends server-timing (cdn-cache; desc=HIT, edge; dur=1, ak_p; desc="1790471326351_3088744349_7037301_2); server/edge processing metrics are disclosed to any client.
+- **Detail:** The root response of adage.com sends server-timing (cdn-cache; desc=HIT, edge; dur=1, ak_p; desc="1790475420215_3088744349_11751193_); server/edge processing metrics are disclosed to any client.
 - **Recommendation:** Restrict server-timing to authenticated/debug contexts if the internals are sensitive.
 
 ### 22. [INFO] Edge/CDN layer identified from response headers (`H26`)
@@ -182,7 +183,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 - **Detail:** Response headers on adage.com identify the edge as Akamai; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
-### 23. [INFO] 41 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 23. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of adage.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
+### 24. [INFO] 41 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: cdn.adage.com, checkout.adage.com, checkout.arcxp-stage.adage.com, help.adage.com, jwt-api.drupal.stage.adage.com, login.adage.com, pelcro.stage.adage.com, store.adage.com
@@ -195,17 +202,17 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
   "domain": "adage.com",
   "dns": {
     "a": [
-      "184.26.127.145",
-      "184.26.127.138"
+      "184.26.127.138",
+      "184.26.127.145"
     ],
     "aaaa": [
-      "2001:b034:1c:200::d247:e348",
-      "2001:b034:1c:200::d247:e338"
+      "2001:b034:1c:200::d247:e338",
+      "2001:b034:1c:200::d247:e348"
     ],
     "cname": null,
     "mx": [
-      "usb-smtp-inbound-2.mimecast.com (pref 60)",
-      "usb-smtp-inbound-1.mimecast.com (pref 10)"
+      "usb-smtp-inbound-1.mimecast.com (pref 10)",
+      "usb-smtp-inbound-2.mimecast.com (pref 60)"
     ],
     "ns": [
       "kurt.ns.cloudflare.com.",
@@ -213,13 +220,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
     ],
     "caa": [],
     "spf": [
-      "bw=A0toi1iKzrmRS2jxukTxOo6KI3d7V7eoIzDw5G7ubw5s",
+      "anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB",
       "lucidlink-verification=J1CHE4K03BM1Q64NFPMW63KC24",
-      "MS=ms52345011",
-      "v=spf1 include:spf.crain.com include:_spf.clickshare.com include:aspmx.pardot.com include:usb._netblocks.mimecast.com ~all",
+      "bw=A0toi1iKzrmRS2jxukTxOo6KI3d7V7eoIzDw5G7ubw5s",
       "google-site-verification=69bymnCN1yRQSpHf-DQz5sLMlqQ0GuCspakaXRLBVZg",
+      "MS=ms52345011",
       "google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28",
-      "anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB"
+      "v=spf1 include:spf.crain.com include:_spf.clickshare.com include:aspmx.pardot.com include:usb._netblocks.mimecast.com ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=none;"
@@ -339,7 +346,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
     }
   },
   "ports": {
-    "ip": "184.26.127.145",
+    "ip": "184.26.127.138",
     "open": []
   },
   "https": {
@@ -424,10 +431,10 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
     ]
   },
   "apex_txt": [
+    "anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB",
     "lucidlink-verification=J1CHE4K03BM1Q64NFPMW63KC24",
     "google-site-verification=69bymnCN1yRQSpHf-DQz5sLMlqQ0GuCspakaXRLBVZg",
-    "google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28",
-    "anthropic-domain-verification-pg50pw=UwO6bTKI23RICT2yieNZizAJB"
+    "google-site-verification=uWzYibDTuhjliXGRiMnMEthKIS6O5mnJViVhGIOvK28"
   ],
   "tls2": {
     "alpn": "",
@@ -446,6 +453,28 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
       "crl_urls": [
         "http://yr2.c.lencr.org/43.crl"
       ],
+      "san": [
+        "adage.com",
+        "arcxp-dev.adage.com",
+        "arcxp-dev.automobilwoche.de",
+        "arcxp-dev.autonews.com",
+        "arcxp-dev.chicagobusiness.com",
+        "arcxp-dev.craincurrency.com",
+        "arcxp-dev.crainscleveland.com",
+        "arcxp-dev.crainsdetroit.com",
+        "arcxp-dev.crainsgrandrapids.com",
+        "arcxp-dev.crainsnewyork.com",
+        "arcxp-dev.genomeweb.com",
+        "arcxp-dev.hartenergy.com",
+        "arcxp-dev.modernhealthcare.com",
+        "arcxp-dev.pionline.com",
+        "arcxp-dev.plasticsnews.com",
+        "arcxp-dev.rubbernews.com",
+        "arcxp-dev.tirebusiness.com",
+        "arcxp-dev.utech-polyurethane.com",
+        "arcxp-prod.automobilwoche.de",
+        "arcxp-prod.craincurrency.com"
+      ],
       "subject_dn": "311e301c06035504031315637261696e2e7765622e6172632d63646e2e6e6574",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595232",
       "not_before": "20260821134819",
@@ -455,7 +484,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
   "x12": {
     "status": 403,
     "ptr": [
-      "a184-26-127-145.deploy.static.akamaitechnologies.com."
+      "a184-26-127-138.deploy.static.akamaitechnologies.com."
     ]
   },
   "x13": {
@@ -482,13 +511,14 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
   },
   "x16": {
     "root_status": 403,
-    "server_timing": "cdn-cache; desc=HIT, edge; dur=1, ak_p; desc=\"1790471326351_3088744349_7037301_20_10642_2_27_-\";dur=1",
+    "server_timing": "cdn-cache; desc=HIT, edge; dur=1, ak_p; desc=\"1790475420215_3088744349_11751193_20_17415_2_8_-\";dur=1",
     "cdn": [
       "Akamai"
     ]
   },
+  "x17": {},
   "elapsed_s": 5.9,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -502,4 +532,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

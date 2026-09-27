@@ -7,12 +7,12 @@
 | Target | https://khanacademy.org/ |
 | Bug bounty program | Khan Academy |
 | Listed scope domain | khanacademy.org |
-| Test date | 2026-09-27 01:25 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:36 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
+Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,8 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 | 16 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 18 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 19 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 20 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
 
 ## Detailed findings
 
@@ -127,13 +129,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (mb99f5ekw41gmu.khanacademy.org and trbwl7imqydz0v.khanacademy.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (yqabwogbj3ub7o.khanacademy.org and 0pq4knhrjoijqs.khanacademy.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=7kTMmLFa8kfzTFffAv659zZAhSvDX5lqnB_yuST-xLY; stripe-verification=332820F9A5BCCCACBF2F5D8636496EB723C4062C9B878B8BAB77E99A2522; apple-domain-verification=FBF7Yx9o3htFHZ7m
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=BUF9CkP4-zm7sN2rDSq6NGRiEkrvvh2k3UdQxwSusrU; google-site-verification=y1w1HGdtmQcg92Uy4JtubYkFtDDshCwmDXTFCgjpr-Y; google-site-verification=7kTMmLFa8kfzTFffAv659zZAhSvDX5lqnB_yuST-xLY
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -145,7 +147,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 65.9.180.126 carries PTR server-65-9-180-126.tpe53.r.cloudfront.net. for khanacademy.org.
+- **Detail:** 65.9.180.53 carries PTR server-65-9-180-53.tpe53.r.cloudfront.net. for khanacademy.org.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] Edge/CDN layer identified from response headers (`H26`)
@@ -154,6 +156,18 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - **Detail:** Response headers on khanacademy.org identify the edge as CloudFront / Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
+### 19. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of khanacademy.org is http://ocsp.r2m01.amazontrust.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 20. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of khanacademy.org discloses a 1-hop fronting chain (1.1 8b885b40aef1418ed0af7180ffd5ab8a.cloudfront.net (CloudFront)); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -161,64 +175,64 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "domain": "khanacademy.org",
   "dns": {
     "a": [
-      "65.9.180.126",
-      "65.9.180.8",
       "65.9.180.53",
-      "65.9.180.111"
+      "65.9.180.8",
+      "65.9.180.111",
+      "65.9.180.126"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "aspmx2.googlemail.com (pref 10)",
+      "aspmx3.googlemail.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx3.googlemail.com (pref 10)"
+      "aspmx.l.google.com (pref 1)",
+      "aspmx2.googlemail.com (pref 10)"
     ],
     "ns": [
-      "ns-125.awsdns-15.com.",
       "ns-1489.awsdns-58.org.",
+      "ns-125.awsdns-15.com.",
       "ns-798.awsdns-35.net.",
       "ns-1664.awsdns-16.co.uk."
     ],
     "caa": [
-      "0 iodef \"mailto:it@khanacademy.org\"",
       "0 issue \"letsencrypt.org\"",
-      "0 issue \"globalsign.com\"",
-      "0 issue \"pki.goog\"",
-      "0 issue \"godaddy.com\"",
-      "0 issue \"amazon.com\"",
       "0 issue \"digicert.com\"",
-      "0 issue \"certainly.com\""
+      "0 issue \"pki.goog\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"certainly.com\"",
+      "0 issue \"godaddy.com\"",
+      "0 issue \"globalsign.com\"",
+      "0 iodef \"mailto:it@khanacademy.org\""
     ],
     "spf": [
-      "google-site-verification=7kTMmLFa8kfzTFffAv659zZAhSvDX5lqnB_yuST-xLY",
-      "stripe-verification=332820F9A5BCCCACBF2F5D8636496EB723C4062C9B878B8BAB77E99A2522E947",
-      "apple-domain-verification=FBF7Yx9o3htFHZ7m",
       "google-site-verification=BUF9CkP4-zm7sN2rDSq6NGRiEkrvvh2k3UdQxwSusrU",
-      "v=spf1 include:_spf.google.com include:sendgrid.net include:aspmx.sailthru.com include:mail.zendesk.com exists:%{i}._spf.mta.salesforce.com include:mg-spf.greenhouse.io -all",
-      "globalsign-domain-verification=qV_5Us2mt6FO1Ig5hnG4kYHESYAxuH5-qZ0cRXC-Ig",
-      "facebook-domain-verification=8kvuco8ljlv8t1aedswjypctrp1pk3",
-      "google-site-verification=sHrvDlgokhtbjBWsn8Dhu616EFRRv8GD0C1AU4_1gl4",
       "google-site-verification=y1w1HGdtmQcg92Uy4JtubYkFtDDshCwmDXTFCgjpr-Y",
-      "_globalsign-domain-verification=e70UZqvudGByIeilV8oO0gubBZi0P7QLakTxKub-zS",
-      "canva-site-verification=JW5MeXNqA7ezvjIRgLOPaQ",
-      "cursor-domain-verification-dc9ngn=XEN4zLZD2K4p5yMB2JFUNxGIk",
-      "yahoo-verification-key=h5B5VELNOFcyiRDJQWEiNChg+SeClI9Bk9k9daiRPR4=",
-      "openai-domain-verification=dv-E4EGw5ZIgYd9B3mwA3dPV5zY",
-      "ZOOM_verify_G7FwqtyEKLkoQGhA3ifQq5",
-      "cl_verification=a568671a-6112-4bc5-997d-1f06d8389b2e",
-      "onetrust-domain-verification=4bc2331ed4d24c81b7be278e6e1fb58b",
-      "botify-site-verification=sGRcFNKzIkHzx1jtsQ7YkiT8hgWB6RiU",
-      "google-site-verification=JML6gcy7DbE1dA3JB9W4O6EB9uQ8bpOlJTyniVCgd-o",
-      "google-site-verification=Jiabx8hC-zV0E8-hAj40dHCY_oWNIvfqkNe7VFnGbCs",
-      "_globalsign-domain-verification=Ca9ol7KyPTrPtyGjL1BqGx_wv6SymozDmCXhHJveUr",
-      "anthropic-domain-verification-4va7p1=Uuz4j8MkpGFjBjYBqvNGNuK46",
       "hibp-verify=dweb_9nibj6s7woei7t5h43qd3yni",
-      "_globalsign-domain-verification=Prrz12gznJzJiHaajX3CnPfpqK6hhLae0miMSZ_BGa",
+      "google-site-verification=7kTMmLFa8kfzTFffAv659zZAhSvDX5lqnB_yuST-xLY",
+      "botify-site-verification=sGRcFNKzIkHzx1jtsQ7YkiT8hgWB6RiU",
+      "openai-domain-verification=dv-E4EGw5ZIgYd9B3mwA3dPV5zY",
       "spf2.0/pra include:_spf.google.com include:sendgrid.net include:aspmx.sailthru.com -all",
-      "google-site-verification=SprWzGYoIdXdFrUCSyBhXJtHzFjE8FAQNlTamgKenhU",
-      "MS=ms10049948"
+      "cursor-domain-verification-dc9ngn=XEN4zLZD2K4p5yMB2JFUNxGIk",
+      "cl_verification=a568671a-6112-4bc5-997d-1f06d8389b2e",
+      "anthropic-domain-verification-4va7p1=Uuz4j8MkpGFjBjYBqvNGNuK46",
+      "google-site-verification=sHrvDlgokhtbjBWsn8Dhu616EFRRv8GD0C1AU4_1gl4",
+      "v=spf1 include:_spf.google.com include:sendgrid.net include:aspmx.sailthru.com include:mail.zendesk.com exists:%{i}._spf.mta.salesforce.com include:mg-spf.greenhouse.io -all",
+      "_globalsign-domain-verification=e70UZqvudGByIeilV8oO0gubBZi0P7QLakTxKub-zS",
+      "stripe-verification=332820F9A5BCCCACBF2F5D8636496EB723C4062C9B878B8BAB77E99A2522E947",
+      "ZOOM_verify_G7FwqtyEKLkoQGhA3ifQq5",
+      "_globalsign-domain-verification=Ca9ol7KyPTrPtyGjL1BqGx_wv6SymozDmCXhHJveUr",
+      "canva-site-verification=JW5MeXNqA7ezvjIRgLOPaQ",
+      "apple-domain-verification=FBF7Yx9o3htFHZ7m",
+      "MS=ms10049948",
+      "onetrust-domain-verification=4bc2331ed4d24c81b7be278e6e1fb58b",
+      "google-site-verification=Jiabx8hC-zV0E8-hAj40dHCY_oWNIvfqkNe7VFnGbCs",
+      "facebook-domain-verification=8kvuco8ljlv8t1aedswjypctrp1pk3",
+      "google-site-verification=JML6gcy7DbE1dA3JB9W4O6EB9uQ8bpOlJTyniVCgd-o",
+      "_globalsign-domain-verification=Prrz12gznJzJiHaajX3CnPfpqK6hhLae0miMSZ_BGa",
+      "yahoo-verification-key=h5B5VELNOFcyiRDJQWEiNChg+SeClI9Bk9k9daiRPR4=",
+      "globalsign-domain-verification=qV_5Us2mt6FO1Ig5hnG4kYHESYAxuH5-qZ0cRXC-Ig",
+      "google-site-verification=SprWzGYoIdXdFrUCSyBhXJtHzFjE8FAQNlTamgKenhU"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc-reports@khanacademy.org; ruf=mailto:dmarc-reports@khanacademy.org"
@@ -281,7 +295,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     }
   },
   "ports": {
-    "ip": "65.9.180.126",
+    "ip": "65.9.180.53",
     "open": []
   },
   "https": {
@@ -335,11 +349,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=7kTMmLFa8kfzTFffAv659zZAhSvDX5lqnB_yuST-xLY",
-    "stripe-verification=332820F9A5BCCCACBF2F5D8636496EB723C4062C9B878B8BAB77E99A2522",
-    "apple-domain-verification=FBF7Yx9o3htFHZ7m",
     "google-site-verification=BUF9CkP4-zm7sN2rDSq6NGRiEkrvvh2k3UdQxwSusrU",
-    "globalsign-domain-verification=qV_5Us2mt6FO1Ig5hnG4kYHESYAxuH5-qZ0cRXC-Ig"
+    "google-site-verification=y1w1HGdtmQcg92Uy4JtubYkFtDDshCwmDXTFCgjpr-Y",
+    "google-site-verification=7kTMmLFa8kfzTFffAv659zZAhSvDX5lqnB_yuST-xLY",
+    "botify-site-verification=sGRcFNKzIkHzx1jtsQ7YkiT8hgWB6RiU",
+    "openai-domain-verification=dv-E4EGw5ZIgYd9B3mwA3dPV5zY"
   ],
   "tls2": {
     "alpn": "",
@@ -358,6 +372,28 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "crl_urls": [
         "http://crl.r2m01.amazontrust.com/r2m01.crl"
       ],
+      "san": [
+        "khanacademy.org",
+        "salkhan.com",
+        "www.youcanlearnanything.org",
+        "www.conacademy.com",
+        "es.pixarinabox.org",
+        "www.kahnacademy.com",
+        "pt.pixarinabox.com",
+        "youcanlearnanything.org",
+        "conacademy.com",
+        "pixarinabox.com",
+        "www.salkhan.com",
+        "camp.khankids.org",
+        "www.khanacademy.es",
+        "conacademy.org",
+        "www.pixarinabox.org",
+        "kahnacademy.org",
+        "www.khankids.org",
+        "sendgrid.khanacademy.org",
+        "kasandbox.org",
+        "www.khanacademy.com"
+      ],
       "subject_dn": "311830160603550403130f6b68616e61636164656d792e6f7267",
       "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3031",
       "not_before": "20251111000000",
@@ -368,7 +404,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "x12": {
     "status": 308,
     "ptr": [
-      "server-65-9-180-126.tpe53.r.cloudfront.net."
+      "server-65-9-180-53.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -402,8 +438,12 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "Fastly"
     ]
   },
-  "elapsed_s": 8.1,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.r2m01.amazontrust.com",
+    "via": "1.1 8b885b40aef1418ed0af7180ffd5ab8a.cloudfront.net (CloudFront)"
+  },
+  "elapsed_s": 8.5,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -417,4 +457,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

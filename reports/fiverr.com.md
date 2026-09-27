@@ -7,12 +7,12 @@
 | Target | https://fiverr.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | fiverr.com |
-| Test date | 2026-09-27 01:20 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:29 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
+Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,8 +36,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 | 18 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
 | 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 20 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
-| 21 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 22 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 21 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 22 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 23 | info | CT1 | 44 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 24 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -50,13 +52,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.114.47:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.113.47:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.18.114.47:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.113.47:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -136,7 +138,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=an+ckXl/FPR7+1gsMUQxtq4syuZoBklOsT5vcFXtDtvx9PN0bs; globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD; google-site-verification=hgsUdXptruag4sbh8wh7u9sOpz0rScqytDJKMTj_cUU
+- **Detail:** Apex TXT records with verification/token content: cursor-domain-verification-snmncy=v2sK6oZqni8YXE6z4r2hYiDk2; google-site-verification=8GwcSuHShuYh0Zl7pqbKLFl2Vy4LJwb663OKdq7oAfU; dropbox-domain-verification=8ilu3axidut2
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -169,13 +171,25 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 - **Detail:** The quiet handshake to fiverr.com negotiated TLSv1.2 even though the client offered TLS 1.3; the edge caps at 1.2 (legacy/compatibility configuration).
 - **Recommendation:** Enable TLS 1.3 at the edge.
 
-### 21. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 21. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of fiverr.com contains wildcard SAN entry(ies) *.post.workspace.fiverr.com, *.nl.fiverr.com, *.pt.fiverr.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 22. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of fiverr.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
+### 23. [INFO] 44 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: dev.fiverr.com, okteto.dev.fiverr.com, pci-internal.dev.fiverr.com, pci.dev.fiverr.com, pro.dev.fiverr.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 22. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 24. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: pci-internal.dev.fiverr.com; content may still be served via virtual-host fallback.
@@ -188,17 +202,17 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
   "domain": "fiverr.com",
   "dns": {
     "a": [
-      "104.18.114.47",
-      "104.18.113.47"
+      "104.18.113.47",
+      "104.18.114.47"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx2.googlemail.com (pref 40)",
+      "alt2.aspmx.l.google.com (pref 30)",
+      "aspmx3.googlemail.com (pref 50)",
       "alt1.aspmx.l.google.com (pref 20)",
       "aspmx.l.google.com (pref 10)",
-      "aspmx3.googlemail.com (pref 50)",
-      "alt2.aspmx.l.google.com (pref 30)"
+      "aspmx2.googlemail.com (pref 40)"
     ],
     "ns": [
       "sid.ns.cloudflare.com.",
@@ -206,44 +220,44 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
     ],
     "caa": [],
     "spf": [
-      "pardot1046343=0c19387b5d416ad576c0938517af3c23e0ec43bb16096e6201065cda46f41092",
-      "sending_domain1046343=a12cb274f55f4a914e10a7258cd1e59efe2d8d2d2cb275a91f531a3d4829d84b",
-      "atlassian-domain-verification=an+ckXl/FPR7+1gsMUQxtq4syuZoBklOsT5vcFXtDtvx9PN0bsiMTfVAGRTmOOWT",
-      "g2hsd2r7uqt07crr95ts25hgec",
-      "v=spf1 ip4:34.192.34.210 ip4:34.192.87.38 ip4:34.243.203.200 include:sendgrid.net include:mail.zendesk.com include:_spf.google.com include:_spf.salesforce.com include:spf1.fiverr.com -all",
-      "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD",
-      "google-site-verification=hgsUdXptruag4sbh8wh7u9sOpz0rScqytDJKMTj_cUU",
-      "sending_domain1079702=fe376d47978ba73b85655072c1359a2bde21692a90cdd2ac949ec76c9f5643f0",
-      "google-site-verification=kMxO4LGDSjWFroQsa4yAFrJqPmPKg1S-LQ6RUC10DqQ",
-      "anthropic-domain-verification-nh998a=YsbxIDUYEOhBI910nAo65cY2R",
-      "8faqpd2tgvlfjq9an0q8311pv4",
-      "apple-domain-verification=qnipzrtidRJDoQCh",
-      "facebook-domain-verification=mzxc9iigaciqjvtj28n064sk2rzbk5",
-      "dropbox-domain-verification=8ilu3axidut2",
-      "mixpanel-domain-verify=90c3d81c-7a7c-4d4d-9b0d-5a60ae994e90",
-      "apple-domain-verification=9KpxtRRlTnV9CMWj",
-      "google-site-verification=YRULw1rJRupVM3WOgi-oe0G-ha41QBBrm1P8irxmMj4",
-      "monday-com-verification=DHMhr9r0SLQ1XbH-UgVehCcq-kI5NO-3gC3T2YhsHNs",
-      "jamf-site-verification=qTZ2kHy5JVbJULQo_cm6sw",
-      "google-site-verification=ijrZ6Yqf-IkTyWct0jRahvbn9D3kphesRnUe4VZT9dE",
-      "google-site-verification=O55kJ9s5kFZ4ZBKNCc0ZoJn40YyB7yM_vONo2l3W_pc",
-      "wiz-domain-verification=5c2bc898460351b783ced51189ad2f3d7ec3a8a6d63f2dc26fa3ec4123d899ab",
-      "cursor-domain-verification-snmncy=v2sK6oZqni8YXE6z4r2hYiDk2",
-      "google-site-verification=iNB30Gch08wWB6x_texeR3GWax3SYEanzhkPIgu5NHY",
-      "mongodb-site-verification=qwSddVOKDfrufdjzWe8XcrxiXFqsH3HH",
-      "00Df2000000vILs=1TBPn0000000Tmn",
-      "00D7z00000Zok0H=1TB7z0000000Q0v",
-      "google-site-verification=SO-X1xOZnZI8nCyaqDcVFT2iMKXHKzh78QZ-hQZXdDg",
-      "google-site-verification=8GwcSuHShuYh0Zl7pqbKLFl2Vy4LJwb663OKdq7oAfU",
-      "fastly-domain-delegation-j93rv73ms7qpmtzhqhqq-883244-2025-02-18",
-      "miro-verification=6a9e176e900b5e728d0f62659369d5d5593e28c3",
-      "sendinblue-code:00c77aaa511d14ef758415286cceb8f8",
-      "citrix-verification-code=a6b5039d-7719-4399-a895-8dc16ee2be75",
       "jai1f598eosu9g2ua6hdcpvo5r",
-      "MS=ms20976924",
+      "pardot1046343=0c19387b5d416ad576c0938517af3c23e0ec43bb16096e6201065cda46f41092",
+      "8faqpd2tgvlfjq9an0q8311pv4",
+      "cursor-domain-verification-snmncy=v2sK6oZqni8YXE6z4r2hYiDk2",
+      "google-site-verification=8GwcSuHShuYh0Zl7pqbKLFl2Vy4LJwb663OKdq7oAfU",
+      "dropbox-domain-verification=8ilu3axidut2",
+      "wiz-domain-verification=5c2bc898460351b783ced51189ad2f3d7ec3a8a6d63f2dc26fa3ec4123d899ab",
+      "jamf-site-verification=qTZ2kHy5JVbJULQo_cm6sw",
+      "sending_domain1046343=a12cb274f55f4a914e10a7258cd1e59efe2d8d2d2cb275a91f531a3d4829d84b",
+      "sending_domain1079702=fe376d47978ba73b85655072c1359a2bde21692a90cdd2ac949ec76c9f5643f0",
+      "apple-domain-verification=qnipzrtidRJDoQCh",
+      "google-site-verification=O55kJ9s5kFZ4ZBKNCc0ZoJn40YyB7yM_vONo2l3W_pc",
+      "google-site-verification=ngPwP5LN0jLJFSwOIs3QPjWdNeXSBaNlAaiK489xW3w",
+      "v=spf1 ip4:34.192.34.210 ip4:34.192.87.38 ip4:34.243.203.200 include:sendgrid.net include:mail.zendesk.com include:_spf.google.com include:_spf.salesforce.com include:spf1.fiverr.com -all",
+      "00Df2000000vILs=1TBPn0000000Tmn",
+      "miro-verification=6a9e176e900b5e728d0f62659369d5d5593e28c3",
+      "g2hsd2r7uqt07crr95ts25hgec",
+      "mongodb-site-verification=qwSddVOKDfrufdjzWe8XcrxiXFqsH3HH",
+      "google-site-verification=hgsUdXptruag4sbh8wh7u9sOpz0rScqytDJKMTj_cUU",
+      "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD",
+      "google-site-verification=ijrZ6Yqf-IkTyWct0jRahvbn9D3kphesRnUe4VZT9dE",
+      "facebook-domain-verification=mzxc9iigaciqjvtj28n064sk2rzbk5",
+      "mixpanel-domain-verify=90c3d81c-7a7c-4d4d-9b0d-5a60ae994e90",
+      "citrix-verification-code=a6b5039d-7719-4399-a895-8dc16ee2be75",
+      "atlassian-domain-verification=an+ckXl/FPR7+1gsMUQxtq4syuZoBklOsT5vcFXtDtvx9PN0bsiMTfVAGRTmOOWT",
+      "fastly-domain-delegation-j93rv73ms7qpmtzhqhqq-883244-2025-02-18",
+      "google-site-verification=SO-X1xOZnZI8nCyaqDcVFT2iMKXHKzh78QZ-hQZXdDg",
       "ZOOM_verify_t3nnvUw_QNuEQ4zcJbNWvg",
+      "anthropic-domain-verification-nh998a=YsbxIDUYEOhBI910nAo65cY2R",
+      "google-site-verification=YRULw1rJRupVM3WOgi-oe0G-ha41QBBrm1P8irxmMj4",
+      "00D7z00000Zok0H=1TB7z0000000Q0v",
       "google-site-verification=OjzIGtAACARGfq-pzfMWJMxPn6MgwCqnz8SuJ0agnGs",
-      "google-site-verification=ngPwP5LN0jLJFSwOIs3QPjWdNeXSBaNlAaiK489xW3w"
+      "apple-domain-verification=9KpxtRRlTnV9CMWj",
+      "sendinblue-code:00c77aaa511d14ef758415286cceb8f8",
+      "monday-com-verification=DHMhr9r0SLQ1XbH-UgVehCcq-kI5NO-3gC3T2YhsHNs",
+      "MS=ms20976924",
+      "google-site-verification=iNB30Gch08wWB6x_texeR3GWax3SYEanzhkPIgu5NHY",
+      "google-site-verification=kMxO4LGDSjWFroQsa4yAFrJqPmPKg1S-LQ6RUC10DqQ"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dca17281@mxtoolbox.dmarc-report.com; ruf=mailto:dca17281@forensics.dmarc-report.com"
@@ -300,7 +314,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
     }
   },
   "ports": {
-    "ip": "104.18.114.47",
+    "ip": "104.18.113.47",
     "open": [
       8080,
       8443
@@ -390,11 +404,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
     ]
   },
   "apex_txt": [
-    "atlassian-domain-verification=an+ckXl/FPR7+1gsMUQxtq4syuZoBklOsT5vcFXtDtvx9PN0bs",
-    "globalsign-domain-verification=8frsHcE2ag-0ccaaP5BTpPmUJC8ob8pdjDQchfAWzD",
-    "google-site-verification=hgsUdXptruag4sbh8wh7u9sOpz0rScqytDJKMTj_cUU",
-    "google-site-verification=kMxO4LGDSjWFroQsa4yAFrJqPmPKg1S-LQ6RUC10DqQ",
-    "anthropic-domain-verification-nh998a=YsbxIDUYEOhBI910nAo65cY2R"
+    "cursor-domain-verification-snmncy=v2sK6oZqni8YXE6z4r2hYiDk2",
+    "google-site-verification=8GwcSuHShuYh0Zl7pqbKLFl2Vy4LJwb663OKdq7oAfU",
+    "dropbox-domain-verification=8ilu3axidut2",
+    "wiz-domain-verification=5c2bc898460351b783ced51189ad2f3d7ec3a8a6d63f2dc26fa3ec41",
+    "jamf-site-verification=qTZ2kHy5JVbJULQo_cm6sw"
   ],
   "tls2": {
     "alpn": "",
@@ -412,6 +426,28 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/we1/cw5NP97l-GM.crl"
+      ],
+      "san": [
+        "fiverr.com",
+        "*.post.workspace.fiverr.com",
+        "*.nl.fiverr.com",
+        "*.pt.fiverr.com",
+        "*.affiliates.fiverr.com",
+        "*.announce.fiverr.com",
+        "*.app.develop.workspace.fiverr.com",
+        "*.app.stage.workspace.fiverr.com",
+        "*.app.workspace.fiverr.com",
+        "*.business.fiverr.com",
+        "*.de.fiverr.com",
+        "*.develop.workspace.fiverr.com",
+        "*.es.fiverr.com",
+        "*.fr.fiverr.com",
+        "*.it.fiverr.com",
+        "*.notifications.fiverr.com",
+        "*.post.develop.workspace.fiverr.com",
+        "*.post.stage.workspace.fiverr.com",
+        "*.pro.fiverr.com",
+        "*.refs.develop.workspace.fiverr.com"
       ],
       "subject_dn": "311330110603550403130a6669766572722e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
@@ -469,8 +505,17 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 5.7,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.post.workspace.fiverr.com",
+      "*.nl.fiverr.com",
+      "*.pt.fiverr.com",
+      "*.affiliates.fiverr.com",
+      "*.announce.fiverr.com"
+    ]
+  },
+  "elapsed_s": 6.2,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -484,4 +529,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://gumroad.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | gumroad.com |
-| Test date | 2026-09-27 01:22 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:32 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **34** (High: 0, Medium: 0, Low: 7, Info: 27)
+Total findings: **36** (High: 0, Medium: 0, Low: 7, Info: 29)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -48,8 +48,10 @@ Total findings: **34** (High: 0, Medium: 0, Low: 7, Info: 27)
 | 30 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
 | 31 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
 | 32 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
-| 33 | info | CT1 | 42 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 34 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 33 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 34 | info | H11 | Legacy Flash cross-domain-policy exposure header | CWE-327 |
+| 35 | info | CT1 | 42 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 36 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -158,13 +160,13 @@ Total findings: **34** (High: 0, Medium: 0, Low: 7, Info: 27)
 ### 17. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (zv51s1q1ism315.gumroad.com and vbfw113z5j7ocr.gumroad.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (dfq45nq7gved6j.gumroad.com and p045af1b4ng0cl.gumroad.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 18. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=PgpLEes7We_6DhccKbUEiYcZ0pdoMFKC9nvJzv5llfo; google-site-verification=lrFehNfjlR5pdQ9Yl1S3X4-HclWnL2hRE-lp5ciPfYs; notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=PgpLEes7We_6DhccKbUEiYcZ0pdoMFKC9nvJzv5llfo; status-page-domain-verification=8vj11whsslmd; notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 19. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -200,7 +202,7 @@ Total findings: **34** (High: 0, Medium: 0, Low: 7, Info: 27)
 ### 24. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkeoshhorf8zdy.html -> 404; error page/headers match: Cloudflare.
+- **Detail:** GET /xkqs830pul7kj2.html -> 404; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 25. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -251,13 +253,25 @@ Total findings: **34** (High: 0, Medium: 0, Low: 7, Info: 27)
 - **Detail:** Response headers on gumroad.com identify the edge as CloudFront; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
-### 33. [INFO] 42 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 33. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of gumroad.com contains wildcard SAN entry(ies) *.gumroad.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 34. [INFO] Legacy Flash cross-domain-policy exposure header (`H11`)
+
+- **CWE:** CWE-327
+- **Detail:** The root of gumroad.com sends X-Permitted-Cross-Domain-Policies (none); the referenced cross-domain policy files remain fetchable by any origin.
+- **Recommendation:** Review the referenced policy files; remove the header if Flash is gone.
+
+### 35. [INFO] 42 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.gumroad.com, blog.gumroad.com, help.gumroad.com, staging.creators.gumroad.com, staging.customers.gumroad.com, staging.followers.gumroad.com, staging.gumroad.com, static.gumroad.com, status.gumroad.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 34. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 36. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: staging.creators.gumroad.com, staging.customers.gumroad.com; content may still be served via virtual-host fallback.
@@ -279,9 +293,9 @@ Total findings: **34** (High: 0, Medium: 0, Low: 7, Info: 27)
     ],
     "cname": null,
     "mx": [
+      "alt2.aspmx.l.google.com (pref 5)",
       "alt1.aspmx.l.google.com (pref 5)",
       "aspmx2.googlemail.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
       "aspmx3.googlemail.com (pref 10)"
     ],
@@ -292,12 +306,12 @@ Total findings: **34** (High: 0, Medium: 0, Low: 7, Info: 27)
     "caa": [],
     "spf": [
       "google-site-verification=PgpLEes7We_6DhccKbUEiYcZ0pdoMFKC9nvJzv5llfo",
-      "v=spf1 a mx ip4:67.225.137.176 include:sendgrid.net include:stspg-customer.com include:_spf.google.com ~all",
-      "MS=ms30035841",
-      "google-site-verification=lrFehNfjlR5pdQ9Yl1S3X4-HclWnL2hRE-lp5ciPfYs",
-      "notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc",
       "status-page-domain-verification=8vj11whsslmd",
-      "tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa"
+      "notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc",
+      "MS=ms30035841",
+      "tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa",
+      "google-site-verification=lrFehNfjlR5pdQ9Yl1S3X4-HclWnL2hRE-lp5ciPfYs",
+      "v=spf1 a mx ip4:67.225.137.176 include:sendgrid.net include:stspg-customer.com include:_spf.google.com ~all"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+qv9rjnupoda@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -426,10 +440,10 @@ Total findings: **34** (High: 0, Medium: 0, Low: 7, Info: 27)
   "wildcard_dns": true,
   "apex_txt": [
     "google-site-verification=PgpLEes7We_6DhccKbUEiYcZ0pdoMFKC9nvJzv5llfo",
-    "google-site-verification=lrFehNfjlR5pdQ9Yl1S3X4-HclWnL2hRE-lp5ciPfYs",
-    "notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc",
     "status-page-domain-verification=8vj11whsslmd",
-    "tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa"
+    "notion-domain-verification=sSdqoXWqKQb9UfQM5R80tQCvesneCxOsRl4uKtCzkZc",
+    "tiktok-developers-site-verification=EAMtFdg7OB3QLjHaQnqfXjp7NocwiRoa",
+    "google-site-verification=lrFehNfjlR5pdQ9Yl1S3X4-HclWnL2hRE-lp5ciPfYs"
   ],
   "tls2": {
     "alpn": "",
@@ -447,6 +461,10 @@ Total findings: **34** (High: 0, Medium: 0, Low: 7, Info: 27)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/we1/L4hpBT6ff0w.crl"
+      ],
+      "san": [
+        "gumroad.com",
+        "*.gumroad.com"
       ],
       "subject_dn": "311430120603550403130b67756d726f61642e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
@@ -492,8 +510,14 @@ Total findings: **34** (High: 0, Medium: 0, Low: 7, Info: 27)
       "CloudFront"
     ]
   },
-  "elapsed_s": 11.5,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.gumroad.com"
+    ],
+    "xcpd": "none"
+  },
+  "elapsed_s": 12.9,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -507,4 +531,5 @@ Total findings: **34** (High: 0, Medium: 0, Low: 7, Info: 27)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

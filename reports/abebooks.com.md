@@ -7,12 +7,12 @@
 | Target | https://abebooks.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | abebooks.com |
-| Test date | 2026-09-27 01:08 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
+Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,8 +37,9 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 | 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 20 | info | SRV1 | Server header discloses a product version | CWE-200 |
 | 21 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
-| 22 | info | CT1 | 129 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 23 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 22 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 23 | info | CT1 | 129 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 24 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -132,7 +133,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbD; google-site-verification=JTPx2-G7CvPiiPJsAsMAWAx1tJVn9aviyV_B6rY2yWM; canva-site-verification=VpUsJZxt_16j3r7pcOpdvg
+- **Detail:** Apex TXT records with verification/token content: stripe-verification=FD47CFC0B7963A0C1F1188BD521D2A02CFE12E6D26B3E5C7A280B16C38E8; atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbD; stripe-verification=B0AD8DC1918B8A717E5B6A29C2E04594A9872AB05F8DA24CB762BBA0A048
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -177,13 +178,19 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - **Detail:** The quiet handshake to abebooks.com negotiated TLSv1.2 even though the client offered TLS 1.3; the edge caps at 1.2 (legacy/compatibility configuration).
 - **Recommendation:** Enable TLS 1.3 at the edge.
 
-### 22. [INFO] 129 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 22. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of abebooks.com is http://ocsp.r2m01.amazontrust.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 23. [INFO] 129 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: alpha.abeapp2.app.servicelookup.abebooks.com, alpha.abeauthmidway.auth.servicelookup.abebooks.com, alpha.jira.abeatlassian.servicelookup.abebooks.com, api.search.abebooks.com, auth.www.abebooks.com, aws.abebooks.com, beta.abeapacheinside.apacheinside.servicelookup.abebooks.com, beta.abeapp2.app.servicelookup.abebooks.com, beta.abeauthmidway.auth.servicelookup.abebooks.com, beta.abediscoveryweb.discovery.servicelookup.abebooks.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 23. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 24. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: alpha.abeapp2.app.servicelookup.abebooks.com, alpha.abeauthmidway.auth.servicelookup.abebooks.com, alpha.jira.abeatlassian.servicelookup.abebooks.com; content may still be served via virtual-host fallback.
@@ -205,27 +212,27 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "amazon-smtp.amazon.com (pref 10)"
     ],
     "ns": [
-      "ns-647.awsdns-16.net.",
-      "ns-1700.awsdns-20.co.uk.",
+      "ns-148.awsdns-18.com.",
       "ns-1492.awsdns-58.org.",
-      "ns-148.awsdns-18.com."
+      "ns-1700.awsdns-20.co.uk.",
+      "ns-647.awsdns-16.net."
     ],
     "caa": [],
     "spf": [
-      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
-      "e1d8d3c2-7a00-4668-aa88-4f0012f5b901",
-      "google-site-verification=JTPx2-G7CvPiiPJsAsMAWAx1tJVn9aviyV_B6rY2yWM",
-      "00D2E00000131R3=1TBat00000002mb",
-      "canva-site-verification=VpUsJZxt_16j3r7pcOpdvg",
-      "MS=ms57068388",
       "00Df4000001cwvQ=1TBat00000002WT",
-      "v=spf1 include:spf1.amazon.com include:spf2.amazon.com include:amazonses.com -all",
-      "MS=ms14925990",
-      "MS=D34F561A65A1538CFE519E225C47127473C0B6AD",
-      "TS1760027",
-      "docker-verification=fb08c2c0-f24a-48ef-9186-9afd873786ff",
       "stripe-verification=FD47CFC0B7963A0C1F1188BD521D2A02CFE12E6D26B3E5C7A280B16C38E86E8D",
-      "stripe-verification=B0AD8DC1918B8A717E5B6A29C2E04594A9872AB05F8DA24CB762BBA0A0487BC6"
+      "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbDvoGpRaIwj/tgPH",
+      "stripe-verification=B0AD8DC1918B8A717E5B6A29C2E04594A9872AB05F8DA24CB762BBA0A0487BC6",
+      "canva-site-verification=VpUsJZxt_16j3r7pcOpdvg",
+      "docker-verification=fb08c2c0-f24a-48ef-9186-9afd873786ff",
+      "MS=ms57068388",
+      "MS=ms14925990",
+      "google-site-verification=JTPx2-G7CvPiiPJsAsMAWAx1tJVn9aviyV_B6rY2yWM",
+      "TS1760027",
+      "00D2E00000131R3=1TBat00000002mb",
+      "MS=D34F561A65A1538CFE519E225C47127473C0B6AD",
+      "v=spf1 include:spf1.amazon.com include:spf2.amazon.com include:amazonses.com -all",
+      "e1d8d3c2-7a00-4668-aa88-4f0012f5b901"
     ],
     "dmarc": [
       "v=DMARC1;",
@@ -406,11 +413,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     ]
   },
   "apex_txt": [
+    "stripe-verification=FD47CFC0B7963A0C1F1188BD521D2A02CFE12E6D26B3E5C7A280B16C38E8",
     "atlassian-domain-verification=ZT4AapXgobCpXIWoNcd7gtMjZyOUdr4EDFMnFUWrqqqgdaQVbD",
-    "google-site-verification=JTPx2-G7CvPiiPJsAsMAWAx1tJVn9aviyV_B6rY2yWM",
+    "stripe-verification=B0AD8DC1918B8A717E5B6A29C2E04594A9872AB05F8DA24CB762BBA0A048",
     "canva-site-verification=VpUsJZxt_16j3r7pcOpdvg",
-    "docker-verification=fb08c2c0-f24a-48ef-9186-9afd873786ff",
-    "stripe-verification=FD47CFC0B7963A0C1F1188BD521D2A02CFE12E6D26B3E5C7A280B16C38E8"
+    "docker-verification=fb08c2c0-f24a-48ef-9186-9afd873786ff"
   ],
   "tls2": {
     "alpn": "",
@@ -428,6 +435,28 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.r2m01.amazontrust.com/r2m01.crl"
+      ],
+      "san": [
+        "prod.aberedirectservice.redirectservice.abebooks.a2z.com",
+        "www.community.abebooks.com",
+        "www.abebooks.ca",
+        "splunk-aws.abebooks.com",
+        "data.abebooks.de",
+        "soporte-comprador.iberlibro.com",
+        "aide-acheteur.abebooks.fr",
+        "stash.kokanee.abebooks.com",
+        "data.zvab.com",
+        "password.abebooks.com",
+        "forums.abebooks.de",
+        "jiratest.kokanee.abebooks.com",
+        "abebooks.com",
+        "soporte-libreria.iberlibro.com",
+        "splunk-aws-prod.abebooks.com",
+        "verkaeuferhilfe.abebooks.de",
+        "password.ops.abebooks.com",
+        "redirect-service.ops.abebooks.com",
+        "splunk.abebooks.com",
+        "www.feriadeprimavera.com"
       ],
       "subject_dn": "3141303f0603550403133870726f642e6162657265646972656374736572766963652e7265646972656374736572766963652e616265626f6f6b732e61327a2e636f6d",
       "issuer_dn": "310b3009060355040613025553310f300d060355040a1306416d617a6f6e311c301a06035504031313416d617a6f6e205253412032303438204d3031",
@@ -488,8 +517,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 43.6,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.r2m01.amazontrust.com"
+  },
+  "elapsed_s": 46.5,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -503,4 +535,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

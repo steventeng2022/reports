@@ -7,12 +7,12 @@
 | Target | https://sourceforge.net/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | sourceforge.net |
-| Test date | 2026-09-27 01:34 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:45 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
+Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -38,6 +38,8 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 | 20 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
 | 21 | info | H25 | server-timing response header exposed | CWE-200 |
 | 22 | info | HTML14 | Public root document marked noindex | CWE-200 |
+| 23 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 24 | info | HTML19 | data: URIs present in root document | CWE-200 |
 
 ## Detailed findings
 
@@ -107,13 +109,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 ### 11. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (j4jg50cg0d0kas.sourceforge.net and ahwri0c7rhh8nh.sourceforge.net) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (1qeajt4uspvfah.sourceforge.net and i3w623fha8l2ey.sourceforge.net) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=HugCfmT_JOUQaz6xbszx1O9W3ccm_Dh5GiageK7egmM; abuseipdb-verification=dvyMFAir; yandex-verification: eddadce308154a90
+- **Detail:** Apex TXT records with verification/token content: tollbit-domain-verification=bae1f5123238c200f3429dba2556501be81cc1ab0b0f0692146e; yandex-verification: eddadce308154a90; google-site-verification=HugCfmT_JOUQaz6xbszx1O9W3ccm_Dh5GiageK7egmM
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -143,7 +145,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 ### 17. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk899np0ohwlhz.html -> 403; error page/headers match: Cloudflare.
+- **Detail:** GET /xkj06hpcxj1y9g.html -> 403; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 18. [INFO] Security policy set via <meta http-equiv> (`HTML1`)
@@ -167,7 +169,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 ### 21. [INFO] server-timing response header exposed (`H25`)
 
 - **CWE:** CWE-200
-- **Detail:** The root response of sourceforge.net sends server-timing (chlray;desc="a416c407ea5d8282"); server/edge processing metrics are disclosed to any client.
+- **Detail:** The root response of sourceforge.net sends server-timing (chlray;desc="a4172bf02e56b016"); server/edge processing metrics are disclosed to any client.
 - **Recommendation:** Restrict server-timing to authenticated/debug contexts if the internals are sensitive.
 
 ### 22. [INFO] Public root document marked noindex (`HTML14`)
@@ -175,6 +177,18 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 - **CWE:** CWE-200
 - **Detail:** The root document of sourceforge.net is marked noindex (meta robots or X-Robots-Tag); a public homepage that is not indexable is a posture anomaly worth reviewing.
 - **Recommendation:** Confirm the noindex directive is intentional.
+
+### 23. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of sourceforge.net contains wildcard SAN entry(ies) *.sourceforge.net, *.users.sourceforge.net; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 24. [INFO] data: URIs present in root document (`HTML19`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of sourceforge.net references 1 data: URI payload(s); inline data resources bypass the normal fetch/CORS path and should be inventoried.
+- **Recommendation:** Review inline data payloads (especially scripts/iframes) as part of the asset inventory.
 
 ## Evidence (raw response observations)
 
@@ -187,38 +201,38 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
       "104.18.13.149"
     ],
     "aaaa": [
-      "2606:4700::6812:c95",
-      "2606:4700::6812:d95"
+      "2606:4700::6812:d95",
+      "2606:4700::6812:c95"
     ],
     "cname": null,
     "mx": [
       "mx.sourceforge.net (pref 10)"
     ],
     "ns": [
-      "ns31.constellix.com.",
       "ns41.constellix.net.",
       "ns21.constellix.com.",
+      "ns61.constellix.net.",
       "ns11.constellix.com.",
-      "ns51.constellix.net.",
-      "ns61.constellix.net."
+      "ns31.constellix.com.",
+      "ns51.constellix.net."
     ],
     "caa": [
-      "0 issue \"sectigo.com\"",
-      "0 issue \"amazon.com\"",
-      "0 issue \"letsencrypt.org\"",
       "0 iodef \"mailto:siteops@slashdotmedia.com\"",
-      "0 issue \"digicert.com\""
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issue \"sectigo.com\""
     ],
     "spf": [
-      "google-site-verification=HugCfmT_JOUQaz6xbszx1O9W3ccm_Dh5GiageK7egmM",
-      "abuseipdb-verification=dvyMFAir",
-      "ca3-33e180a2afaa4c86951f4a8ad123e300",
-      "v=spf1 include:sparkpostmail.com include:servers.mcsv.net ip4:216.105.38.0/26 -all",
-      "yandex-verification: eddadce308154a90",
-      "ca3-1594c24430d2487fad7bceaec2fa251f",
       "tollbit-domain-verification=bae1f5123238c200f3429dba2556501be81cc1ab0b0f0692146e362a49979895",
-      "brave-ledger-verification=09845b65316c1613c72337595c391c4675fff6ae8923768232dc3f6c661af14b",
+      "ca3-33e180a2afaa4c86951f4a8ad123e300",
       "ca3-8b7801430b214be99a3325aab5d0d899",
+      "yandex-verification: eddadce308154a90",
+      "google-site-verification=HugCfmT_JOUQaz6xbszx1O9W3ccm_Dh5GiageK7egmM",
+      "v=spf1 include:sparkpostmail.com include:servers.mcsv.net ip4:216.105.38.0/26 -all",
+      "abuseipdb-verification=dvyMFAir",
+      "ca3-1594c24430d2487fad7bceaec2fa251f",
+      "brave-ledger-verification=09845b65316c1613c72337595c391c4675fff6ae8923768232dc3f6c661af14b",
       "SourceForge, Inc."
     ],
     "dmarc": [
@@ -312,10 +326,10 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "tollbit-domain-verification=bae1f5123238c200f3429dba2556501be81cc1ab0b0f0692146e",
+    "yandex-verification: eddadce308154a90",
     "google-site-verification=HugCfmT_JOUQaz6xbszx1O9W3ccm_Dh5GiageK7egmM",
     "abuseipdb-verification=dvyMFAir",
-    "yandex-verification: eddadce308154a90",
-    "tollbit-domain-verification=bae1f5123238c200f3429dba2556501be81cc1ab0b0f0692146e",
     "brave-ledger-verification=09845b65316c1613c72337595c391c4675fff6ae8923768232dc3f"
   ],
   "tls2": {
@@ -334,6 +348,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
       "bc_pathlen": null,
       "crl_urls": [
         "http://ye2.c.lencr.org/54.crl"
+      ],
+      "san": [
+        "*.sourceforge.net",
+        "*.users.sourceforge.net",
+        "sourceforge.net"
       ],
       "subject_dn": "311830160603550403130f736f75726365666f7267652e6e6574",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303594532",
@@ -388,11 +407,18 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
   "x16": {
     "root_status": 403,
     "alt_svc": "h3=\":443\"; ma=86400",
-    "server_timing": "chlray;desc=\"a416c407ea5d8282\"",
+    "server_timing": "chlray;desc=\"a4172bf02e56b016\"",
     "noindex": true
   },
-  "elapsed_s": 5.7,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.sourceforge.net",
+      "*.users.sourceforge.net"
+    ],
+    "data_uris": 1
+  },
+  "elapsed_s": 6.6,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -406,4 +432,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

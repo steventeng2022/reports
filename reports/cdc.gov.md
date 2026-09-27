@@ -7,12 +7,12 @@
 | Target | https://cdc.gov/ |
 | Bug bounty program | U.S. Dept of Health & Human Services (HHS) |
 | Listed scope domain | cdc.gov |
-| Test date | 2026-09-27 01:12 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:21 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
+Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,9 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 | 16 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 18 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 19 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 20 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 21 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -126,7 +129,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-sending-domain-verification=a39e7003-10de-46b1-8afb-86ef7509f246; google-site-verification=nZIK8Rc0sw4MxlgnsYseSBTdcyDXeLFR6P5FIAbgSEM; openai-domain-verification=dv-hbgCCuVm9CpZSVXjvFPfivD5
+- **Detail:** Apex TXT records with verification/token content: atlassian-sending-domain-verification=f2ef9649-6a78-47f6-9990-44a295ae5b5a; google-site-verification=GkbnFA_aF3RXaZOC3deEsrGqs0fmTXyys2hbIn1nVcM; apple-domain-verification=VOKePKhT9MhX9zmq
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
@@ -138,7 +141,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 ### 16. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xknqx1qdfopp6c.html -> 403; error page/headers match: Akamai.
+- **Detail:** GET /xk4dpghqg6gp6r.html -> 403; error page/headers match: Akamai.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -153,6 +156,24 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - **Detail:** Response headers on cdc.gov identify the edge as Akamai; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
+### 19. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of cdc.gov contains wildcard SAN entry(ies) *.cdc.gov; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 20. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of cdc.gov is http://ocsp.digicert.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 21. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of cdc.gov declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -164,53 +185,53 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "23.210.215.218"
     ],
     "aaaa": [
-      "2600:1417:76::17d2:d7da",
-      "2600:1417:76::17d2:d7cb"
+      "2600:1417:76::17d2:d7cb",
+      "2600:1417:76::17d2:d7da"
     ],
     "cname": null,
     "mx": [
-      "alt2.us.etp.fireeyegov.com (pref 30)",
-      "alt3.us.etp.fireeyegov.com (pref 40)",
       "alt1.us.etp.fireeyegov.com (pref 20)",
-      "primary.us.etp.fireeyegov.com (pref 10)"
+      "alt2.us.etp.fireeyegov.com (pref 30)",
+      "primary.us.etp.fireeyegov.com (pref 10)",
+      "alt3.us.etp.fireeyegov.com (pref 40)"
     ],
     "ns": [
-      "a2-64.akam.net.",
       "a5-66.akam.net.",
+      "a2-64.akam.net.",
+      "a28-65.akam.net.",
       "a1-43.akam.net.",
-      "a9-64.akam.net.",
       "a8-67.akam.net.",
-      "a28-65.akam.net."
+      "a9-64.akam.net."
     ],
     "caa": [],
     "spf": [
-      "ZOOM_verify_yEK5MgTwT72nP5URz-eoaA",
-      "_mhpeli9n9zj3rasw6wfiuch30t2sjlw",
-      "atlassian-sending-domain-verification=a39e7003-10de-46b1-8afb-86ef7509f246",
-      "MS=ms84056562",
-      "v=spf1 ip4:51.5.72.0/24 ip4:172.81.81.38 ip4:51.4.72.0/24 ip4:51.5.80.0/27 ip4:51.4.80.0/27 ip4:172.81.81.50 ip4:172.81.82.50 ip4:63.123.152.4 ip4:40.92.0.0/15 ip4:172.81.82.79 ip4:172.81.80.64 ip4:172.81.81.39 ip4:172.81.82.87 ip4:172.81.82.88 ip4:155.95",
-      ".96.50 ip4:155.95.86.50 ip4:23.90.98.102 ip4:124.17.27.36 ip4:149.72.0.0/16 ip4:198.21.0.0/21 ip4:50.31.32.0/19 ip4:167.89.0.0/17 ip4:68.232.140.57 ip4:68.232.140.79 include:_s0.cdc.gov -all",
-      "google-site-verification=nZIK8Rc0sw4MxlgnsYseSBTdcyDXeLFR6P5FIAbgSEM",
-      "identrust_validate=B/Pm/IvNx8tLDDFRsJXBs+oweQGmx08QZ6xK0IvBQn3R",
-      "openai-domain-verification=dv-hbgCCuVm9CpZSVXjvFPfivD5",
+      "_bthbaxy8p6mr5c0o5r7pit3d25lgztb",
       "_v0e31vq52ru6qgumyh95pylxoe5kmby",
+      "ZOOM_verify_yEK5MgTwT72nP5URz-eoaA",
+      "atlassian-sending-domain-verification=f2ef9649-6a78-47f6-9990-44a295ae5b5a",
+      "google-site-verification=GkbnFA_aF3RXaZOC3deEsrGqs0fmTXyys2hbIn1nVcM",
+      "apple-domain-verification=VOKePKhT9MhX9zmq",
+      "MS=ms84056562",
+      "atlassian-domain-verification=i5oCgfh8OkdKw7Yv2CCKvAdKMW8kYpNVO1A7fcUkBdAy7IzdP/M8D9NoirnaVqZC",
+      "google-site-verification=qZbBdujV5kZQv_pCqV2wpfSU25odH35HQukm5ACyLNs",
       "4FF7-1931-E8C2-912B-94CF-BCB0-806A-7442",
-      "v4ixju/hXVFXszYswwinkbStpHoDb361lQekI6rkjQ2DV4HHKdN/FJPvMAO88x1rTaRwf29UYwPAq6LqldNWZQ==",
+      "identrust_validate=B/Pm/IvNx8tLDDFRsJXBs+oweQGmx08QZ6xK0IvBQn3R",
       "dtm-domain-verification=KQ1rIgUP8GpiV9mSmysS40YKtHjVrI0VF938cuCAWXQ",
-      "atlassian-domain-verification=qjHCJ33pyZHmggxdcFDtGiegrc/iLSyVUIG0LAu1g7XW1JnMdaY8G8pbMUY1Z4hm",
       "geneious.com:domain-verification=DP8tae0qCr-FH6KGRvMwWA",
       "268BC041572123F15C5566E5F3D88675FABCC028427B501AE228CA9BB31630D5",
-      "_bthbaxy8p6mr5c0o5r7pit3d25lgztb",
+      "google-site-verification=nZIK8Rc0sw4MxlgnsYseSBTdcyDXeLFR6P5FIAbgSEM",
+      "atlassian-domain-verification=qjHCJ33pyZHmggxdcFDtGiegrc/iLSyVUIG0LAu1g7XW1JnMdaY8G8pbMUY1Z4hm",
       "atlassian-sending-domain-verification=977cbfcd-c314-42dc-9d86-32e2abca00ac",
       "adobe-idp-site-verification=4089552e88740d878b0400d184ab01c0b7391e6dc85796732000450e3476fc93",
+      "_mhpeli9n9zj3rasw6wfiuch30t2sjlw",
+      "atlassian-sending-domain-verification=a39e7003-10de-46b1-8afb-86ef7509f246",
+      "openai-domain-verification=dv-hbgCCuVm9CpZSVXjvFPfivD5",
       "google-gws-recovery-domain-verification=42225222",
-      "_ddb344bjip99et71u5cidtx1t53ezdl",
-      "apple-domain-verification=VOKePKhT9MhX9zmq",
+      "v4ixju/hXVFXszYswwinkbStpHoDb361lQekI6rkjQ2DV4HHKdN/FJPvMAO88x1rTaRwf29UYwPAq6LqldNWZQ==",
+      "v=spf1 ip4:51.5.72.0/24 ip4:172.81.81.38 ip4:51.4.72.0/24 ip4:51.5.80.0/27 ip4:51.4.80.0/27 ip4:172.81.81.50 ip4:172.81.82.50 ip4:63.123.152.4 ip4:40.92.0.0/15 ip4:172.81.82.79 ip4:172.81.80.64 ip4:172.81.81.39 ip4:172.81.82.87 ip4:172.81.82.88 ip4:155.95",
+      ".96.50 ip4:155.95.86.50 ip4:23.90.98.102 ip4:124.17.27.36 ip4:149.72.0.0/16 ip4:198.21.0.0/21 ip4:50.31.32.0/19 ip4:167.89.0.0/17 ip4:68.232.140.57 ip4:68.232.140.79 include:_s0.cdc.gov -all",
       "amazonses:OhxI8Nxovqf1xBmhK5S9kNk7vo9XV4GmGe6LVc+ji80=",
-      "atlassian-domain-verification=i5oCgfh8OkdKw7Yv2CCKvAdKMW8kYpNVO1A7fcUkBdAy7IzdP/M8D9NoirnaVqZC",
-      "google-site-verification=GkbnFA_aF3RXaZOC3deEsrGqs0fmTXyys2hbIn1nVcM",
-      "google-site-verification=qZbBdujV5kZQv_pCqV2wpfSU25odH35HQukm5ACyLNs",
-      "atlassian-sending-domain-verification=f2ef9649-6a78-47f6-9990-44a295ae5b5a"
+      "_ddb344bjip99et71u5cidtx1t53ezdl"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; ri=3600; rua=mailto:8idhoybh@ag.us.dmarcian.com,mailto:reports@dmarc.cyber.dhs.gov; ruf=mailto:8idhoybh@fr.us.dmarcian.com;"
@@ -301,11 +322,11 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "atlassian-sending-domain-verification=a39e7003-10de-46b1-8afb-86ef7509f246",
-    "google-site-verification=nZIK8Rc0sw4MxlgnsYseSBTdcyDXeLFR6P5FIAbgSEM",
-    "openai-domain-verification=dv-hbgCCuVm9CpZSVXjvFPfivD5",
-    "dtm-domain-verification=KQ1rIgUP8GpiV9mSmysS40YKtHjVrI0VF938cuCAWXQ",
-    "atlassian-domain-verification=qjHCJ33pyZHmggxdcFDtGiegrc/iLSyVUIG0LAu1g7XW1JnMda"
+    "atlassian-sending-domain-verification=f2ef9649-6a78-47f6-9990-44a295ae5b5a",
+    "google-site-verification=GkbnFA_aF3RXaZOC3deEsrGqs0fmTXyys2hbIn1nVcM",
+    "apple-domain-verification=VOKePKhT9MhX9zmq",
+    "atlassian-domain-verification=i5oCgfh8OkdKw7Yv2CCKvAdKMW8kYpNVO1A7fcUkBdAy7IzdP/",
+    "google-site-verification=qZbBdujV5kZQv_pCqV2wpfSU25odH35HQukm5ACyLNs"
   ],
   "tls2": {
     "alpn": "",
@@ -324,6 +345,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "crl_urls": [
         "http://crl3.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl",
         "http://crl4.digicert.com/DigiCertGlobalG3TLSECCSHA3842020CA1-2.crl"
+      ],
+      "san": [
+        "*.cdc.gov",
+        "cdc.gov"
       ],
       "subject_dn": "310b30090603550406130255533110300e0603550408130747656f726769613110300e0603550407130741746c616e746131333031060355040a132a43656e7465727320666f72204469736561736520436f6e74726f6c20616e642050726576656e74696f6e3112301006035504030c092a2e6364632e676f76",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473320544c532045434320534841333834203230323020434131",
@@ -371,8 +396,14 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
       "Akamai"
     ]
   },
-  "elapsed_s": 4.8,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.cdc.gov"
+    ],
+    "ocsp_http": "http://ocsp.digicert.com"
+  },
+  "elapsed_s": 5.5,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -386,4 +417,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 4, Info: 14)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

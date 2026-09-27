@@ -7,12 +7,12 @@
 | Target | https://apps.apple.com/ |
 | Bug bounty program | Apple |
 | Listed scope domain | apps.apple.com |
-| Test date | 2026-09-27 01:10 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
+Total findings: **24** (High: 0, Medium: 0, Low: 2, Info: 22)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,7 +35,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
 | 17 | info | SRV1 | Server header discloses a product version | CWE-200 |
 | 18 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
 | 19 | info | WK4 | RFC 8615 change-password endpoint live | CWE-200 |
-| 20 | info | CT1 | 23 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 20 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 21 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
+| 22 | info | WK5 | RFC 9449 DPoP JWKS published | CWE-200 |
+| 23 | info | WK6 | W3C Origin RSA Keys published | CWE-200 |
+| 24 | info | CT1 | 23 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -159,7 +163,31 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
 - **Detail:** /.well-known/change-password on apps.apple.com answers 200; a password-change service endpoint is advertised.
 - **Recommendation:** Confirm the endpoint is an intended user-facing service.
 
-### 20. [INFO] 23 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 20. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of apps.apple.com is http://ocsp.apple.com/ocsp03-apevsrsa1g101; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 21. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of apps.apple.com discloses a 1-hop fronting chain (1.1 varnish); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
+### 22. [INFO] RFC 9449 DPoP JWKS published (`WK5`)
+
+- **CWE:** CWE-200
+- **Detail:** /.well-known/dpop-jwks.json on apps.apple.com answers 200; the DPoP proof-verification key set is publicly disclosed.
+- **Recommendation:** Confirm the publication is intended and kept current.
+
+### 23. [INFO] W3C Origin RSA Keys published (`WK6`)
+
+- **CWE:** CWE-200
+- **Detail:** /.well-known/origin-rsa-keys.json on apps.apple.com answers 200; W3C Origin RSA Keys (origin-binding key publication) are disclosed.
+- **Recommendation:** Confirm the publication is intended and kept current.
+
+### 24. [INFO] 23 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: amp-account.apps.apple.com, amp-api-ads.apps.apple.com, amp-api-conversation.apps.apple.com, amp-api-edge.apps.apple.com, amp-api-search-edge.apps.apple.com, amp-api-search.apps.apple.com, amp-api-updates.apps.apple.com, amp-api.apps.apple.com, api-edge.apps.apple.com, api-feeds.apps.apple.com
@@ -178,11 +206,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
       "151.101.3.6"
     ],
     "aaaa": [
-      "2600:1417:76:a84::2a1",
-      "2600:1417:76:a82::2a1",
-      "2600:1417:76:a83::2a1",
-      "2600:1417:76:a81::2a1",
-      "2600:1417:76:a86::2a1"
+      "2a04:4e42::774",
+      "2a04:4e42:200::774",
+      "2a04:4e42:600::774",
+      "2a04:4e42:400::774"
     ],
     "cname": "apps-cdn.itunes-apple.com.akadns.net.",
     "mx": [],
@@ -317,7 +344,8 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
   "cname_chain": [
     "apps-cdn.itunes-apple.com.akadns.net",
     "apps-cdn-row.itunes-apple.com.akadns.net",
-    "h3.apis.apple.map.fastly.net"
+    "itunes.apple.com.edgekey.net",
+    "e673.dsce9.akamaiedge.net"
   ],
   "tls2": {
     "alpn": "",
@@ -335,6 +363,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.apple.com/apevsrsa1g1.crl"
+      ],
+      "san": [
+        "podcasts.apple.com",
+        "music.apple.com",
+        "books.apple.com",
+        "apps.apple.com",
+        "tv.apple.com"
       ],
       "subject_dn": "311d301b060355040f0c1450726976617465204f7267616e697a6174696f6e31133011060b2b0601040182373c02010313025553311b3019060b2b0601040182373c0201020c0a43616c69666f726e69613111300f060355040513084330383036353932310b30090603550406130255533113301106035504080c0a43616c69666f726e69613112301006035504070c09437570657274696e6f31133011060355040a0c0a4170706c6520496e632e3117301506035504030c0e617070732e6170706c652e636f6d",
       "issuer_dn": "310b300906035504061302555331133011060355040a130a4170706c6520496e632e312d302b060355040313244170706c65205075626c696320455620536572766572205253412043412031202d204731",
@@ -388,8 +423,14 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
     ],
     "change_password": true
   },
-  "elapsed_s": 31.7,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.apple.com/ocsp03-apevsrsa1g101",
+    "via": "1.1 varnish",
+    "wk5": true,
+    "wk6": true
+  },
+  "elapsed_s": 36.2,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -403,4 +444,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

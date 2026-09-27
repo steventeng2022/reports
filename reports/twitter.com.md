@@ -7,12 +7,12 @@
 | Target | https://twitter.com/ |
 | Bug bounty program | Twitter |
 | Listed scope domain | twitter.com |
-| Test date | 2026-09-27 01:36 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:47 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
+Total findings: **22** (High: 0, Medium: 0, Low: 2, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 | 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 18 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 | 19 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 20 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 21 | info | H11 | Legacy Flash cross-domain-policy exposure header | CWE-327 |
+| 22 | info | H13 | Cross-origin isolation only partially configured | CWE-693 |
 
 ## Detailed findings
 
@@ -98,7 +101,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: notion-domain-verification=uKi5TAGxlhWMHG9uHKHkDY3cVc6zraAE1I44bILENlB; google-site-verification=h6dJIv0HXjLOkGAotLAWEzvoi9SxqP4vjpx98vrCvvQ; google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw
+- **Detail:** Apex TXT records with verification/token content: stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA; google-site-verification=h6dJIv0HXjLOkGAotLAWEzvoi9SxqP4vjpx98vrCvvQ; atlassian-domain-verification=j6u0o1PTkobCXC84uEF/sWpIPtaZURBVYqKzmTvT8wugLcHT1v
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -155,6 +158,24 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 - **Detail:** Response headers on twitter.com identify the edge as CloudFront / Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
+### 20. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of twitter.com contains wildcard SAN entry(ies) *.twitter.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 21. [INFO] Legacy Flash cross-domain-policy exposure header (`H11`)
+
+- **CWE:** CWE-327
+- **Detail:** The root of twitter.com sends X-Permitted-Cross-Domain-Policies (none); the referenced cross-domain policy files remain fetchable by any origin.
+- **Recommendation:** Review the referenced policy files; remove the header if Flash is gone.
+
+### 22. [INFO] Cross-origin isolation only partially configured (`H13`)
+
+- **CWE:** CWE-693
+- **Detail:** The root of twitter.com sends COOP without COEP (same-origin-allow-popups); effective cross-origin isolation requires both COOP and COEP.
+- **Recommendation:** Add the missing header (or remove the partial configuration).
+
 ## Evidence (raw response observations)
 
 ```json
@@ -167,48 +188,48 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt4.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "d.u06.twtrdns.net.",
-      "a.u06.twtrdns.net.",
-      "b.u06.twtrdns.net.",
       "c.r06.twtrdns.net.",
-      "d.r06.twtrdns.net.",
-      "b.r06.twtrdns.net.",
+      "a.u06.twtrdns.net.",
+      "c.u06.twtrdns.net.",
       "a.r06.twtrdns.net.",
-      "c.u06.twtrdns.net."
+      "b.r06.twtrdns.net.",
+      "b.u06.twtrdns.net.",
+      "d.r06.twtrdns.net.",
+      "d.u06.twtrdns.net."
     ],
     "caa": [],
     "spf": [
-      "v=spf1 ip4:199.16.156.0/22 ip4:199.59.148.0/22 ip4:8.25.194.0/23 ip4:8.25.196.0/23 ip4:204.92.114.203 ip4:204.92.114.204/31 include:_spf.google.com include:_thirdparty.twitter.com -all",
-      "notion-domain-verification=uKi5TAGxlhWMHG9uHKHkDY3cVc6zraAE1I44bILENlB",
-      "google-site-verification=h6dJIv0HXjLOkGAotLAWEzvoi9SxqP4vjpx98vrCvvQ",
-      "google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw",
-      "bj6sbt5xqs9hw9jrfvz7hplrg0l680sb",
-      "stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA707D",
-      "mixpanel-domain-verify=164dda91-31f4-41e8-a816-0f59b38fea30",
-      "google-site-verification=TNhAkfLUeIbzzzSgPNxS5aEkKMf3aUcpPmCK1_kmIvU",
       "traction-guest=6882b04e-4188-4ff9-8bb4-bff5a3d358e6",
-      "linear-domain-verification=t5iq7e7nbw5w",
-      "slack-domain-verification=9oO8P4Glf4252QJDOg4rHGs6KlSkBuI5ZVmWRO8d",
-      "google-site-verification=600dQ0pZYsH2xOFt4hYmf5f5NpjCbWE_qk5Y04dErYM",
-      "0a8c0fc6-bfa5-4ea7-b09b-87f2989022d6",
+      "stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA707D",
+      "google-site-verification=h6dJIv0HXjLOkGAotLAWEzvoi9SxqP4vjpx98vrCvvQ",
+      "atlassian-domain-verification=j6u0o1PTkobCXC84uEF/sWpIPtaZURBVYqKzmTvT8wugLcHT1vvrzzA63iP1qSLN",
+      "apple-domain-verification=zd1iHoEO9LILEQIq",
+      "google-site-verification=TNhAkfLUeIbzzzSgPNxS5aEkKMf3aUcpPmCK1_kmIvU",
+      "traction-guest=a4d0248d-fe01-4222-8fcc-33f68323e667",
+      "canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg",
+      "miro-verification=6e1ca9ad6d0c2cd2e4186141265f23ed618cfe37",
+      "v=spf1 ip4:199.16.156.0/22 ip4:199.59.148.0/22 ip4:8.25.194.0/23 ip4:8.25.196.0/23 ip4:204.92.114.203 ip4:204.92.114.204/31 include:_spf.google.com include:_thirdparty.twitter.com -all",
       "google-site-verification=P9-NRZ0gaRKRGNDOXOjct5XETPtr3P9D-XA8HnlbAy4",
+      "bj6sbt5xqs9hw9jrfvz7hplrg0l680sb",
+      "slack-domain-verification=9oO8P4Glf4252QJDOg4rHGs6KlSkBuI5ZVmWRO8d",
+      "google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw",
+      "notion-domain-verification=uKi5TAGxlhWMHG9uHKHkDY3cVc6zraAE1I44bILENlB",
       "wrike-verification=MjU4MTA5MjoyN2UzNDc1MjU3MDZiZTY4NjBiNzliNDQ2OTUwNWY3NmM5NDgyMTBlYzFkNTcwYTE2YWNmZDdkNTY2ZmE4Yzlh",
       "google-site-verification=F2uUiLUsD6kQlpUVQzxUM3PHa0uPo5GBS84SCG8QwXI",
-      "MS=BEE202D20C326867290BDEFA2DDDF4594B5D6860",
+      "0a8c0fc6-bfa5-4ea7-b09b-87f2989022d6",
       "adobe-idp-site-verification=a2ff8fc40c434d1d6f02f68b0b1a683e400572ab8c1f2c180c71c3d985b9270a",
       "loom-site-verification=638c6bc173b9458997f64d305bf42499",
-      "traction-guest=a4d0248d-fe01-4222-8fcc-33f68323e667",
-      "apple-domain-verification=zd1iHoEO9LILEQIq",
-      "miro-verification=6e1ca9ad6d0c2cd2e4186141265f23ed618cfe37",
-      "canva-site-verification=lMnZ3wMh7c1uqZqa-cxZTg",
-      "atlassian-domain-verification=j6u0o1PTkobCXC84uEF/sWpIPtaZURBVYqKzmTvT8wugLcHT1vvrzzA63iP1qSLN"
+      "MS=BEE202D20C326867290BDEFA2DDDF4594B5D6860",
+      "linear-domain-verification=t5iq7e7nbw5w",
+      "mixpanel-domain-verify=164dda91-31f4-41e8-a816-0f59b38fea30",
+      "google-site-verification=600dQ0pZYsH2xOFt4hYmf5f5NpjCbWE_qk5Y04dErYM"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:d3omt-8484@rua.dmarc.emailanalyst.com; ruf=mailto:d3omt-8484@ruf.dmarc.emailanalyst.com; fo=1"
@@ -316,10 +337,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "notion-domain-verification=uKi5TAGxlhWMHG9uHKHkDY3cVc6zraAE1I44bILENlB",
-    "google-site-verification=h6dJIv0HXjLOkGAotLAWEzvoi9SxqP4vjpx98vrCvvQ",
-    "google-site-verification=q1ghWjGLX9Ba-Gy_B4n_pAgC_mQYzWmQpOD8CMWl_Hw",
     "stripe-verification=46F7B88485621DC18923B43D12E90E6CDBCE232F2FEBCF084E6EFA91F6BA",
+    "google-site-verification=h6dJIv0HXjLOkGAotLAWEzvoi9SxqP4vjpx98vrCvvQ",
+    "atlassian-domain-verification=j6u0o1PTkobCXC84uEF/sWpIPtaZURBVYqKzmTvT8wugLcHT1v",
+    "apple-domain-verification=zd1iHoEO9LILEQIq",
     "google-site-verification=TNhAkfLUeIbzzzSgPNxS5aEkKMf3aUcpPmCK1_kmIvU"
   ],
   "tls2": {
@@ -338,6 +359,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
       "bc_pathlen": null,
       "crl_urls": [
         "http://yr1.c.lencr.org/37.crl"
+      ],
+      "san": [
+        "*.twitter.com",
+        "cdn.syndication.twitter.com",
+        "twitter.com"
       ],
       "subject_dn": "3116301406035504030c0d2a2e747769747465722e636f6d",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595231",
@@ -404,8 +430,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
       "Fastly"
     ]
   },
-  "elapsed_s": 10.8,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.twitter.com"
+    ],
+    "xcpd": "none",
+    "isolation_partial": "COOP without COEP"
+  },
+  "elapsed_s": 12.1,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -419,4 +452,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

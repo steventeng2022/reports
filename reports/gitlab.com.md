@@ -7,12 +7,12 @@
 | Target | https://gitlab.com/ |
 | Bug bounty program | GitLab |
 | Listed scope domain | gitlab.com |
-| Test date | 2026-09-27 01:21 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:31 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **39** (High: 0, Medium: 9, Low: 2, Info: 28)
+Total findings: **40** (High: 0, Medium: 9, Low: 2, Info: 29)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -55,6 +55,7 @@ Total findings: **39** (High: 0, Medium: 9, Low: 2, Info: 28)
 | 37 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 | 38 | info | WK2 | OIDC discovery document published | CWE-200 |
 | 39 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 40 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 
 ## Detailed findings
 
@@ -231,7 +232,7 @@ Total findings: **39** (High: 0, Medium: 9, Low: 2, Info: 28)
 ### 29. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: gitlab-pages-verification-code=5228e61c992af7e65f5f5160f0587fb4; jamf-site-verification=nRPNM9HJGzWzUkvBtgvBrg; google-site-verification=lnPjOx5EAxmESH8FSn4colWVMAxe18K4ZIopDB1IEDY
+- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=af5b5fda116e45a9b4c4abcd9e571923; decagon-domain-verification-cmrbvs=Lb6bOM0iABwwrWBstDaKWS3U8; google-site-verification=QiG7NTIWpedorFi71mMN7OVe2Fo_yA6RclsxO8stOa8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 30. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -294,6 +295,12 @@ Total findings: **39** (High: 0, Medium: 9, Low: 2, Info: 28)
 - **Detail:** Response headers on gitlab.com identify the edge as CloudFront; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
+### 40. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of gitlab.com is http://ocsp.sectigo.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -308,66 +315,66 @@ Total findings: **39** (High: 0, Medium: 9, Low: 2, Info: 28)
     ],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt4.aspmx.l.google.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "jermaine.ns.cloudflare.com.",
-      "diva.ns.cloudflare.com."
+      "diva.ns.cloudflare.com.",
+      "jermaine.ns.cloudflare.com."
     ],
     "caa": [
-      "0 iodef \"mailto:security@gitlab.com\"",
-      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
-      "0 issue \"awstrust.com\"",
-      "0 issuewild \"letsencrypt.org\"",
-      "0 issue \"comodoca.com\"",
-      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
-      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
-      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
-      "0 issuewild \"comodoca.com\"",
-      "0 issue \"amazontrust.com\"",
-      "0 issue \"globalsign.com\"",
-      "0 issue \"amazon.com\"",
-      "0 issue \"ssl.com\"",
-      "0 issue \"sectigo.com\"",
-      "0 issuewild \"ssl.com\"",
       "0 issue \"amazonaws.com\"",
-      "0 issue \"letsencrypt.org\""
+      "0 issue \"ssl.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"globalsign.com\"",
+      "0 issue \"amazontrust.com\"",
+      "0 issue \"comodoca.com\"",
+      "0 issue \"sectigo.com\"",
+      "0 iodef \"mailto:security@gitlab.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"comodoca.com\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issuewild \"ssl.com\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issuewild \"letsencrypt.org\""
     ],
     "spf": [
-      "gitlab-pages-verification-code=5228e61c992af7e65f5f5160f0587fb4",
-      "MS=ms60523131",
-      "v=spf1 include:mail.zendesk.com include:_spf.google.com include:mktomail.com include:_spf.salesforce.com include:_spf-ip.gitlab.com a:zgateway.zuora.com include:mailgun.org include:_spf.sendergen.com ip4:35.80.141.6/32 ip4:44.229.121.55/32 -all",
-      "jamf-site-verification=nRPNM9HJGzWzUkvBtgvBrg",
-      "google-site-verification=lnPjOx5EAxmESH8FSn4colWVMAxe18K4ZIopDB1IEDY",
-      "docusign=1a7d6818-2cf5-4956-a9fb-c3d2e9a578dd",
-      "smartsheet-site-validation=wTADkxxpf97DU9ZxO4RuFpZJyRvP7MRm",
-      "_globalsign-domain-verification=4azHJ7gL04Dr8r2VR0txu7OrWg7uZpU6v7LOHVP1b3",
-      "onetrust-domain-verification=84b59aa2659244d486b0b86f5db073dd",
-      "v=MCPv1; k=ed25519; p=MmZM6XexKcX4jiWqHtn3M0av9Q7HDmonAdP6PqktwX0=",
+      "onetrust-domain-verification=af5b5fda116e45a9b4c4abcd9e571923",
+      "decagon-domain-verification-cmrbvs=Lb6bOM0iABwwrWBstDaKWS3U8",
       "google-site-verification=QiG7NTIWpedorFi71mMN7OVe2Fo_yA6RclsxO8stOa8",
-      "asv=3f763643512ad5bdcc0d42caea1b3951",
-      "adobe-idp-site-verification=5a5e001556a2c0595ed571d2a1f7b5f8a749a00742853e035eb909bdd31622b8",
-      "zapier-domain-verification-challenge=a1d665be-8176-4ada-9707-4332dfa7a2cc",
+      "jamf-site-verification=nRPNM9HJGzWzUkvBtgvBrg",
+      "MS=ms60523131",
       "openai-domain-verification=dv-Uq90dak9n7LidGh0WsdFOOUu",
-      "google-site-verification=iWR2UGQb3MvVY83zY47ZFrGFVFLG6ADfpjqchlQjnok",
-      "google-site-verification=vPPg6DGiVgf5vhzQg5zGISLao6-07-lVzzpqvmCFe5Y",
-      "google-site-verification=uT9dAMjaTlnkbC0VnN5flFWp0Bsze7zHObWjZwkd2p8",
-      "google-site-verification=XDRo7LEOqv6OV0RfGDFh7G2XgpzdycygGJBqde334q4",
+      "serval-domain-verification-rahzqw=w9adwbCM3CJ9BrXnAleSWuMqz",
       "stripe-verification=E331E16D59119AEFB547211475C2E225C1BF6EB8CB885D300536B2852EAD3D74",
       "uber-domain-verification=38ba2b7b-5ae3-4694-9701-086b20ea3d36",
-      "serval-domain-verification-rahzqw=w9adwbCM3CJ9BrXnAleSWuMqz",
-      "onetrust-domain-verification=af5b5fda116e45a9b4c4abcd9e571923",
-      "mgverify=2dd945066758840fe3bfbd9ccf90e2c6000458f13345baa576338880dcc86658",
+      "docusign=1a7d6818-2cf5-4956-a9fb-c3d2e9a578dd",
       "MS=ms83893381",
-      "decagon-domain-verification-cmrbvs=Lb6bOM0iABwwrWBstDaKWS3U8",
-      "mgverify=9549a96a4bc9886fbf483bcd56872eaf2b5b9e690d264024041cf446664cb114",
-      "drift-domain-verification=fa583cfff88c496bcc62651057550656a98ab3e689c314255a1a6ae848e3e56d",
+      "v=MCPv1; k=ed25519; p=MmZM6XexKcX4jiWqHtn3M0av9Q7HDmonAdP6PqktwX0=",
+      "mgverify=2dd945066758840fe3bfbd9ccf90e2c6000458f13345baa576338880dcc86658",
+      "google-site-verification=uT9dAMjaTlnkbC0VnN5flFWp0Bsze7zHObWjZwkd2p8",
       "apple-domain-verification=UNUD9vY0Jp9z5TjO",
-      "google-site-verification=6Cb3PPpoMp6-xRavXf2HZz03s7pplQeG5MiUaPGIu_Q"
+      "smartsheet-site-validation=wTADkxxpf97DU9ZxO4RuFpZJyRvP7MRm",
+      "gitlab-pages-verification-code=5228e61c992af7e65f5f5160f0587fb4",
+      "onetrust-domain-verification=84b59aa2659244d486b0b86f5db073dd",
+      "google-site-verification=lnPjOx5EAxmESH8FSn4colWVMAxe18K4ZIopDB1IEDY",
+      "mgverify=9549a96a4bc9886fbf483bcd56872eaf2b5b9e690d264024041cf446664cb114",
+      "_globalsign-domain-verification=4azHJ7gL04Dr8r2VR0txu7OrWg7uZpU6v7LOHVP1b3",
+      "google-site-verification=6Cb3PPpoMp6-xRavXf2HZz03s7pplQeG5MiUaPGIu_Q",
+      "google-site-verification=vPPg6DGiVgf5vhzQg5zGISLao6-07-lVzzpqvmCFe5Y",
+      "drift-domain-verification=fa583cfff88c496bcc62651057550656a98ab3e689c314255a1a6ae848e3e56d",
+      "adobe-idp-site-verification=5a5e001556a2c0595ed571d2a1f7b5f8a749a00742853e035eb909bdd31622b8",
+      "google-site-verification=iWR2UGQb3MvVY83zY47ZFrGFVFLG6ADfpjqchlQjnok",
+      "google-site-verification=XDRo7LEOqv6OV0RfGDFh7G2XgpzdycygGJBqde334q4",
+      "zapier-domain-verification-challenge=a1d665be-8176-4ada-9707-4332dfa7a2cc",
+      "asv=3f763643512ad5bdcc0d42caea1b3951",
+      "v=spf1 include:mail.zendesk.com include:_spf.google.com include:mktomail.com include:_spf.salesforce.com include:_spf-ip.gitlab.com a:zgateway.zuora.com include:mailgun.org include:_spf.sendergen.com ip4:35.80.141.6/32 ip4:44.229.121.55/32 -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:dmarc_agg@vali.email;"
@@ -483,11 +490,11 @@ Total findings: **39** (High: 0, Medium: 9, Low: 2, Info: 28)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "gitlab-pages-verification-code=5228e61c992af7e65f5f5160f0587fb4",
+    "onetrust-domain-verification=af5b5fda116e45a9b4c4abcd9e571923",
+    "decagon-domain-verification-cmrbvs=Lb6bOM0iABwwrWBstDaKWS3U8",
+    "google-site-verification=QiG7NTIWpedorFi71mMN7OVe2Fo_yA6RclsxO8stOa8",
     "jamf-site-verification=nRPNM9HJGzWzUkvBtgvBrg",
-    "google-site-verification=lnPjOx5EAxmESH8FSn4colWVMAxe18K4ZIopDB1IEDY",
-    "_globalsign-domain-verification=4azHJ7gL04Dr8r2VR0txu7OrWg7uZpU6v7LOHVP1b3",
-    "onetrust-domain-verification=84b59aa2659244d486b0b86f5db073dd"
+    "openai-domain-verification=dv-Uq90dak9n7LidGh0WsdFOOUu"
   ],
   "tls2": {
     "alpn": "",
@@ -504,6 +511,14 @@ Total findings: **39** (High: 0, Medium: 9, Low: 2, Info: 28)
       "bc_ca": null,
       "bc_pathlen": null,
       "crl_urls": null,
+      "san": [
+        "gitlab.com",
+        "auth.gitlab.com",
+        "customers.gitlab.com",
+        "email.customers.gitlab.com",
+        "gprd.gitlab.com",
+        "www.gitlab.com"
+      ],
       "subject_dn": "311330110603550403130a6769746c61622e636f6d",
       "issuer_dn": "310b300906035504061302474231183016060355040a130f5365637469676f204c696d69746564313730350603550403132e5365637469676f205075626c6963205365727665722041757468656e7469636174696f6e20434120445620523336",
       "not_before": "20260426000000",
@@ -566,8 +581,11 @@ Total findings: **39** (High: 0, Medium: 9, Low: 2, Info: 28)
       "CloudFront"
     ]
   },
-  "elapsed_s": 20.1,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.sectigo.com"
+  },
+  "elapsed_s": 21.2,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -581,4 +599,5 @@ Total findings: **39** (High: 0, Medium: 9, Low: 2, Info: 28)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

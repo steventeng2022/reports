@@ -7,12 +7,12 @@
 | Target | https://theguardian.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | theguardian.com |
-| Test date | 2026-09-27 01:35 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:46 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
+Total findings: **23** (High: 0, Medium: 0, Low: 7, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
 | 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 19 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 | 20 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 21 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 22 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 23 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
 
 ## Detailed findings
 
@@ -128,7 +131,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=4qbvNZKyKKZyBtdU; formstack-domain-verification=0cc5b58e5ea4088ab9333fcd9721a72f; onetrust-domain-verification=ce4031d6f7b94fdb9ed409ab9cf643d3
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=ujq5XlF5Ty7dwXv7S3AV99WRr8IwetZIjNqqloPpKmA; facebook-domain-verification=9qqmd2kl745hph02i64iyoxvdphmi9; google-site-verification=6-wiFtmcPHY78jVuZUE3io1c6c9SrSyjPVmUr7XRW2I
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -167,6 +170,24 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
 - **Detail:** Response headers on theguardian.com identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
+### 21. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of theguardian.com contains wildcard SAN entry(ies) *.code.dev-guardianapis.com, *.code.dev-theguardian.com, *.dev-theguardian.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 22. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of theguardian.com is http://ocsp.globalsign.com/ca/gsatlasr46dvtlsca2026q3; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 23. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of theguardian.com discloses a 1-hop fronting chain (1.1 varnish); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -175,72 +196,72 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
   "dns": {
     "a": [
       "151.101.65.111",
-      "151.101.1.111",
       "151.101.193.111",
+      "151.101.1.111",
       "151.101.129.111"
     ],
     "aaaa": [
-      "2a04:4e42:400::367",
-      "2a04:4e42:600::367",
       "2a04:4e42:200::367",
-      "2a04:4e42::367"
+      "2a04:4e42::367",
+      "2a04:4e42:400::367",
+      "2a04:4e42:600::367"
     ],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
-      "alt2.aspmx.l.google.com (pref 20)",
       "alt4.aspmx.l.google.com (pref 30)",
       "aspmx.l.google.com (pref 10)",
-      "alt3.aspmx.l.google.com (pref 30)"
+      "alt1.aspmx.l.google.com (pref 20)",
+      "alt3.aspmx.l.google.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
       "ns04.theguardiandns.com.",
-      "dns2.p04.nsone.net.",
-      "ns03.theguardiandns.com.",
-      "ns02.theguardiandns.com.",
+      "ns01.theguardiandns.com.",
       "dns1.p04.nsone.net.",
+      "ns03.theguardiandns.com.",
+      "dns2.p04.nsone.net.",
       "dns3.p04.nsone.net.",
-      "dns4.p04.nsone.net.",
-      "ns01.theguardiandns.com."
+      "ns02.theguardiandns.com.",
+      "dns4.p04.nsone.net."
     ],
     "caa": [],
     "spf": [
-      "apple-domain-verification=4qbvNZKyKKZyBtdU",
-      "pardot709753=1cfbb8fa5dabcb6befc9faa15661f500a64a6f22eb83bb146848633dbe7633cf",
-      "formstack-domain-verification=0cc5b58e5ea4088ab9333fcd9721a72f",
+      "google-site-verification=ujq5XlF5Ty7dwXv7S3AV99WRr8IwetZIjNqqloPpKmA",
+      "facebook-domain-verification=9qqmd2kl745hph02i64iyoxvdphmi9",
+      "google-site-verification=6-wiFtmcPHY78jVuZUE3io1c6c9SrSyjPVmUr7XRW2I",
+      "lucidlink-verification=4K96N0ZDHCHPKDZ538AFRVH54G",
+      "onetrust-domain-verification=ce4031d6f7b94fdb9ed409ab9cf643d3",
+      "MS=ms94953828",
       "v=spf1 include:_spf.google.com include:spf_c.oraclecloud.com include:_spf.salesforce.com include:_spf1.theguardian.com ip4:199.255.192.0/22 ip4:199.127.232.0/22 ip4:54.240.0.0/18 ip4:69.169.224.0/20 ip4:23.249.208.0/20 ip4:23.251.224.0/19 ip4:76.223.176.0",
       "/20 ip4:54.240.64.0/18 ip4:76.223.128.0/19 ip4:216.221.160.0/19 ip4:206.55.144.0/20 ip4:24.110.64.0/18 -all",
-      "onetrust-domain-verification=ce4031d6f7b94fdb9ed409ab9cf643d3",
-      "73t2Qr1jv9^4RG3CsYKp#F&^5S1fxpHtq9X5bLBQtc4q2PhMvMBmUrIh%LLGPb3V!XpnW9tvQd$tg^rLv!8ALDOQhhss%c9K%Xt",
-      "adobe-idp-site-verification=af3ef20fdc1d370aee02414a73ce0db9f1b465c21d53a369080184cd8e4b60f1",
-      "google-site-verification=LCHObeC_7NyDBnXVNSqm5VJAve2qxx04PmUFc697Rf0",
-      "google-site-verification=6-wiFtmcPHY78jVuZUE3io1c6c9SrSyjPVmUr7XRW2I",
-      "google-site-verification=9SMJbNVsYm0GCVZbGVOMSzXajrK_pqVtjW3P007kaQo",
-      "asv=d971bc0397a95b5da450b9bfbad1212a",
-      "google-site-verification=iLS6vcS8qLmM07nG-W_M3TAmaSEAAwoLBKovJCGOrOs",
-      "google-site-verification=IU-vqTBscxkgU3J_f5i10_i624mvE3IjvYpeVPB2A98",
-      "cisco-ci-domain-verification=394bd3979592402fa40244fcf11f48e5e5014697e1f7e8587eba08075cdd79e3",
-      "slack-domain-verification=K3gfZj51sHXR6hxk5BVVfunkmGnHxc4NvwNtqo77",
-      "miro-verification=9bbe1ce0f13ab2efbbda64d44bd0db3c1f17fd60",
-      "multiverse-domain-verification=3e7e7acf-12cc-4934-a23a-b8c0127fb091",
-      "MS=ms94953828",
-      "amazonses:2s68hEXFIHnDWOVNuEbZ06pSFJhN0qCtTx8lztmngls=",
-      "google-site-verification=M9Q_QcvQQCoQEca1--d55J0QKwKZt0XgAAj9DJrJ0jQ",
-      "google-site-verification=ujq5XlF5Ty7dwXv7S3AV99WRr8IwetZIjNqqloPpKmA",
-      "lucidlink-verification=4K96N0ZDHCHPKDZ538AFRVH54G",
-      "docker-verification=42d9d88d-f950-4407-a675-3d843c16a983",
-      "apple-domain-verification=sVI2atim1Brh4UUx\n",
       "MS=B95E020056873FBC8A077EEE2104192B3DBC1D61",
+      "cisco-ci-domain-verification=394bd3979592402fa40244fcf11f48e5e5014697e1f7e8587eba08075cdd79e3",
+      "adobe-idp-site-verification=af3ef20fdc1d370aee02414a73ce0db9f1b465c21d53a369080184cd8e4b60f1",
+      "miro-verification=9bbe1ce0f13ab2efbbda64d44bd0db3c1f17fd60",
+      "google-site-verification=M9Q_QcvQQCoQEca1--d55J0QKwKZt0XgAAj9DJrJ0jQ",
+      "google-site-verification=iLS6vcS8qLmM07nG-W_M3TAmaSEAAwoLBKovJCGOrOs",
+      "google-site-verification=9SMJbNVsYm0GCVZbGVOMSzXajrK_pqVtjW3P007kaQo",
+      "apple-domain-verification=4qbvNZKyKKZyBtdU",
+      "asv=d971bc0397a95b5da450b9bfbad1212a",
+      "docker-verification=42d9d88d-f950-4407-a675-3d843c16a983",
+      "intersight=123333260936a76db6d9dedc01d0ab4d61a9aae47515abbf0087e02a395747f9",
       "google-site-verification=4l7NequdA4a20U0D9YSw7ENlF69-hDeHXx21aU2UUC0",
-      "facebook-domain-verification=9qqmd2kl745hph02i64iyoxvdphmi9",
-      "RDOAB9Z9GAJESXAA11TST3LEI0RN5LQ4TES408NS",
+      "slack-domain-verification=K3gfZj51sHXR6hxk5BVVfunkmGnHxc4NvwNtqo77",
+      "apple-domain-verification=sVI2atim1Brh4UUx\n",
+      "amazonses:2s68hEXFIHnDWOVNuEbZ06pSFJhN0qCtTx8lztmngls=",
+      "73t2Qr1jv9^4RG3CsYKp#F&^5S1fxpHtq9X5bLBQtc4q2PhMvMBmUrIh%LLGPb3V!XpnW9tvQd$tg^rLv!8ALDOQhhss%c9K%Xt",
+      "google-site-verification=LCHObeC_7NyDBnXVNSqm5VJAve2qxx04PmUFc697Rf0",
+      "multiverse-domain-verification=3e7e7acf-12cc-4934-a23a-b8c0127fb091",
       "google-site-verification=I3xSjID5V7E9UDa3WSvvvpCqiqw1_34kG1Y_rz5dlV4",
-      "stripe-verification=85178DB4E6F4EC41721B7F20BD9F04B21E2B630ADA8156BDFE421272EBC2056F",
-      "openai-domain-verification=dv-m8f1SR7Sj1HI4BIM0XsZAOxx",
-      "docusign=1f00efb3-0975-459c-b221-e46452a0f92a",
+      "pardot709753=1cfbb8fa5dabcb6befc9faa15661f500a64a6f22eb83bb146848633dbe7633cf",
+      "RDOAB9Z9GAJESXAA11TST3LEI0RN5LQ4TES408NS",
       "brave-ledger-verification=7e309ab3cd9203b886205458254a13f930f79821ea05031742f7dfc9285370c8",
-      "_hfmu2x1szay737kpys7nmqjko311kxu",
-      "intersight=123333260936a76db6d9dedc01d0ab4d61a9aae47515abbf0087e02a395747f9"
+      "formstack-domain-verification=0cc5b58e5ea4088ab9333fcd9721a72f",
+      "docusign=1f00efb3-0975-459c-b221-e46452a0f92a",
+      "openai-domain-verification=dv-m8f1SR7Sj1HI4BIM0XsZAOxx",
+      "google-site-verification=IU-vqTBscxkgU3J_f5i10_i624mvE3IjvYpeVPB2A98",
+      "stripe-verification=85178DB4E6F4EC41721B7F20BD9F04B21E2B630ADA8156BDFE421272EBC2056F",
+      "_hfmu2x1szay737kpys7nmqjko311kxu"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;rua=mailto:dmarcreporting@theguardian.com"
@@ -354,11 +375,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "apple-domain-verification=4qbvNZKyKKZyBtdU",
-    "formstack-domain-verification=0cc5b58e5ea4088ab9333fcd9721a72f",
-    "onetrust-domain-verification=ce4031d6f7b94fdb9ed409ab9cf643d3",
-    "adobe-idp-site-verification=af3ef20fdc1d370aee02414a73ce0db9f1b465c21d53a3690801",
-    "google-site-verification=LCHObeC_7NyDBnXVNSqm5VJAve2qxx04PmUFc697Rf0"
+    "google-site-verification=ujq5XlF5Ty7dwXv7S3AV99WRr8IwetZIjNqqloPpKmA",
+    "facebook-domain-verification=9qqmd2kl745hph02i64iyoxvdphmi9",
+    "google-site-verification=6-wiFtmcPHY78jVuZUE3io1c6c9SrSyjPVmUr7XRW2I",
+    "lucidlink-verification=4K96N0ZDHCHPKDZ538AFRVH54G",
+    "onetrust-domain-verification=ce4031d6f7b94fdb9ed409ab9cf643d3"
   ],
   "tls2": {
     "alpn": "",
@@ -376,6 +397,28 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.globalsign.com/ca/gsatlasr46dvtlsca2026q3.crl"
+      ],
+      "san": [
+        "theguardian.com",
+        "*.code.dev-guardianapis.com",
+        "*.code.dev-theguardian.com",
+        "*.dev-theguardian.com",
+        "*.editorial.theguardian.com",
+        "*.email.theguardian.com",
+        "*.guardian.co.uk",
+        "*.guardianapis.com",
+        "*.guim.co.uk",
+        "*.guimcode.co.uk",
+        "*.ophan.co.uk",
+        "*.qa.dev-guardianapis.com",
+        "*.service.theguardian.com",
+        "*.theguardian.co.uk",
+        "*.theguardian.com",
+        "*.theguardian.design",
+        "api.nextgen.guardianapps.co.uk",
+        "code.api.nextgen.guardianapps.co.uk",
+        "dev-gutools.co.uk",
+        "dev-theguardian.com"
       ],
       "subject_dn": "3118301606035504030c0f746865677561726469616e2e636f6d",
       "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312f302d06035504031326476c6f62616c5369676e2041746c61732052343620445620544c532043412032303236205133",
@@ -437,8 +480,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
       "Fastly"
     ]
   },
-  "elapsed_s": 23.5,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.code.dev-guardianapis.com",
+      "*.code.dev-theguardian.com",
+      "*.dev-theguardian.com",
+      "*.editorial.theguardian.com",
+      "*.email.theguardian.com"
+    ],
+    "ocsp_http": "http://ocsp.globalsign.com/ca/gsatlasr46dvtlsca2026q3",
+    "via": "1.1 varnish"
+  },
+  "elapsed_s": 25.2,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -452,4 +506,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 7, Info: 13)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

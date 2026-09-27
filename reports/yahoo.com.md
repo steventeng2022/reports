@@ -7,12 +7,12 @@
 | Target | https://yahoo.com/ |
 | Bug bounty program | Yahoo! |
 | Listed scope domain | yahoo.com |
-| Test date | 2026-09-27 01:37 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:49 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,8 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 14 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 15 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 | 16 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
+| 17 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 18 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 
 ## Detailed findings
 
@@ -96,7 +98,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=Z3-Vh6zqUMgybVH4wQl1GxKSKN7JE13kyCyeZ3TZZ-I; google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE; google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY; google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI; google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -114,7 +116,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 74.6.231.20 carries PTR media-router-fp73.prod.media.vip.ne1.yahoo.com. for yahoo.com.
+- **Detail:** 98.137.11.164 carries PTR media-router-fp73.prod.media.vip.gq1.yahoo.com. for yahoo.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 14. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
@@ -135,6 +137,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - **Detail:** /.well-known/security.txt on yahoo.com is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
 - **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
 
+### 17. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of yahoo.com contains wildcard SAN entry(ies) *.yahoo.com, *.www.yahoo.com, *.media.yahoo.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 18. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of yahoo.com is http://ocsp.digicert.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -142,53 +156,53 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   "domain": "yahoo.com",
   "dns": {
     "a": [
-      "74.6.231.20",
-      "74.6.231.21",
       "98.137.11.164",
+      "74.6.143.25",
+      "74.6.231.21",
       "74.6.143.26",
       "98.137.11.163",
-      "74.6.143.25"
+      "74.6.231.20"
     ],
     "aaaa": [
-      "2001:4998:24:120d::1:1",
+      "2001:4998:44:3507::8001",
+      "2001:4998:24:120d::1:0",
       "2001:4998:44:3507::8000",
       "2001:4998:124:1507::f000",
-      "2001:4998:24:120d::1:0",
-      "2001:4998:44:3507::8001",
-      "2001:4998:124:1507::f001"
+      "2001:4998:124:1507::f001",
+      "2001:4998:24:120d::1:1"
     ],
     "cname": null,
     "mx": [
+      "mta5.am0.yahoodns.net (pref 1)",
       "mta6.am0.yahoodns.net (pref 1)",
-      "mta7.am0.yahoodns.net (pref 1)",
-      "mta5.am0.yahoodns.net (pref 1)"
+      "mta7.am0.yahoodns.net (pref 1)"
     ],
     "ns": [
+      "ns1.yahoo.com.",
+      "ns3.yahoo.com.",
       "ns5.yahoo.com.",
       "ns2.yahoo.com.",
-      "ns4.yahoo.com.",
-      "ns1.yahoo.com.",
-      "ns3.yahoo.com."
+      "ns4.yahoo.com."
     ],
     "caa": [
       "0 issue \"digicert.com\"",
-      "0 iodef \"mailto:security@yahooinc.com\"",
       "0 issue \"globalsign.com\"",
-      "0 issue \"sectigo.com\""
+      "0 issue \"sectigo.com\"",
+      "0 iodef \"mailto:security@yahooinc.com\""
     ],
     "spf": [
-      "edb3bff2c0d64622a9b2250438277a59",
-      "google-site-verification=Z3-Vh6zqUMgybVH4wQl1GxKSKN7JE13kyCyeZ3TZZ-I",
-      "google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE",
-      "google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ",
-      "google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk",
-      "v=spf1 redirect=_spf.mail.yahoo.com",
       "Zoom=13284637",
       "google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY",
       "google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI",
-      "facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p",
+      "google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE",
+      "google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk",
       "google-site-verification=GU8WAl0zPqaxdcZqDjuN7pqdfPCpR9Amz9rwxMG91qw",
-      "_globalsign-domain-verification=3rQPnwMFlx5UmUzSMV-JeDoNEMeG8BYFKvKDsHEzr9"
+      "_globalsign-domain-verification=3rQPnwMFlx5UmUzSMV-JeDoNEMeG8BYFKvKDsHEzr9",
+      "google-site-verification=Z3-Vh6zqUMgybVH4wQl1GxKSKN7JE13kyCyeZ3TZZ-I",
+      "v=spf1 redirect=_spf.mail.yahoo.com",
+      "google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ",
+      "edb3bff2c0d64622a9b2250438277a59",
+      "facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com;"
@@ -232,7 +246,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     }
   },
   "ports": {
-    "ip": "74.6.231.20",
+    "ip": "98.137.11.164",
     "open": []
   },
   "https": {
@@ -285,11 +299,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=Z3-Vh6zqUMgybVH4wQl1GxKSKN7JE13kyCyeZ3TZZ-I",
+    "google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY",
+    "google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI",
     "google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE",
-    "google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ",
     "google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk",
-    "google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY"
+    "google-site-verification=GU8WAl0zPqaxdcZqDjuN7pqdfPCpR9Amz9rwxMG91qw"
   ],
   "tls2": {
     "alpn": "",
@@ -308,6 +322,24 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "crl_urls": [
         "http://crl3.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl",
         "http://crl4.digicert.com/DigiCertGlobalG2TLSRSASHA2562020CA1-1.crl"
+      ],
+      "san": [
+        "yahoo.com",
+        "tw.rd.yahoo.com",
+        "s.yimg.com",
+        "mbp.yimg.com",
+        "hk.rd.yahoo.com",
+        "fr-ca.rogers.yahoo.com",
+        "ddl.fp.yahoo.com",
+        "ca.rogers.yahoo.com",
+        "ca.my.yahoo.com",
+        "brb.yahoo.net",
+        "add.my.yahoo.com",
+        "*.yahoo.com",
+        "*.www.yahoo.com",
+        "*.media.yahoo.com",
+        "*.att.yahoo.com",
+        "*.amp.yimg.com"
       ],
       "subject_dn": "310b30090603550406130255533111300f060355040813084e657720596f726b3111300f060355040713084e657720596f726b311c301a060355040a13135961686f6f20486f6c64696e677320496e632e31123010060355040313097961686f6f2e636f6d",
       "issuer_dn": "310b300906035504061302555331153013060355040a130c446967694365727420496e63313330310603550403132a446967694365727420476c6f62616c20473220544c532052534120534841323536203230323020434131",
@@ -338,7 +370,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   "x12": {
     "status": 301,
     "ptr": [
-      "media-router-fp73.prod.media.vip.ne1.yahoo.com."
+      "media-router-fp73.prod.media.vip.gq1.yahoo.com."
     ]
   },
   "x13": {
@@ -370,8 +402,18 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 42.2,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.yahoo.com",
+      "*.www.yahoo.com",
+      "*.media.yahoo.com",
+      "*.att.yahoo.com",
+      "*.amp.yimg.com"
+    ],
+    "ocsp_http": "http://ocsp.digicert.com"
+  },
+  "elapsed_s": 45.3,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -385,4 +427,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

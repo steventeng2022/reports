@@ -7,12 +7,12 @@
 | Target | https://weebly.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | weebly.com |
-| Test date | 2026-09-27 01:37 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **28** (High: 0, Medium: 0, Low: 6, Info: 22)
+Total findings: **30** (High: 0, Medium: 0, Low: 6, Info: 24)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -44,6 +44,8 @@ Total findings: **28** (High: 0, Medium: 0, Low: 6, Info: 22)
 | 26 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 27 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 | 28 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 29 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 30 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -176,13 +178,13 @@ Total findings: **28** (High: 0, Medium: 0, Low: 6, Info: 22)
 ### 20. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (osiiubt1chwth2.weebly.com and ekmwh8n6oom1dk.weebly.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (19dn3ylixgrz7s.weebly.com and wh73ly10fyleb3.weebly.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 21. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc; postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda553; facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc; facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx; postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda553
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 22. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -227,6 +229,18 @@ Total findings: **28** (High: 0, Medium: 0, Low: 6, Info: 22)
 - **Detail:** Response headers on weebly.com identify the edge as CloudFront; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
+### 29. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of weebly.com contains wildcard SAN entry(ies) *.weebly.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 30. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of weebly.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -240,25 +254,25 @@ Total findings: **28** (High: 0, Medium: 0, Low: 6, Info: 22)
     "aaaa": [],
     "cname": null,
     "mx": [
+      "alt2.aspmx.l.google.com (pref 20)",
+      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx.l.google.com (pref 10)",
       "aspmx2.googlemail.com (pref 20)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx3.googlemail.com (pref 20)"
     ],
     "ns": [
+      "ns-123.awsdns-15.com.",
       "ns-1500.awsdns-59.org.",
-      "ns-1797.awsdns-32.co.uk.",
       "ns-646.awsdns-16.net.",
-      "ns-123.awsdns-15.com."
+      "ns-1797.awsdns-32.co.uk."
     ],
     "caa": [],
     "spf": [
-      "78e4ad1ec37ca38d4dbe035e01fa3a0533ccacc4f8e2083013d13571e5904ef9",
       "google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc",
+      "facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx",
+      "78e4ad1ec37ca38d4dbe035e01fa3a0533ccacc4f8e2083013d13571e5904ef9",
       "v=spf1 include:_spf.google.com include:mail.zendesk.com include:_netblocks.sparkpostmail.com include:sendgrid.net ip4:74.115.48.0/22 ip6:2620:11c::/44 mx ~all",
-      "postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda5530224a7661f91528b27485bc875c9c71d37bd628267264a247a929ad63752883379e313d91a3a",
-      "facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx"
+      "postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda5530224a7661f91528b27485bc875c9c71d37bd628267264a247a929ad63752883379e313d91a3a"
     ],
     "dmarc": [
       "v=DMARC1; p=none;"
@@ -355,8 +369,8 @@ Total findings: **28** (High: 0, Medium: 0, Low: 6, Info: 22)
   "wildcard_dns": true,
   "apex_txt": [
     "google-site-verification=TZ4zEVLWw4gmABVLLvmfhXKRj-zP8yV_Llo38JMHGyc",
-    "postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda553",
-    "facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx"
+    "facebook-domain-verification=pgcgq3ulxdr0q5k8130ihxgsfgajtx",
+    "postman-domain-verification=7a0f12684fd818d88542a63a6993e876ef284f9472ca49fda553"
   ],
   "tls2": {
     "alpn": "",
@@ -374,6 +388,10 @@ Total findings: **28** (High: 0, Medium: 0, Low: 6, Info: 22)
       "bc_pathlen": null,
       "crl_urls": [
         "http://ye2.c.lencr.org/18.crl"
+      ],
+      "san": [
+        "*.weebly.com",
+        "weebly.com"
       ],
       "subject_dn": "311330110603550403130a776565626c792e636f6d",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303594532",
@@ -439,8 +457,13 @@ Total findings: **28** (High: 0, Medium: 0, Low: 6, Info: 22)
       "CloudFront"
     ]
   },
-  "elapsed_s": 16.5,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.weebly.com"
+    ]
+  },
+  "elapsed_s": 18.8,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -454,4 +477,5 @@ Total findings: **28** (High: 0, Medium: 0, Low: 6, Info: 22)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

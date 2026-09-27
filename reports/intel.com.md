@@ -7,12 +7,12 @@
 | Target | https://intel.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | intel.com |
-| Test date | 2026-09-27 01:24 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:35 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
+Total findings: **20** (High: 0, Medium: 0, Low: 3, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,7 +34,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 | 16 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 18 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
-| 19 | info | CT1 | 97 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 20 | info | CT1 | 97 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -127,7 +128,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=OAQrNBk5trF8X7H3; Dynatrace-site-verification=03bc0e9d-4899-45bc-8fb6-963829cd5cf1__m1rmdc12bet67g; anthropic-domain-verification-ygt3tf=Q9RHyPSxi5ES3lSyMrb5aJ3WV
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=HZCQBwMXW2bQcmIUCMcxovy1yMxkEcu1mGA2spyLARo; perplexity-ai-domain-verification-r24pxy=rliweb0yORQ8UxAD7URTfKgdu; adobe-idp-site-verification=12d5bea8-aab4-4b2e-9c77-8f69ad4734f0
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -154,7 +155,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 - **Detail:** The intel.com certificate lists an AIA OCSP responder (http://ocsp.sectigo.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
-### 19. [INFO] 97 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 19. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of intel.com is http://ocsp.sectigo.com; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 20. [INFO] 97 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: epsilon-cpa.app.intel.com
@@ -175,118 +182,118 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
       "mgamail.eglb.intel.com (pref 100)"
     ],
     "ns": [
-      "ns2.intel.com.",
+      "ns1.intel.com.",
       "ns4.intel.com.",
-      "ns3.intel.com.",
-      "ns1.intel.com."
+      "ns2.intel.com.",
+      "ns3.intel.com."
     ],
     "caa": [],
     "spf": [
-      "00DBZ0000008j8l=1TBcn00000001Yn",
+      "08428d8e-d6dd-4d4f-acca-42955adb18cf",
+      "00Do0000000L7IX=1TBV40000000G8I",
+      "00D2i0000008d6j=1TBTH00000006IL",
+      "google-site-verification=HZCQBwMXW2bQcmIUCMcxovy1yMxkEcu1mGA2spyLARo",
+      "perplexity-ai-domain-verification-r24pxy=rliweb0yORQ8UxAD7URTfKgdu",
+      "00D830000008aVT=1TBcr00000000zJ",
+      "00DRL00000KHFn7=1TBRL0000000K1x",
+      "00DVB0000075KEz=1TBVB00000009Un",
+      "ibmid=b4542555-fac2-4d7d-a8ad-f4d3ee20ba22",
+      "adobe-idp-site-verification=12d5bea8-aab4-4b2e-9c77-8f69ad4734f0",
+      "MS=B03F616C5688CE657CC2FA94EF4E72109431092B",
+      "00DDn000003r4Pl=1TBQQ000000021p",
+      "cloudhealth=1659ead7-5c47-4817-a0d3-94b456169734",
+      "atlassian-domain-verification=qHOhH89J6Mh62tAEcDaX6swdU8wX1iJZUUlaDWdfkcma0KJ1qVgrfNrxbtBvAOqH",
+      "00DcV000002xNXJ=1TBcV00000000BJ",
+      "00D780000004Z0C=1TBVZ0000000M5N",
+      "00Dbf000005BKtN=1TBbf0000000HDm",
+      "v=spf1 include:_spf.intel.com -all",
+      "00D1I000000nTd4=1TBQQ000000017N",
+      "00D52000000L89a=1TBVa00000000Uf",
+      "00D2D000000E9ZK=1TBWA0000004VGX",
+      "uber-domain-verification=233c950b-1660-447a-a8bc-a0bb20559c05",
+      "google-site-verification=pIbeNdxnfMeMUhiz7Ad6UlkU08jIlagr9h55GoQSw6I",
+      "00DDS000001gRdW=1TBOu0000000A2b",
+      "00D4B0000009zrY=1TBdh00000007JF",
+      "00DQL00000NjvOH=1TBQL0000000pCD",
+      "I+FotdhF45rEb5bSOZyqcRNYMIuqDOEcWLtvZ8cb5RKf4p2v+6laazMU1bT8dq88ia98W9aUKYirlD7+tv0Z/A==",
+      "00D3k000000ub4r=1TBQQ00000001ov",
+      "00D36000000K1su=1TBQQ00000001qX",
+      "google-site-verification=pv06NhezCJEfqLpFMO8YKqC6Ye1q85TiFq_S5qUUdxE",
+      "google-site-verification=_BVjdlNMi517YkaWfQ8SOCUxjGyrK4X4tkMeCqieedQ",
+      "00DWJ000008Mljd=1TBWJ0000000Di1",
+      "00DHu000002tYyb=1TBcv00000004lB",
+      "00Dco000004OBXu=1TBco00000000BJ",
       "",
-      "apple-domain-verification=OAQrNBk5trF8X7H3",
-      "00D2E000001FGQm=1TBcx000000015l",
-      "Dynatrace-site-verification=03bc0e9d-4899-45bc-8fb6-963829cd5cf1__m1rmdc12bet67grogkur4kat1r",
-      "",
+      "mongodb-site-verification=p6n0w6nnOPjCeuCnsW0Xc4UgAh4jfMHo",
       "anthropic-domain-verification-ygt3tf=Q9RHyPSxi5ES3lSyMrb5aJ3WV",
       "cursor-domain-verification-5h3fn5=uPEBnPX0FRt8elKd8xtpotTsg",
-      "00DO4000007MxTd=1TBO40000000KA2",
-      "google-site-verification=xQ71LIpBIRMAhe6YyAjaNEeqOHF6VOCCLJD-xBsnwtU",
-      "00Df40000004A8x=1TBVX00000001Tx",
-      "uber-domain-verification=233c950b-1660-447a-a8bc-a0bb20559c05",
-      "onetrust-domain-verification=da03b7174c53436587dd407887778160",
-      "adobe-idp-site-verification=12d5bea8-aab4-4b2e-9c77-8f69ad4734f0",
-      "00D15000000EnBl=1TB7y00000000uT",
-      "perplexity-ai-domain-verification-r24pxy=rliweb0yORQ8UxAD7URTfKgdu",
-      "bcd9860a-1369-4d5c-ae5e-e9320d79f083",
-      "00D36000000K1su=1TBQQ00000001qX",
-      "00DcV000002xNXJ=1TBcV00000000BJ",
-      "00D7h000000HD25=1TBWL00000005Az",
-      "00D6w0000004eS8=1TBdh0000000EKj",
-      "00D8c000006KOns=1TBWQ000000023R",
-      "google-site-verification=33gwj8vJs6_J5adGCJ3IWWAm5C4MeM-ZUy5uzNIEX4s",
-      "docusign=ff4d259b-5b2b-4dc7-84e5-34dc2c13e83e",
-      "v=spf1 include:_spf.intel.com -all",
-      "atlassian-domain-verification=dfPURS8tP5ncA5xHnEv8nyfRQZzwLH6RRKWNXRHLwny6EBpmC7pwMz1xFLmi/EWH",
-      "00D4B0000009zrY=1TBdh00000007JF",
-      "mongodb-site-verification=p6n0w6nnOPjCeuCnsW0Xc4UgAh4jfMHo",
-      "autodesk-domain-verification=EKQ8nv86UxiJDM9bI18R",
-      "00D1I000000nTd4=1TBQQ000000017N",
-      "onetrust-domain-verification=ee0aec8e25a047c185d8fff907e052c2",
-      "e94b687f1bd60e6d49bee301361913c22b1aaf63beb963f10826f8472fced7f1",
-      "chariot=chariot+intel@praetorian.com",
-      "fastly-domain-delegation-RIA8ruNVQ8qqxgwlPyD3-485843-2022-27-04",
-      "atlassian-domain-verification=qHOhH89J6Mh62tAEcDaX6swdU8wX1iJZUUlaDWdfkcma0KJ1qVgrfNrxbtBvAOqH",
-      "00D2f0000000uGy=1TBOt0000000T21",
-      "00DU0000000YT3c=1TBVz00000001CD",
-      "google-site-verification=HZCQBwMXW2bQcmIUCMcxovy1yMxkEcu1mGA2spyLARo",
-      "docker-verification=ce0bc02e-16dd-47c2-bb3e-7f6d680dcd47",
-      "00D2i0000000pFZ=1TBdh000000079Z",
-      "09/10/2024",
-      "00D7j0000004Xkw=1TBdh00000006VF",
-      "00DU0000000JvXT=1TBPb00000000cj",
-      "ms-domain-verification=63e408c2-11b8-4d5f-939c-d71b7d7e3d91",
-      "ibmid=b4542555-fac2-4d7d-a8ad-f4d3ee20ba22",
-      "cloudhealth=1659ead7-5c47-4817-a0d3-94b456169734",
-      "meltwater_sso_20240930",
-      "00D8C0000008hms=1TBDZ0000000022",
-      "00DcV000002z2LV=1TBcV00000005XZ",
-      "00D3k000000ub4r=1TBQQ00000001ov",
-      "00DC00000016oM2=1TBcw00000001wz",
-      "canva-site-verification=Udnsc-EibCkG6QIOjQ53WQ",
       "00D3F0000000Nmr=1TBRu0000000dEH",
-      "00DKQ0000000ni0=1TBKQ000000KykT",
-      "00D2i0000008d6j=1TBTH00000006IL",
-      "00D1I000003pf77=1TBVv00000000ZV",
-      "00D8F0000004i7a=1TBW400000002kz",
-      "I+FotdhF45rEb5bSOZyqcRNYMIuqDOEcWLtvZ8cb5RKf4p2v+6laazMU1bT8dq88ia98W9aUKYirlD7+tv0Z/A==",
-      "google-site-verification=_BVjdlNMi517YkaWfQ8SOCUxjGyrK4X4tkMeCqieedQ",
-      "Dynatrace-site-verification=e1eb3fe5-f14a-4a0c-b8b6-1c5f380cb804__dfadqbk4o2ngu8n8bho3kom0t",
-      "00Do0000000aRcf=1TBcv000000029t",
-      "MS=B03F616C5688CE657CC2FA94EF4E72109431092B",
-      "teamviewer-sso-verification=c0fca594575d4ae58cb4d02d7ede2b3e",
-      "00DDS000001gRdW=1TBOu0000000A2b",
-      "00DRL00000KHFn7=1TBRL0000000K1x",
-      "00D780000004Z0C=1TBVZ0000000M5N",
-      "00D36000000rSuA=1TBPe00000002zV",
-      "00Ddy000003k0uX=1TBdy00000009cn",
       "slack-domain-verification=1Cz4MCZJuypQf1rh9T3qlqJDFCRYuqZkrOUh5kL4",
-      "00Do0000000L7IX=1TBV40000000G8I",
-      "docusign=46a68707-4a57-4782-bf77-1373777e73e8",
-      "00D040000000QYW=1TBDc0000008OLs",
-      "00D8A0000005uU8=1TBWA0000004VV3",
-      "00Dbf000005BKtN=1TBbf0000000HDm",
-      "00D23000000Fw7O=1TBWH0000000I6b",
-      "00DWJ000008Mljd=1TBWJ0000000Di1",
-      "atlassian-domain-verification=ZOexs0awZv94sBIlIBoxjhW8lXHZ24atEWqaXZtHXJyUNyrJRFD2TUyajwtz1pL1",
-      "00DHu000002tYyb=1TBcv00000004lB",
-      "00Ddi000004mJ65=1TBdi0000000FK1",
-      "google-site-verification=pv06NhezCJEfqLpFMO8YKqC6Ye1q85TiFq_S5qUUdxE",
-      "00DDn000003r4Pl=1TBQQ000000021p",
-      "bluebeam-verification=ocvjzp7gd8fvt0qv85zgh1og5o3nl9",
-      "google-site-verification=pIbeNdxnfMeMUhiz7Ad6UlkU08jIlagr9h55GoQSw6I",
-      "00D2D000000E9ZK=1TBWA0000004VGX",
-      "08428d8e-d6dd-4d4f-acca-42955adb18cf",
-      "00D5C000000NdC1=1TBce00000001H3",
-      "f076027a-8022-4cd7-9c52-373ef56f9848",
-      "00DQL00000NjvOH=1TBQL0000000pCD",
-      "00DVB0000075KEz=1TBVB00000009Un",
       "atlassian-domain-verification=ApWZ5iliIwA1g0Ka7JhMa7BP0qBkz/WIaMoGiJqvekBz2LJlc2QD7foiLd2h72Rv",
-      "onetrust-domain-verification=09f55ff1baba439b9174d37afefcaf2d",
-      "00D52000000L89a=1TBVa00000000Uf",
-      "00DE0000000Hxbi=1TBPY00000002OP",
-      "00DDD000001fKur=1TBdh000000091h",
-      "00D6w0000004cRG=1TBVA0000000QTx",
-      "openai-domain-verification=dv-lOXezFecTzWt8rrZT7dTGVFq",
+      "atlassian-domain-verification=dfPURS8tP5ncA5xHnEv8nyfRQZzwLH6RRKWNXRHLwny6EBpmC7pwMz1xFLmi/EWH",
+      "00D6w0000004eS8=1TBdh0000000EKj",
+      "f076027a-8022-4cd7-9c52-373ef56f9848",
+      "docker-verification=ce0bc02e-16dd-47c2-bb3e-7f6d680dcd47",
+      "00DKQ0000000ni0=1TBKQ000000KykT",
       "00D2f0000008gWF=1TBgP0000000Ac5",
-      "00D2f0000008gWP=1TBgP00000003kH",
-      "google-site-verification=tCdhchtzK9L-sDZA5OazdRCeK5HrqgOJ9kZkzdbtmd8",
-      "00Dgy0000000YzN=1TBgy00000000WH",
-      "00Dco000004OBXu=1TBco00000000BJ",
+      "00DU0000000JvXT=1TBPb00000000cj",
+      "canva-site-verification=Udnsc-EibCkG6QIOjQ53WQ",
+      "meltwater_sso_20240930",
+      "00Dj0000001tZRR=1TBa6000000012X",
+      "autodesk-domain-verification=EKQ8nv86UxiJDM9bI18R",
+      "00D8c000006KOns=1TBWQ000000023R",
+      "apple-domain-verification=OAQrNBk5trF8X7H3",
+      "fastly-domain-delegation-RIA8ruNVQ8qqxgwlPyD3-485843-2022-27-04",
+      "00D8C0000008hms=1TBDZ0000000022",
+      "bcd9860a-1369-4d5c-ae5e-e9320d79f083",
+      "00D040000000QYW=1TBDc0000008OLs",
+      "google-site-verification=xQ71LIpBIRMAhe6YyAjaNEeqOHF6VOCCLJD-xBsnwtU",
+      "00DDD000001fKur=1TBdh000000091h",
+      "00D7h000000HD25=1TBWL00000005Az",
+      "00Do0000000aRcf=1TBcv000000029t",
+      "00DC00000016oM2=1TBcw00000001wz",
+      "00DBZ0000008j8l=1TBcn00000001Yn",
+      "",
+      "openai-domain-verification=dv-lOXezFecTzWt8rrZT7dTGVFq",
+      "00DU0000000YT3c=1TBVz00000001CD",
+      "Dynatrace-site-verification=e1eb3fe5-f14a-4a0c-b8b6-1c5f380cb804__dfadqbk4o2ngu8n8bho3kom0t",
+      "bluebeam-verification=ocvjzp7gd8fvt0qv85zgh1og5o3nl9",
+      "00D2f0000000uGy=1TBOt0000000T21",
+      "00D5C000000NdC1=1TBce00000001H3",
+      "google-site-verification=33gwj8vJs6_J5adGCJ3IWWAm5C4MeM-ZUy5uzNIEX4s",
+      "e94b687f1bd60e6d49bee301361913c22b1aaf63beb963f10826f8472fced7f1",
+      "00Df40000004A8x=1TBVX00000001Tx",
       "00Dg0000006V1T1=1TBdh0000000CMA",
-      "00D830000008aVT=1TBcr00000000zJ",
+      "00Ddy000003k0uX=1TBdy00000009cn",
+      "00DE0000000Hxbi=1TBPY00000002OP",
+      "00D2E000001FGQm=1TBcx000000015l",
+      "chariot=chariot+intel@praetorian.com",
       "qqmail-site-verification=de1a8d707315b7e0442efe7a2812e10457a771ccdeb",
-      "00Dj0000001tZRR=1TBa6000000012X"
+      "00D7j0000004Xkw=1TBdh00000006VF",
+      "atlassian-domain-verification=ZOexs0awZv94sBIlIBoxjhW8lXHZ24atEWqaXZtHXJyUNyrJRFD2TUyajwtz1pL1",
+      "onetrust-domain-verification=09f55ff1baba439b9174d37afefcaf2d",
+      "00D15000000EnBl=1TB7y00000000uT",
+      "00D2i0000000pFZ=1TBdh000000079Z",
+      "00D1I000003pf77=1TBVv00000000ZV",
+      "00DcV000002z2LV=1TBcV00000005XZ",
+      "00DO4000007MxTd=1TBO40000000KA2",
+      "onetrust-domain-verification=ee0aec8e25a047c185d8fff907e052c2",
+      "onetrust-domain-verification=da03b7174c53436587dd407887778160",
+      "docusign=ff4d259b-5b2b-4dc7-84e5-34dc2c13e83e",
+      "00D6w0000004cRG=1TBVA0000000QTx",
+      "00D36000000rSuA=1TBPe00000002zV",
+      "google-site-verification=tCdhchtzK9L-sDZA5OazdRCeK5HrqgOJ9kZkzdbtmd8",
+      "00D2f0000008gWP=1TBgP00000003kH",
+      "docusign=46a68707-4a57-4782-bf77-1373777e73e8",
+      "00Dgy0000000YzN=1TBgy00000000WH",
+      "teamviewer-sso-verification=c0fca594575d4ae58cb4d02d7ede2b3e",
+      "00D8F0000004i7a=1TBW400000002kz",
+      "Dynatrace-site-verification=03bc0e9d-4899-45bc-8fb6-963829cd5cf1__m1rmdc12bet67grogkur4kat1r",
+      "00D8A0000005uU8=1TBWA0000004VV3",
+      "09/10/2024",
+      "00D23000000Fw7O=1TBWH0000000I6b",
+      "00Ddi000004mJ65=1TBdi0000000FK1",
+      "ms-domain-verification=63e408c2-11b8-4d5f-939c-d71b7d7e3d91"
     ],
     "dmarc": [
       "v=DMARC1;p=none;sp=none;fo=1;rua=mailto:dmarc.notification@intel.com"
@@ -449,11 +456,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
     ]
   },
   "apex_txt": [
-    "apple-domain-verification=OAQrNBk5trF8X7H3",
-    "Dynatrace-site-verification=03bc0e9d-4899-45bc-8fb6-963829cd5cf1__m1rmdc12bet67g",
-    "anthropic-domain-verification-ygt3tf=Q9RHyPSxi5ES3lSyMrb5aJ3WV",
-    "cursor-domain-verification-5h3fn5=uPEBnPX0FRt8elKd8xtpotTsg",
-    "google-site-verification=xQ71LIpBIRMAhe6YyAjaNEeqOHF6VOCCLJD-xBsnwtU"
+    "google-site-verification=HZCQBwMXW2bQcmIUCMcxovy1yMxkEcu1mGA2spyLARo",
+    "perplexity-ai-domain-verification-r24pxy=rliweb0yORQ8UxAD7URTfKgdu",
+    "adobe-idp-site-verification=12d5bea8-aab4-4b2e-9c77-8f69ad4734f0",
+    "atlassian-domain-verification=qHOhH89J6Mh62tAEcDaX6swdU8wX1iJZUUlaDWdfkcma0KJ1qV",
+    "uber-domain-verification=233c950b-1660-447a-a8bc-a0bb20559c05"
   ],
   "tls2": {
     "alpn": "",
@@ -471,6 +478,28 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.sectigo.com/SectigoPublicServerAuthenticationCAOVR36.crl"
+      ],
+      "san": [
+        "intel.com",
+        "01.org",
+        "acpica.org",
+        "barefootnetworks.com",
+        "buyaltera.com",
+        "dml-lang.org",
+        "easic.com",
+        "exploreintel.com",
+        "granulate.io",
+        "insight.tech",
+        "intel.ai",
+        "intel.ca",
+        "intel.cn",
+        "intel.co.id",
+        "intel.co.il",
+        "intel.co.jp",
+        "intel.co.kr",
+        "intel.co.uk",
+        "intel.co.za",
+        "intel.com.au"
       ],
       "subject_dn": "310b3009060355040613025553311330110603550408130a43616c69666f726e6961311a3018060355040a1311496e74656c20436f72706f726174696f6e3112301006035504031309696e74656c2e636f6d",
       "issuer_dn": "310b300906035504061302474231183016060355040a130f5365637469676f204c696d69746564313730350603550403132e5365637469676f205075626c6963205365727665722041757468656e7469636174696f6e204341204f5620523336",
@@ -514,8 +543,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
   "x16": {
     "root_status": 301
   },
-  "elapsed_s": 31.4,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.sectigo.com"
+  },
+  "elapsed_s": 32.9,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -529,4 +561,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

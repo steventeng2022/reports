@@ -7,12 +7,12 @@
 | Target | https://walmart.com/ |
 | Bug bounty program | Walmart Corporation |
 | Listed scope domain | walmart.com |
-| Test date | 2026-09-27 01:36 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:48 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
+Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 17 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 | 18 | info | H25 | server-timing response header exposed | CWE-200 |
 | 19 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 20 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 
 ## Detailed findings
 
@@ -120,7 +121,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG; _globalsign-domain-verification=E0XnB_4FxsbzvD6MDzvAQoSFChcy4XTb2vlMqtUc5k; _globalsign-domain-verification=0UV9-mABi984W6oReb-NIqLZE4wxFn0Z_HZqReFlfx
+- **Detail:** Apex TXT records with verification/token content: slack-domain-verification=Ic5IE8asOH1Bg6b1To8CGfWytCkVfywFsAJRZvUm; twilio-domain-verification=19bf2f50450a9dec2b6ea8d18ab9114f; _globalsign-domain-verification=9-Ef1Ps_FbIDDK9OPPGU3ju471Ap4_xAPV4pacA3ht
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -150,7 +151,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 18. [INFO] server-timing response header exposed (`H25`)
 
 - **CWE:** CWE-200
-- **Detail:** The root response of walmart.com sends server-timing (cdn-cache; desc=HIT, edge; dur=1, ak_p; desc="1790473027804_388906919_980475874_); server/edge processing metrics are disclosed to any client.
+- **Detail:** The root response of walmart.com sends server-timing (cdn-cache; desc=HIT, edge; dur=1, ak_p; desc="1790477309492_388906948_2727030783); server/edge processing metrics are disclosed to any client.
 - **Recommendation:** Restrict server-timing to authenticated/debug contexts if the internals are sensitive.
 
 ### 19. [INFO] Edge/CDN layer identified from response headers (`H26`)
@@ -158,6 +159,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - **CWE:** CWE-200
 - **Detail:** Response headers on walmart.com identify the edge as Akamai; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 20. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of walmart.com is http://ocsp.globalsign.com/gsgcce46ovtlsca2025; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
 
 ## Evidence (raw response observations)
 
@@ -175,41 +182,41 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "mxa-000c7201.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "a1-185.akam.net.",
-      "a3-64.akam.net.",
-      "a8-66.akam.net.",
-      "a22-67.akam.net.",
-      "pdnswm3.ultradns.org.",
-      "pdnswm2.ultradns.net.",
       "pdnswm5.ultradns.info.",
-      "pdnswm1.ultradns.net.",
-      "pdnswm6.ultradns.co.uk.",
-      "pdnswm4.ultradns.org.",
       "a10-66.akam.net.",
-      "a5-65.akam.net."
+      "pdnswm2.ultradns.net.",
+      "pdnswm3.ultradns.org.",
+      "a22-67.akam.net.",
+      "a1-185.akam.net.",
+      "pdnswm4.ultradns.org.",
+      "a5-65.akam.net.",
+      "pdnswm6.ultradns.co.uk.",
+      "a3-64.akam.net.",
+      "pdnswm1.ultradns.net.",
+      "a8-66.akam.net."
     ],
     "caa": [
-      "0 issue \"globalsign.com\"",
       "0 issue \"amazon.com\"",
-      "0 issue \"digicert.com\""
+      "0 issue \"digicert.com\"",
+      "0 issue \"globalsign.com\""
     ],
     "spf": [
-      "_globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG",
-      "_globalsign-domain-verification=E0XnB_4FxsbzvD6MDzvAQoSFChcy4XTb2vlMqtUc5k",
-      "infoblox-domain-mastery=cbdbcb7b4ccda409b4d353af156079955dc262a3bd4566aae2a9afba1d3d43e5c2",
-      "_globalsign-domain-verification=0UV9-mABi984W6oReb-NIqLZE4wxFn0Z_HZqReFlfx",
-      "globalsign-domain-verification=290297CC7AD18787782E80BFF88B354B",
-      "canva-site-verification=jcrBOlbl254ia6gsPJNFCg",
       "slack-domain-verification=Ic5IE8asOH1Bg6b1To8CGfWytCkVfywFsAJRZvUm",
-      "globalsign-domain-verification=2AD27E3A206DB3231BAD817BD5A21F7A",
-      "_globalsign-domain-verification=tYy2ZDIHUuR-3NGTeWDgC5Bs1vAYAyL7kZK8HpVwNg",
+      "infoblox-domain-mastery=cbdbcb7b4ccda409b4d353af156079955dc262a3bd4566aae2a9afba1d3d43e5c2",
+      "twilio-domain-verification=19bf2f50450a9dec2b6ea8d18ab9114f",
+      "_globalsign-domain-verification=9-Ef1Ps_FbIDDK9OPPGU3ju471Ap4_xAPV4pacA3ht",
       "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com include:_netblocks.walmart.com include:_vspf1.walmart.com include:_vspf2.walmart.com include:_vspf3.walmart.com ip4:161.170.248.0/24 ip4:161.170.244.0/24 ip4:161.170.241.16/30 ip4:161.170.245.0/24 ip4:16",
       "1.170.249.0/24 ~all",
-      "anthropic-domain-verification-5vz2bt=GhKF4NMESyKswHJGVanZVBEtB",
-      "_globalsign-domain-verification=9-Ef1Ps_FbIDDK9OPPGU3ju471Ap4_xAPV4pacA3ht",
       "+wnQWce020VDWuXiDkLvV2jJXOlN5tNAzGyHFjMbBg0=",
-      "twilio-domain-verification=19bf2f50450a9dec2b6ea8d18ab9114f",
-      "openai-domain-verification=dv-IDGFBjh74ycOf2e4vrXwBZtv"
+      "canva-site-verification=jcrBOlbl254ia6gsPJNFCg",
+      "openai-domain-verification=dv-IDGFBjh74ycOf2e4vrXwBZtv",
+      "_globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG",
+      "globalsign-domain-verification=290297CC7AD18787782E80BFF88B354B",
+      "globalsign-domain-verification=2AD27E3A206DB3231BAD817BD5A21F7A",
+      "_globalsign-domain-verification=0UV9-mABi984W6oReb-NIqLZE4wxFn0Z_HZqReFlfx",
+      "anthropic-domain-verification-5vz2bt=GhKF4NMESyKswHJGVanZVBEtB",
+      "_globalsign-domain-verification=tYy2ZDIHUuR-3NGTeWDgC5Bs1vAYAyL7kZK8HpVwNg",
+      "_globalsign-domain-verification=E0XnB_4FxsbzvD6MDzvAQoSFChcy4XTb2vlMqtUc5k"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -301,11 +308,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "_globalsign-domain-verification=AXcfQAoG3in-mjLnMOJPhp1CNvUTsRkCaLo60rR5hG",
-    "_globalsign-domain-verification=E0XnB_4FxsbzvD6MDzvAQoSFChcy4XTb2vlMqtUc5k",
-    "_globalsign-domain-verification=0UV9-mABi984W6oReb-NIqLZE4wxFn0Z_HZqReFlfx",
-    "globalsign-domain-verification=290297CC7AD18787782E80BFF88B354B",
-    "canva-site-verification=jcrBOlbl254ia6gsPJNFCg"
+    "slack-domain-verification=Ic5IE8asOH1Bg6b1To8CGfWytCkVfywFsAJRZvUm",
+    "twilio-domain-verification=19bf2f50450a9dec2b6ea8d18ab9114f",
+    "_globalsign-domain-verification=9-Ef1Ps_FbIDDK9OPPGU3ju471Ap4_xAPV4pacA3ht",
+    "canva-site-verification=jcrBOlbl254ia6gsPJNFCg",
+    "openai-domain-verification=dv-IDGFBjh74ycOf2e4vrXwBZtv"
   ],
   "tls2": {
     "alpn": "",
@@ -323,6 +330,15 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.globalsign.com/gsgcce46ovtlsca2025.crl"
+      ],
+      "san": [
+        "www.walmart.com",
+        "beta.walmart.com",
+        "grocery.walmart.com",
+        "walmart.pharmacy",
+        "walmartspecialty.pharmacy",
+        "www.wal-mart.com",
+        "walmart.com"
       ],
       "subject_dn": "310b30090603550406130255533111300f0603550408130841726b616e736173311430120603550407130b42656e746f6e76696c6c6531153013060355040a130c57616c6d61727420496e632e311830160603550403130f7777772e77616c6d6172742e636f6d",
       "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312a302806035504031321476c6f62616c5369676e2047434320453436204f5620544c532043412032303235",
@@ -383,13 +399,16 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   },
   "x16": {
     "root_status": 301,
-    "server_timing": "cdn-cache; desc=HIT, edge; dur=1, ak_p; desc=\"1790473027804_388906919_980475874_20_8647_42_34_-\";dur=1",
+    "server_timing": "cdn-cache; desc=HIT, edge; dur=1, ak_p; desc=\"1790477309492_388906948_2727030783_20_8089_42_35_-\";dur=1",
     "cdn": [
       "Akamai"
     ]
   },
-  "elapsed_s": 9.8,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.globalsign.com/gsgcce46ovtlsca2025"
+  },
+  "elapsed_s": 10.3,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -403,4 +422,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

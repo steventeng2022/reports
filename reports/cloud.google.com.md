@@ -7,12 +7,12 @@
 | Target | https://cloud.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | cloud.google.com |
-| Test date | 2026-09-27 01:13 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:22 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
+Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,7 +34,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 | 16 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
 | 17 | info | HTML12 | preconnect/dns-prefetch declares third-party destinations | CWE-200 |
 | 18 | info | WK4 | RFC 8615 change-password endpoint live | CWE-200 |
-| 19 | info | CT1 | 15 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 20 | info | H13 | Cross-origin isolation only partially configured | CWE-693 |
+| 21 | info | WK5 | RFC 9449 DPoP JWKS published | CWE-200 |
+| 22 | info | WK6 | W3C Origin RSA Keys published | CWE-200 |
+| 23 | info | CT1 | 15 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -73,7 +77,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 ### 6. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863; facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0; google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=6nz-JOcA8VP-mmx29RInf7-g6CTloBX9wpmWHlVSMsw; linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a; google-site-verification=jaH5RlwfdutdrKEaZY5nEbcReUEp9rlTOJIuMqh-SV4
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 7. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -103,7 +107,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 ### 11. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 142.250.204.46 carries PTR hkg07s38-in-f14.1e100.net., lctsaa-ac-in-f14.1e100.net. for cloud.google.com.
+- **Detail:** 142.250.192.142 carries PTR nctsaa-ag-in-f14.1e100.net., bom12s18-in-f14.1e100.net. for cloud.google.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 12. [LOW] HSTS does not cover subdomains (`H21`)
@@ -148,7 +152,31 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 - **Detail:** /.well-known/change-password on cloud.google.com answers 200; a password-change service endpoint is advertised.
 - **Recommendation:** Confirm the endpoint is an intended user-facing service.
 
-### 19. [INFO] 15 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 19. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of cloud.google.com contains wildcard SAN entry(ies) *.google.com, *.appengine.google.com, *.bdn.dev; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 20. [INFO] Cross-origin isolation only partially configured (`H13`)
+
+- **CWE:** CWE-693
+- **Detail:** The root of cloud.google.com sends COOP without COEP (same-origin); effective cross-origin isolation requires both COOP and COEP.
+- **Recommendation:** Add the missing header (or remove the partial configuration).
+
+### 21. [INFO] RFC 9449 DPoP JWKS published (`WK5`)
+
+- **CWE:** CWE-200
+- **Detail:** /.well-known/dpop-jwks.json on cloud.google.com answers 200; the DPoP proof-verification key set is publicly disclosed.
+- **Recommendation:** Confirm the publication is intended and kept current.
+
+### 22. [INFO] W3C Origin RSA Keys published (`WK6`)
+
+- **CWE:** CWE-200
+- **Detail:** /.well-known/origin-rsa-keys.json on cloud.google.com answers 200; W3C Origin RSA Keys (origin-binding key publication) are disclosed.
+- **Recommendation:** Confirm the publication is intended and kept current.
+
+### 23. [INFO] 15 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: console.au.cloud.google.com, console.ca.cloud.google.com, console.ch.cloud.google.com, console.eu.cloud.google.com, console.il.cloud.google.com, console.in.cloud.google.com, console.it.cloud.google.com, console.jp.cloud.google.com, console.sa.cloud.google.com, console.uk.cloud.google.com
@@ -161,22 +189,22 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
   "domain": "cloud.google.com",
   "dns": {
     "a": [
-      "142.250.204.46"
+      "142.250.192.142"
     ],
     "aaaa": [
-      "2404:6800:4012:9::200e"
+      "2404:6800:4012:2::200e"
     ],
     "cname": null,
     "mx": [],
     "ns": [],
     "caa": [],
     "spf": [
-      "linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863",
-      "facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0",
-      "google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU",
       "google-site-verification=6nz-JOcA8VP-mmx29RInf7-g6CTloBX9wpmWHlVSMsw",
+      "linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a",
       "google-site-verification=jaH5RlwfdutdrKEaZY5nEbcReUEp9rlTOJIuMqh-SV4",
-      "linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a"
+      "linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863",
+      "google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU",
+      "facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -267,7 +295,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
     }
   },
   "ports": {
-    "ip": "142.250.204.46",
+    "ip": "142.250.192.142",
     "open": []
   },
   "https": {
@@ -360,11 +388,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
     ]
   },
   "apex_txt": [
-    "linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863",
-    "facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0",
-    "google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU",
     "google-site-verification=6nz-JOcA8VP-mmx29RInf7-g6CTloBX9wpmWHlVSMsw",
-    "google-site-verification=jaH5RlwfdutdrKEaZY5nEbcReUEp9rlTOJIuMqh-SV4"
+    "linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a",
+    "google-site-verification=jaH5RlwfdutdrKEaZY5nEbcReUEp9rlTOJIuMqh-SV4",
+    "linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863",
+    "google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU"
   ],
   "tls2": {
     "alpn": "",
@@ -383,6 +411,28 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
       "crl_urls": [
         "http://c.pki.goog/wr2/oQ6nyr8F0m0.crl"
       ],
+      "san": [
+        "*.google.com",
+        "*.appengine.google.com",
+        "*.bdn.dev",
+        "*.origin-test.bdn.dev",
+        "*.cloud.google.com",
+        "*.crowdsource.google.com",
+        "*.datacompute.google.com",
+        "*.google.ca",
+        "*.google.cl",
+        "*.google.co.in",
+        "*.google.co.jp",
+        "*.google.co.uk",
+        "*.google.com.ar",
+        "*.google.com.au",
+        "*.google.com.br",
+        "*.google.com.co",
+        "*.google.com.mx",
+        "*.google.com.tr",
+        "*.google.com.vn",
+        "*.google.de"
+      ],
       "subject_dn": "3115301306035504030c0c2a2e676f6f676c652e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303575232",
       "not_before": "20260910192153",
@@ -395,8 +445,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
   "x12": {
     "status": 200,
     "ptr": [
-      "hkg07s38-in-f14.1e100.net.",
-      "lctsaa-ac-in-f14.1e100.net."
+      "nctsaa-ag-in-f14.1e100.net.",
+      "bom12s18-in-f14.1e100.net."
     ]
   },
   "x13": {
@@ -431,8 +481,20 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
     ],
     "change_password": true
   },
-  "elapsed_s": 10.4,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.google.com",
+      "*.appengine.google.com",
+      "*.bdn.dev",
+      "*.origin-test.bdn.dev",
+      "*.cloud.google.com"
+    ],
+    "isolation_partial": "COOP without COEP",
+    "wk5": true,
+    "wk6": true
+  },
+  "elapsed_s": 11.7,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -446,4 +508,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

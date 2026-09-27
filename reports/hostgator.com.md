@@ -7,12 +7,12 @@
 | Target | https://hostgator.com/ |
 | Bug bounty program | Host Gator |
 | Listed scope domain | hostgator.com |
-| Test date | 2026-09-27 01:23 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:33 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
+Total findings: **26** (High: 0, Medium: 0, Low: 6, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -40,6 +40,8 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
 | 22 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 23 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
 | 24 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 25 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 26 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -58,13 +60,13 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.144.208:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.43.48:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.64.144.208:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.18.43.48:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -175,7 +177,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
 ### 21. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=HUY22ADwgB0ij1JaYucTVtUI6dAvbNp5g4nQQ9tKHHc; google-site-verification=pj2LYTgRxkGunX03DSguHxBxwaBABFEUxEDsLgOdlys; google-site-verification=WH8320OT9w-ZORb35j4X4VbeUNoMrUyhXoAzISUhEo0
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=yx1ED4Liv7PN2PvYnLuop_CVyyyxLz8lc5M2MRnSNWk; google-site-verification=XD3tFbXKRYV0fG-3zRGEzPC2irkiXg9Rz2eIKCG-0IQ; knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 22. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -196,6 +198,18 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
 - **Detail:** The root response of hostgator.com carries alt-svc h3=":443"; ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
 - **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
 
+### 25. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of hostgator.com contains wildcard SAN entry(ies) *.hostgator.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 26. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of hostgator.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -203,8 +217,8 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
   "domain": "hostgator.com",
   "dns": {
     "a": [
-      "172.64.144.208",
-      "104.18.43.48"
+      "104.18.43.48",
+      "172.64.144.208"
     ],
     "aaaa": [],
     "cname": null,
@@ -216,33 +230,33 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
       "erin.ns.cloudflare.com."
     ],
     "caa": [
-      "0 issue \"amazon.com\"",
-      "0 issuewild \"sectigo.com\"",
       "0 issue \"letsencrypt.org\"",
-      "0 issue \"ssl.com\"",
-      "0 issue \"comodoca.com\"",
-      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
-      "0 issuewild \"amazon.com\"",
-      "0 issuewild \"comodoca.com\"",
-      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
-      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
-      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
       "0 issuewild \"ssl.com\"",
+      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issuewild \"sectigo.com\"",
+      "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 issue \"comodoca.com\"",
+      "0 issue \"ssl.com\"",
+      "0 issuewild \"comodoca.com\"",
+      "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
       "0 issuewild \"letsencrypt.org\""
     ],
     "spf": [
-      "google-site-verification=HUY22ADwgB0ij1JaYucTVtUI6dAvbNp5g4nQQ9tKHHc",
-      "google-site-verification=pj2LYTgRxkGunX03DSguHxBxwaBABFEUxEDsLgOdlys",
-      "google-site-verification=WH8320OT9w-ZORb35j4X4VbeUNoMrUyhXoAzISUhEo0",
       "google-site-verification=yx1ED4Liv7PN2PvYnLuop_CVyyyxLz8lc5M2MRnSNWk",
-      "v=spf1 ip4:209.17.115.0/24 ip4:64.69.218.0/24 include:spf.constantcontact.com include:_spf.salesforce.com include:_spf2.hostgator.com include:spf.protection.outlook.com include:eig.spf.a.cloudfilter.net include:_spf.myorderbox.com include:spf.websitewelco",
-      "me.com -all",
-      "google-site-verification=oYqxGxAsuHwvRDo4FqADW6ToV1nf8ITUfcw728UUvuI",
       "google-site-verification=XD3tFbXKRYV0fG-3zRGEzPC2irkiXg9Rz2eIKCG-0IQ",
       "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
-      "google-site-verification=0vcyIt2ASVGA-Hnox9hZPXaaLIX5pYSm8dZd0_0HLyU",
+      "google-site-verification=WH8320OT9w-ZORb35j4X4VbeUNoMrUyhXoAzISUhEo0",
+      "google-site-verification=oYqxGxAsuHwvRDo4FqADW6ToV1nf8ITUfcw728UUvuI",
       "MS=ms19427866",
-      "google-site-verification=268NzFe_2w_P3-j4fg2PDTwC5tgY0m__CQR9hYG7hSA"
+      "google-site-verification=pj2LYTgRxkGunX03DSguHxBxwaBABFEUxEDsLgOdlys",
+      "google-site-verification=HUY22ADwgB0ij1JaYucTVtUI6dAvbNp5g4nQQ9tKHHc",
+      "v=spf1 ip4:209.17.115.0/24 ip4:64.69.218.0/24 include:spf.constantcontact.com include:_spf.salesforce.com include:_spf2.hostgator.com include:spf.protection.outlook.com include:eig.spf.a.cloudfilter.net include:_spf.myorderbox.com include:spf.websitewelco",
+      "me.com -all",
+      "google-site-verification=268NzFe_2w_P3-j4fg2PDTwC5tgY0m__CQR9hYG7hSA",
+      "google-site-verification=0vcyIt2ASVGA-Hnox9hZPXaaLIX5pYSm8dZd0_0HLyU"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+kgjw4j9bykj@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -272,7 +286,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
     }
   },
   "ports": {
-    "ip": "172.64.144.208",
+    "ip": "104.18.43.48",
     "open": [
       8080,
       8443
@@ -333,10 +347,10 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=HUY22ADwgB0ij1JaYucTVtUI6dAvbNp5g4nQQ9tKHHc",
-    "google-site-verification=pj2LYTgRxkGunX03DSguHxBxwaBABFEUxEDsLgOdlys",
-    "google-site-verification=WH8320OT9w-ZORb35j4X4VbeUNoMrUyhXoAzISUhEo0",
     "google-site-verification=yx1ED4Liv7PN2PvYnLuop_CVyyyxLz8lc5M2MRnSNWk",
+    "google-site-verification=XD3tFbXKRYV0fG-3zRGEzPC2irkiXg9Rz2eIKCG-0IQ",
+    "knowbe4-site-verification=2196cd8a72de50eedd7703120b752b77",
+    "google-site-verification=WH8320OT9w-ZORb35j4X4VbeUNoMrUyhXoAzISUhEo0",
     "google-site-verification=oYqxGxAsuHwvRDo4FqADW6ToV1nf8ITUfcw728UUvuI"
   ],
   "tls2": {
@@ -355,6 +369,10 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/we1/btvd66Z9uQY.crl"
+      ],
+      "san": [
+        "hostgator.com",
+        "*.hostgator.com"
       ],
       "subject_dn": "311630140603550403130d686f73746761746f722e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
@@ -392,8 +410,13 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
     "root_status": 301,
     "alt_svc": "h3=\":443\"; ma=86400"
   },
-  "elapsed_s": 6.0,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.hostgator.com"
+    ]
+  },
+  "elapsed_s": 5.9,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -407,4 +430,5 @@ Total findings: **24** (High: 0, Medium: 0, Low: 6, Info: 18)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

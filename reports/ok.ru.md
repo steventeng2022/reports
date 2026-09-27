@@ -7,12 +7,12 @@
 | Target | https://ok.ru/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | ok.ru |
-| Test date | 2026-09-27 01:28 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:39 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
+Total findings: **33** (High: 0, Medium: 0, Low: 5, Info: 28)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -45,7 +45,10 @@ Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
 | 27 | info | HTML11 | Document references many third-party domains | CWE-200 |
 | 28 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
 | 29 | info | HTML12 | preconnect/dns-prefetch declares third-party destinations | CWE-200 |
-| 30 | info | CT1 | 13 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 30 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 31 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 32 | info | HTML16 | Inline event handlers in root document | CWE-79 |
+| 33 | info | CT1 | 13 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -138,7 +141,7 @@ Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: yandex-verification: 7fe1bb8a552ceb32; mailru-verification: b528448d3bf1dbea; google-site-verification=j-yEdmca2KoStcc5q-aEBlyDjOcxLqDm5bDqOAYIhoY
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=YzQ0R16gjSTb1agD8LvkQ2AMlXcrPn_IS9wj8Lovd7M; _globalsign-domain-verification=hyG8ZuHS3igfmZRnDwWCgCcP_M87sPi_KnJ11zpCVO; facebook-domain-verification=20zoxd8vljdt1j42fswju4pushgv41
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -174,7 +177,7 @@ Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
 ### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 217.20.157.145 carries PTR ip145.157.odnoklassniki.ru. for ok.ru.
+- **Detail:** 5.61.21.121 carries PTR ip121.21.odnoklassniki.ru. for ok.ru.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 21. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -204,7 +207,7 @@ Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
 ### 25. [INFO] Session-like cookie value has low entropy (`CK11`)
 
 - **CWE:** CWE-340
-- **Detail:** Cookie 'ENVOY_JSESSIONID' on ok.ru is 18 chars with ~3.46 bits/char of entropy; low-entropy tokens are easier to guess.
+- **Detail:** Cookie 'ENVOY_JSESSIONID' on ok.ru is 18 chars with ~3.09 bits/char of entropy; low-entropy tokens are easier to guess.
 - **Recommendation:** Generate session identifiers from a CSPRNG with sufficient entropy.
 
 ### 26. [INFO] security.txt published with a contact address (`SEC1`)
@@ -231,7 +234,25 @@ Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
 - **Detail:** Root document of ok.ru declares preconnect/dns-prefetch/modulepreload for 1 third-party registrable domain(s) (e.g. cdn-vk.ru); declared (not yet loaded) destinations widen the expected network topology of the page.
 - **Recommendation:** Review declared third-party destinations as part of the supply-chain inventory.
 
-### 30. [INFO] 13 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 30. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of ok.ru contains wildcard SAN entry(ies) *.ok.ru, *.oklive.app, *.odnoklassniki.ru; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 31. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of ok.ru is http://ocsp.harica.gr; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 32. [INFO] Inline event handlers in root document (`HTML16`)
+
+- **CWE:** CWE-79
+- **Detail:** The root document of ok.ru contains 4 inline event handler attribute(s); each is a DOM-level execution point that SRI does not constrain.
+- **Recommendation:** Move handlers to external scripts where feasible and keep them covered by CSP.
+
+### 33. [INFO] 13 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: admin.ok.ru, test.ok.ru
@@ -244,8 +265,8 @@ Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
   "domain": "ok.ru",
   "dns": {
     "a": [
-      "217.20.157.145",
-      "5.61.21.121"
+      "5.61.21.121",
+      "217.20.157.145"
     ],
     "aaaa": [],
     "cname": null,
@@ -253,36 +274,36 @@ Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
       "mxs.mail.ru (pref 10)"
     ],
     "ns": [
-      "ns3.ok.ru.",
+      "ns1.ok.ru.",
       "ns2.ok.ru.",
-      "ns1.ok.ru."
+      "ns3.ok.ru."
     ],
     "caa": [],
     "spf": [
-      "yandex-verification: 7fe1bb8a552ceb32",
-      "mailru-verification: b528448d3bf1dbea",
-      "google-site-verification=j-yEdmca2KoStcc5q-aEBlyDjOcxLqDm5bDqOAYIhoY",
-      "_globalsign-domain-verification=upQWAiWgl9ghkHatFjyw-BEJkU-1UVnsOIEkP6wC39",
-      "mailru-verification: 4f4ac5123de41e20",
-      "_globalsign-domain-verification=AJ2DeQYTm2pZ_AD24ZK4J7YgjqWNjxyPXCwZYt9bZh",
-      "facebook-domain-verification=20zoxd8vljdt1j42fswju4pushgv41",
-      "_globalsign-domain-verification=hyG8ZuHS3igfmZRnDwWCgCcP_M87sPi_KnJ11zpCVO",
-      "google-site-verification=hfmT3vbIz_5hRvk9oeE0uIaXA18XY4RStPddIlVifiQ",
-      "v=spf1 ip4:217.20.144.0/20 ip4:5.61.16.0/21 ip4:185.16.244.0/22 ip4:185.16.148.0/22 ip4:185.100.104.0/22 ip4:188.93.58.115/32 ip4:217.69.129.234/32 ip4:188.93.56.178/32 ip4:188.93.56.179/32 include:astrum-nival.com ip4:178.22.88.131 ip4:188.93.63.75 ip4:9",
-      "5.163.40.8/29 include:_spf.mail.ru include:_spf.notify.mail.ru include:spf.unisender.com ~all",
-      "HARICA-BikYRETep3cbQtouTna",
-      "mailru-verification: 000ee422012001f4",
-      "google-site-verification=Ulruf8YYkR5p9-2klauDQNcJNSXgLzqmpqZuu3btFzE",
-      "mailru-verification: 0ec15abd420c666e",
-      "yandex-verification: 72c290082879917b",
       "google-site-verification=YzQ0R16gjSTb1agD8LvkQ2AMlXcrPn_IS9wj8Lovd7M",
-      "_globalsign-domain-verification=DlOK4vaNNgPTIFOajXiZp-OdQ2N4oSRvcWN6QDXP5z",
+      "_globalsign-domain-verification=hyG8ZuHS3igfmZRnDwWCgCcP_M87sPi_KnJ11zpCVO",
+      "facebook-domain-verification=20zoxd8vljdt1j42fswju4pushgv41",
+      "mailru-verification: c54cac0033fe5771",
       "spf2.0/mfrom,pra ip4:217.20.144.0/20 ip4:5.61.16.0/21 ip4:185.16.244.0/22 ip4:185.16.148.0/22 ip4:185.100.104.0/22 ip4:188.93.58.115/32 ip4:217.69.129.234/32 ip4:188.93.56.178/32 ip4:188.93.56.179/32 include:astrum-nival.com ip4:178.22.88.131 ip4:188.93.6",
       "3.75 ip4:95.163.40.8/29 include:_spf.mail.ru include:_spf.notify.mail.ru include:senderid.unisender.com ~all",
+      "_globalsign-domain-verification=AJ2DeQYTm2pZ_AD24ZK4J7YgjqWNjxyPXCwZYt9bZh",
+      "HARICA-BikYRETep3cbQtouTna",
+      "google-site-verification=j-yEdmca2KoStcc5q-aEBlyDjOcxLqDm5bDqOAYIhoY",
+      "google-site-verification=hfmT3vbIz_5hRvk9oeE0uIaXA18XY4RStPddIlVifiQ",
       "HARICA-CAvqAE2foWlJKppVxaI",
+      "_globalsign-domain-verification=DlOK4vaNNgPTIFOajXiZp-OdQ2N4oSRvcWN6QDXP5z",
+      "_globalsign-domain-verification=upQWAiWgl9ghkHatFjyw-BEJkU-1UVnsOIEkP6wC39",
+      "v=spf1 ip4:217.20.144.0/20 ip4:5.61.16.0/21 ip4:185.16.244.0/22 ip4:185.16.148.0/22 ip4:185.100.104.0/22 ip4:188.93.58.115/32 ip4:217.69.129.234/32 ip4:188.93.56.178/32 ip4:188.93.56.179/32 include:astrum-nival.com ip4:178.22.88.131 ip4:188.93.63.75 ip4:9",
+      "5.163.40.8/29 include:_spf.mail.ru include:_spf.notify.mail.ru include:spf.unisender.com ~all",
+      "mailru-verification: 0ec15abd420c666e",
+      "yandex-verification: 72c290082879917b",
+      "mailru-verification: 4f4ac5123de41e20",
+      "mailru-verification: b528448d3bf1dbea",
+      "google-site-verification=Ulruf8YYkR5p9-2klauDQNcJNSXgLzqmpqZuu3btFzE",
       "mailru-verification: 432f8720b192812c",
+      "yandex-verification: 7fe1bb8a552ceb32",
       "yandex-verification: 0e517f20a1c65405",
-      "mailru-verification: c54cac0033fe5771"
+      "mailru-verification: 000ee422012001f4"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;rua=mailto:dmarc_rua@corp.mail.ru;fo=1;"
@@ -352,7 +373,7 @@ Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
     }
   },
   "ports": {
-    "ip": "217.20.157.145",
+    "ip": "5.61.21.121",
     "open": []
   },
   "https": {
@@ -440,11 +461,11 @@ Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
     ]
   },
   "apex_txt": [
-    "yandex-verification: 7fe1bb8a552ceb32",
-    "mailru-verification: b528448d3bf1dbea",
-    "google-site-verification=j-yEdmca2KoStcc5q-aEBlyDjOcxLqDm5bDqOAYIhoY",
-    "_globalsign-domain-verification=upQWAiWgl9ghkHatFjyw-BEJkU-1UVnsOIEkP6wC39",
-    "mailru-verification: 4f4ac5123de41e20"
+    "google-site-verification=YzQ0R16gjSTb1agD8LvkQ2AMlXcrPn_IS9wj8Lovd7M",
+    "_globalsign-domain-verification=hyG8ZuHS3igfmZRnDwWCgCcP_M87sPi_KnJ11zpCVO",
+    "facebook-domain-verification=20zoxd8vljdt1j42fswju4pushgv41",
+    "mailru-verification: c54cac0033fe5771",
+    "_globalsign-domain-verification=AJ2DeQYTm2pZ_AD24ZK4J7YgjqWNjxyPXCwZYt9bZh"
   ],
   "tls2": {
     "alpn": "",
@@ -462,6 +483,28 @@ Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.harica.gr/HARICA-DV-TLS-Sub-R1.crl"
+      ],
+      "san": [
+        "*.ok.ru",
+        "ok.ru",
+        "m.odnoklassniki.am",
+        "www.m.odnoklassniki.am",
+        "m.odnoklasniki.by",
+        "www.m.odnoklasniki.by",
+        "*.oklive.app",
+        "oklive.app",
+        "*.odnoklassniki.ru",
+        "odnoklassniki.ru",
+        "*.tamtam.chat",
+        "tamtam.chat",
+        "m.odnoklasniki.ru",
+        "www.m.odnoklasniki.ru",
+        "*.okl.lt",
+        "okl.lt",
+        "m.odnoklassniki.co.ee",
+        "www.m.odnoklassniki.co.ee",
+        "*.mscu.ok.ru",
+        "mscu.ok.ru"
       ],
       "subject_dn": "3110300e06035504030c072a2e6f6b2e7275",
       "issuer_dn": "310b300906035504061302475231373035060355040a0c2e48656c6c656e69632041636164656d696320616e6420526573656172636820496e737469747574696f6e73204341311a301806035504030c1148415249434120445620544c5320525341",
@@ -493,7 +536,7 @@ Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
   "x12": {
     "status": 200,
     "ptr": [
-      "ip145.157.odnoklassniki.ru."
+      "ip121.21.odnoklassniki.ru."
     ]
   },
   "x13": {
@@ -531,8 +574,19 @@ Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
       "cdn-vk.ru"
     ]
   },
-  "elapsed_s": 60.8,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.ok.ru",
+      "*.oklive.app",
+      "*.odnoklassniki.ru",
+      "*.tamtam.chat",
+      "*.okl.lt"
+    ],
+    "ocsp_http": "http://ocsp.harica.gr",
+    "inline_handlers": 4
+  },
+  "elapsed_s": 64.1,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -546,4 +600,5 @@ Total findings: **30** (High: 0, Medium: 0, Low: 5, Info: 25)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

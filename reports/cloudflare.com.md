@@ -7,12 +7,12 @@
 | Target | https://cloudflare.com/ |
 | Bug bounty program | Cloudflare |
 | Listed scope domain | cloudflare.com |
-| Test date | 2026-09-27 01:13 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:22 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
+Total findings: **22** (High: 0, Medium: 0, Low: 5, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,8 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 | 18 | info | CK9 | Framework/stack inferred from cookie name | CWE-200 |
 | 19 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 | 20 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 21 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 22 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -141,7 +143,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: onetrust-domain-verification=bd5cd08a1e9644799fdb98ed7d60c9cb; stripe-verification=5096d01ff2cf194285dd51cae18f24fa9c26dc928cebac3636d462b4c692; facebook-domain-verification=h9mm6zopj6p2po54woa16m5bskm6oo
+- **Detail:** Apex TXT records with verification/token content: creatopy-domain-verification=97d2ca50-9b6f-4a21-9bdb-fbb630e4cec7; databank-domain-verification-hkehd2=fzgu4kmbZwMoW99zENgO4u8NL; stripe-verification=5096d01ff2cf194285dd51cae18f24fa9c26dc928cebac3636d462b4c692
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -168,6 +170,18 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - **Detail:** The root response of cloudflare.com carries alt-svc h3=":443"; ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
 - **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
 
+### 21. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of cloudflare.com contains wildcard SAN entry(ies) *.ns.cloudflare.com, *.secondary.cloudflare.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 22. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of cloudflare.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -179,66 +193,66 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "104.16.132.229"
     ],
     "aaaa": [
-      "2606:4700::6810:85e5",
-      "2606:4700::6810:84e5"
+      "2606:4700::6810:84e5",
+      "2606:4700::6810:85e5"
     ],
     "cname": null,
     "mx": [
-      "mxa-canary.global.inbound.cf-emailsecurity.net (pref 5)",
+      "mxb-canary.global.inbound.cf-emailsecurity.net (pref 5)",
       "mxb.global.inbound.cf-emailsecurity.net (pref 10)",
       "mxa.global.inbound.cf-emailsecurity.net (pref 10)",
-      "mxb-canary.global.inbound.cf-emailsecurity.net (pref 5)"
+      "mxa-canary.global.inbound.cf-emailsecurity.net (pref 5)"
     ],
     "ns": [
-      "ns7.cloudflare.com.",
       "ns5.cloudflare.com.",
+      "ns6.cloudflare.com.",
       "ns3.cloudflare.com.",
-      "ns4.cloudflare.com.",
-      "ns6.cloudflare.com."
+      "ns7.cloudflare.com.",
+      "ns4.cloudflare.com."
     ],
     "caa": [
-      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
-      "0 issuewild \"comodoca.com\"",
-      "0 issuewild \"ssl.com\"",
-      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
       "0 issuewild \"pki.goog; cansignhttpexchanges=yes\"",
-      "0 issue \"comodoca.com\"",
-      "0 issue \"ssl.com\"",
-      "0 issuewild \"letsencrypt.org\"",
+      "0 issuewild \"digicert.com; cansignhttpexchanges=yes\"",
+      "0 iodef \"mailto:tls-abuse@cloudflare.com\"",
+      "0 issue \"pki.goog; cansignhttpexchanges=yes\"",
       "0 issue \"digicert.com; cansignhttpexchanges=yes\"",
       "0 issue \"letsencrypt.org\"",
-      "0 iodef \"mailto:tls-abuse@cloudflare.com\""
+      "0 issuewild \"letsencrypt.org\"",
+      "0 issue \"comodoca.com\"",
+      "0 issuewild \"ssl.com\"",
+      "0 issuewild \"comodoca.com\"",
+      "0 issue \"ssl.com\""
     ],
     "spf": [
-      "onetrust-domain-verification=bd5cd08a1e9644799fdb98ed7d60c9cb",
-      "stripe-verification=5096d01ff2cf194285dd51cae18f24fa9c26dc928cebac3636d462b4c6925623",
-      "v=spf1 ip4:199.15.212.0/22 ip4:173.245.48.0/20 include:_spf.google.com include:spf1.mcsv.net include:spf.mandrillapp.com include:mail.zendesk.com include:stspg-customer.com include:_spf.salesforce.com -all",
-      "facebook-domain-verification=h9mm6zopj6p2po54woa16m5bskm6oo",
-      "liveramp-site-verification=EhH1MqgwbndTWl1AN64hOTKz7hc1s80yUpchLbgpfY0",
-      "ZOOM_verify_7LFBvOO9SIigypFG2xRlMA",
-      "status-page-domain-verification=r14frwljwbxs",
-      "logmein-verification-code=b3433c86-3823-4808-8a7e-58042469f654",
-      "asv=894f6d1f9f83bcf44e4b1bc40bc1c4aa",
-      "canva-site-verification=oOyaVnHC-OiFoR1BPvetNA",
       "creatopy-domain-verification=97d2ca50-9b6f-4a21-9bdb-fbb630e4cec7",
+      "databank-domain-verification-hkehd2=fzgu4kmbZwMoW99zENgO4u8NL",
+      "ZOOM_verify_7LFBvOO9SIigypFG2xRlMA",
+      "DirectFedAuthUrl=https://cloudflare-security.cloudflareaccess.com/cdn-cgi/access/sso/saml/ebec933773c69c93420d13e6776adb8c4a190f6281f9d132bcebd7dcb0967bdd",
+      "stripe-verification=5096d01ff2cf194285dd51cae18f24fa9c26dc928cebac3636d462b4c6925623",
+      "jamf-site-verification=c-eUvHBbhgFxMulFSY-QJQ",
+      "cisco-ci-domain-verification=27e926884619804ef987ae4aa1c4168f6b152ada84f4c8bfc74eb2bd2912ad72",
+      "liveramp-site-verification=EhH1MqgwbndTWl1AN64hOTKz7hc1s80yUpchLbgpfY0",
+      "asv=894f6d1f9f83bcf44e4b1bc40bc1c4aa",
+      "onetrust-domain-verification=bd5cd08a1e9644799fdb98ed7d60c9cb",
+      "MS=ms70274184",
+      "apple-domain-verification=DNnWJoArJobFJKhJ",
+      "drift-domain-verification=f037808a26ae8b25bc13b1f1f2b4c3e0f78c03e67f24cefdd4ec520efa8e719f",
+      "stripe-verification=bf1a94e6b16ace2502a4a7fff574a25c8a45291054960c883c59be39d1788db9",
+      "status-page-domain-verification=r14frwljwbxs",
+      "v=spf1 ip4:199.15.212.0/22 ip4:173.245.48.0/20 include:_spf.google.com include:spf1.mcsv.net include:spf.mandrillapp.com include:mail.zendesk.com include:stspg-customer.com include:_spf.salesforce.com -all",
+      "DirectFedAuthUrl=https://cloudflare-security.cloudflareaccess.com/cdn-cgi/access/sso/saml/dba6756ad312fc13c45f705cf7f5e87f4d658be016c41f950329aa4085b3abc1",
       "_saml-domain-challenge.2dc00405-79cd-457b-b288-a119c6f0c7b7.71996d53-d178-4ba9-bef4-7f7e46edab74.cloudflare.com=1c8736fd-84b2-4197-985f-3fb2852f2457",
       "_neqmkgaq1lq9it5s8qmetrhbnu121wb",
-      "apple-domain-verification=DNnWJoArJobFJKhJ",
-      "atlassian-domain-verification=WxxKyN9aLnjEsoOjUYI6T0bb5vcqmKzaIkC9Rx2QkNb751G3LL/cus8/ZDOgh8xB",
-      "MS=ms70274184",
-      "drift-domain-verification=f037808a26ae8b25bc13b1f1f2b4c3e0f78c03e67f24cefdd4ec520efa8e719f",
-      "google-site-verification=C7thfNeXVahkVhniiqTI1iSVnElKR_kBBtnEHkeGDlo",
-      "DirectFedAuthUrl=https://cloudflare-security.cloudflareaccess.com/cdn-cgi/access/sso/saml/dba6756ad312fc13c45f705cf7f5e87f4d658be016c41f950329aa4085b3abc1",
       "uber-domain-verification=58086039-150a-42a4-a4be-b4032921aa0f",
-      "DirectFedAuthUrl=https://cloudflare-security.cloudflareaccess.com/cdn-cgi/access/sso/saml/ebec933773c69c93420d13e6776adb8c4a190f6281f9d132bcebd7dcb0967bdd",
       "google-site-verification=ZdlQZLBBAPkxeFTCM1rpiB_ibtGff_JF5KllNKwDR9I",
+      "atlassian-domain-verification=WxxKyN9aLnjEsoOjUYI6T0bb5vcqmKzaIkC9Rx2QkNb751G3LL/cus8/ZDOgh8xB",
+      "facebook-domain-verification=h9mm6zopj6p2po54woa16m5bskm6oo",
       "_wkjc0fot0d7qrvrdt78bxkj2e2o67d2",
       "miro-verification=bdd7dfa0a49adfb43ad6ddfaf797633246c07356",
+      "logmein-verification-code=b3433c86-3823-4808-8a7e-58042469f654",
+      "canva-site-verification=oOyaVnHC-OiFoR1BPvetNA",
       "docker-verification=c578e21c-34fb-4474-9b90-d55ee4cba10c",
-      "cisco-ci-domain-verification=27e926884619804ef987ae4aa1c4168f6b152ada84f4c8bfc74eb2bd2912ad72",
-      "jamf-site-verification=c-eUvHBbhgFxMulFSY-QJQ",
-      "stripe-verification=bf1a94e6b16ace2502a4a7fff574a25c8a45291054960c883c59be39d1788db9",
-      "databank-domain-verification-hkehd2=fzgu4kmbZwMoW99zENgO4u8NL"
+      "google-site-verification=C7thfNeXVahkVhniiqTI1iSVnElKR_kBBtnEHkeGDlo"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; adkim=r; aspf=r; pct=100; rua=mailto:a1c47f179bc04efd8ee4dcd4d85dfc65@dmarc-reports.cloudflare.net,mailto:rua@cloudflare.com"
@@ -333,11 +347,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "onetrust-domain-verification=bd5cd08a1e9644799fdb98ed7d60c9cb",
+    "creatopy-domain-verification=97d2ca50-9b6f-4a21-9bdb-fbb630e4cec7",
+    "databank-domain-verification-hkehd2=fzgu4kmbZwMoW99zENgO4u8NL",
     "stripe-verification=5096d01ff2cf194285dd51cae18f24fa9c26dc928cebac3636d462b4c692",
-    "facebook-domain-verification=h9mm6zopj6p2po54woa16m5bskm6oo",
-    "liveramp-site-verification=EhH1MqgwbndTWl1AN64hOTKz7hc1s80yUpchLbgpfY0",
-    "status-page-domain-verification=r14frwljwbxs"
+    "jamf-site-verification=c-eUvHBbhgFxMulFSY-QJQ",
+    "cisco-ci-domain-verification=27e926884619804ef987ae4aa1c4168f6b152ada84f4c8bfc74"
   ],
   "tls2": {
     "alpn": "",
@@ -355,6 +369,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "bc_pathlen": null,
       "crl_urls": [
         "http://c.pki.goog/we1/gAooAfzx9uw.crl"
+      ],
+      "san": [
+        "cloudflare.com",
+        "ns.cloudflare.com",
+        "*.ns.cloudflare.com",
+        "*.secondary.cloudflare.com",
+        "secondary.cloudflare.com"
       ],
       "subject_dn": "311730150603550403130e636c6f7564666c6172652e636f6d",
       "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574531",
@@ -400,8 +421,14 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     "root_status": 301,
     "alt_svc": "h3=\":443\"; ma=86400"
   },
-  "elapsed_s": 5.5,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.ns.cloudflare.com",
+      "*.secondary.cloudflare.com"
+    ]
+  },
+  "elapsed_s": 6.4,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -415,4 +442,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

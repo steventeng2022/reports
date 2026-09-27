@@ -7,12 +7,12 @@
 | Target | https://apple.com/ |
 | Bug bounty program | Apple |
 | Listed scope domain | apple.com |
-| Test date | 2026-09-27 01:10 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 15 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 16 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 | 17 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 18 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 19 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
+| 20 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -113,7 +116,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=L5kkMdiFI8npvb6KlHui84fJaCw5G64DWhaDRIAT4_c; ValidationTokenValue=77a4a6de-da14-449c-83c4-85366e0f55f9; miro-verification=2494d255c4c50b1e521650a0659cbf3fa08b0072
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=L5kkMdiFI8npvb6KlHui84fJaCw5G64DWhaDRIAT4_c; miro-verification=2494d255c4c50b1e521650a0659cbf3fa08b0072; Dynatrace-site-verification=7d881a7c-c13f-4146-9d27-2731459e2509__iqls0105tagglc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -131,7 +134,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 17.253.144.10 carries PTR apple.com.co., apple.com.sg., apple.com.au., www.brkgls.com., apple.com.tt., apple.com.cn., iworktrialbuy.apple.com., itunespartner.apple.com., apple.com.py., livepage.apple.com., apple.it., vipd-healthcheck.a01.3banana.com., squeakytoytrainingcamp.com., apple.com., apple.com.mx., apple.com.lk., seminars.apple.com., world-any.aaplimg.com., podcast.apple.com., apple.co.uk., iphone.apple.com., icloud.com., shake.apple.com., applejava.apple.com., apple.nl., advertising.apple.com., apple.com.pa., apple.ca., apple.com.pe., apple.es., safaricampaign.apple., guide.apple.com., applescript.apple.com., brkgls.com., apple.com.hn., apple.fr., apple.com.ai., apple.com.do., asia.apple.com., apple.com.bo., firewire.apple.com., apple.de., apple.com.gy., apple.com.my., applecomputer.co.kr., aperturetrialbuy.apple.com., apple.com.uy., appstore.com. for apple.com.
+- **Detail:** 17.253.144.10 carries PTR apple.com.gy., apple.com.tt., vipd-healthcheck.a01.3banana.com., itunespartner.apple.com., apple.fr., apple.it., livepage.apple.com., apple.ca., apple.de., apple.com.uy., apple.com.mx., firewire.apple.com., icloud.com., guide.apple.com., apple.com., apple.com.au., apple.com.do., podcast.apple.com., aperturetrialbuy.apple.com., apple.es., apple.com.ai., apple.com.py., iphone.apple.com., applecomputer.co.kr., apple.com.pe., applescript.apple.com., advertising.apple.com., safaricampaign.apple., apple.com.bo., apple.co.uk., apple.com.hn., asia.apple.com., world-any.aaplimg.com., iworktrialbuy.apple.com., apple.com.cn., apple.com.lk., apple.nl., appstore.com., shake.apple.com., squeakytoytrainingcamp.com., apple.com.sg., apple.com.my., www.brkgls.com., apple.com.pa., applejava.apple.com., brkgls.com., seminars.apple.com., apple.com.co. for apple.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 16. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
@@ -145,6 +148,24 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - **CWE:** CWE-200
 - **Detail:** Response headers on apple.com identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 18. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of apple.com is http://ocsp.apple.com/ocsp03-apevsecc1g101; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 19. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of apple.com discloses a 1-hop fronting chain (http/1.1 twtpe2-edge-fx-011.ts.apple.com (acdn/331.16659)); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
+### 20. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of apple.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
 
 ## Evidence (raw response observations)
 
@@ -160,48 +181,48 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     ],
     "cname": null,
     "mx": [
-      "mx-in-sg.apple.com (pref 20)",
-      "mx-in-vib.apple.com (pref 20)",
       "mx-in-rn.apple.com (pref 20)",
-      "mx-in-hfd.apple.com (pref 20)",
+      "mx-in-vib.apple.com (pref 20)",
+      "mx-in-sg.apple.com (pref 20)",
+      "mx-in.g.apple.com (pref 10)",
       "mx-in-ma.apple.com (pref 20)",
-      "mx-in.g.apple.com (pref 10)"
+      "mx-in-hfd.apple.com (pref 20)"
     ],
     "ns": [
-      "a.ns.apple.com.",
       "d.ns.apple.com.",
+      "b.ns.apple.com.",
       "c.ns.apple.com.",
-      "b.ns.apple.com."
+      "a.ns.apple.com."
     ],
     "caa": [
-      "0 issuewild \"pki.apple.com\"",
+      "0 iodef \"mailto:contact_pki@apple.com\"",
       "0 issue \"pki.apple.com\"",
-      "0 iodef \"mailto:contact_pki@apple.com\""
+      "0 issuewild \"pki.apple.com\""
     ],
     "spf": [
       "google-site-verification=L5kkMdiFI8npvb6KlHui84fJaCw5G64DWhaDRIAT4_c",
-      "ValidationTokenValue=77a4a6de-da14-449c-83c4-85366e0f55f9",
-      "json:eyJ3aHkiOiJUaGlzIGlzIHRvIHRydW5jYXRlIFVEUCByZXNwb25zZXMgZm9yIFRYVCBxdWVyaWVzIHRvIGFwcGxlLmNvbSIsInBhZGRpbmciOiJpZW4wYWVHaGF0aG9oNmhhaHZpZWphaTNlYXkwYWh2YWhjaGFocXVhZWxlZTBZdWw0cGhpZXRoMHNvNXZpZXllZWNvaDRpZThzaGVlcGllVDNwYWVjaGVpVjZqb2h3aWVwaG82In0K",
       "miro-verification=2494d255c4c50b1e521650a0659cbf3fa08b0072",
-      "cerner-client-id=ce3abf18-ee87-43b9-9927-9eb24b4bac4a",
-      "facebook-domain-verification=n6cqjfucq6plswmtfbwnbbeu1qiq3v",
-      "77a4a6de-da14-449c-83c4-85366e0f55f9",
-      "yahoo-verification-key=Ay+djyw0qWQgXKWGA/jstjYryTMrKb+PBXI5l8u5/jw=",
-      "apple-domain-verification=X5Jt76bn3Dnmgzjj",
-      "cisco-ci-domain-verification=6f3bfb849796a518061f8e8c4356f687a138502d86db742791685059176547dd",
-      "atlassian-domain-verification=qZD4TfnCAoAjCFQgafhoKQpOs9tviekNK4wYE4a5eK3XoRP06hXAvEp8SLU0v7fI",
-      "lucidlink-verification=SCDW9V44GJHAVXKFS6ZY6EZ2YR",
-      "google-site-verification=zBSq1mG5ssu2If-C17UAz_MzSZDcx03MVxmeDwMNc5w",
+      "v=spf1 include:_spf.apple.com include:_spf-txn.apple.com ~all",
       "Dynatrace-site-verification=7d881a7c-c13f-4146-9d27-2731459e2509__iqls0105tagglcsaul0m16ibrf",
-      "atlassian-domain-verification=mLabq99iaT8kquJechF6l31FAYoNUe3WB7tLpLFUiUYVJCse9SKq83hOJzFkwqrh",
-      "webexdomainverification.8C462=b728ec3f-dfc9-42f9-92cb-9ba8853cbee8",
-      "google-site-verification=8M6XjQCzydT62jk8HY3VXPAG-nKDllTRV-JpA3-Ktyw",
-      "json:eyJ3aHkiOiJUaGlzIGlzIHRvIHRydW5jYXRlIFVEUCByZXNwb25zZXMgZm9yIFRYVCBxdWVyaWVzIHRvIGFwcGxlLmNvbSIsInBhZGRpbmciOiJxdWFoMGVpamFhNGVlajh0aWVkYWlnaG9jZWljaGFlOGVUb3ppZTVmdTVhaFRoMldlaU00aWsyaHVxdThpZXBoaWVxdW9oc2hlaXBhZWdoOUthZWw3b2NoaWVuZ2llem9lc2g1In0K",
+      "ValidationTokenValue=77a4a6de-da14-449c-83c4-85366e0f55f9",
+      "facebook-domain-verification=n6cqjfucq6plswmtfbwnbbeu1qiq3v",
+      "yahoo-verification-key=Ay+djyw0qWQgXKWGA/jstjYryTMrKb+PBXI5l8u5/jw=",
+      "google-site-verification=zBSq1mG5ssu2If-C17UAz_MzSZDcx03MVxmeDwMNc5w",
+      "atlassian-domain-verification=qZD4TfnCAoAjCFQgafhoKQpOs9tviekNK4wYE4a5eK3XoRP06hXAvEp8SLU0v7fI",
       "_eht2v8yfz1agpq7o4zdkkz3k0k86fyr",
+      "atlassian-domain-verification=mLabq99iaT8kquJechF6l31FAYoNUe3WB7tLpLFUiUYVJCse9SKq83hOJzFkwqrh",
       "_khcec23xgc5b2lb981hup1csjb4cdnz",
-      "cerner-client-id=22dd1d8a-5e8b-4e1e-80ef-39bcdfd42798",
+      "lucidlink-verification=SCDW9V44GJHAVXKFS6ZY6EZ2YR",
+      "cisco-ci-domain-verification=6f3bfb849796a518061f8e8c4356f687a138502d86db742791685059176547dd",
+      "apple-domain-verification=X5Jt76bn3Dnmgzjj",
       "adobe-idp-site-verification=6bd5e74c-a3a0-4781-b2e1-e95399b5e11c",
-      "v=spf1 include:_spf.apple.com include:_spf-txn.apple.com ~all"
+      "json:eyJ3aHkiOiJUaGlzIGlzIHRvIHRydW5jYXRlIFVEUCByZXNwb25zZXMgZm9yIFRYVCBxdWVyaWVzIHRvIGFwcGxlLmNvbSIsInBhZGRpbmciOiJxdWFoMGVpamFhNGVlajh0aWVkYWlnaG9jZWljaGFlOGVUb3ppZTVmdTVhaFRoMldlaU00aWsyaHVxdThpZXBoaWVxdW9oc2hlaXBhZWdoOUthZWw3b2NoaWVuZ2llem9lc2g1In0K",
+      "77a4a6de-da14-449c-83c4-85366e0f55f9",
+      "google-site-verification=8M6XjQCzydT62jk8HY3VXPAG-nKDllTRV-JpA3-Ktyw",
+      "json:eyJ3aHkiOiJUaGlzIGlzIHRvIHRydW5jYXRlIFVEUCByZXNwb25zZXMgZm9yIFRYVCBxdWVyaWVzIHRvIGFwcGxlLmNvbSIsInBhZGRpbmciOiJpZW4wYWVHaGF0aG9oNmhhaHZpZWphaTNlYXkwYWh2YWhjaGFocXVhZWxlZTBZdWw0cGhpZXRoMHNvNXZpZXllZWNvaDRpZThzaGVlcGllVDNwYWVjaGVpVjZqb2h3aWVwaG82In0K",
+      "cerner-client-id=22dd1d8a-5e8b-4e1e-80ef-39bcdfd42798",
+      "cerner-client-id=ce3abf18-ee87-43b9-9927-9eb24b4bac4a",
+      "webexdomainverification.8C462=b728ec3f-dfc9-42f9-92cb-9ba8853cbee8"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=reject; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com;"
@@ -281,10 +302,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   },
   "apex_txt": [
     "google-site-verification=L5kkMdiFI8npvb6KlHui84fJaCw5G64DWhaDRIAT4_c",
-    "ValidationTokenValue=77a4a6de-da14-449c-83c4-85366e0f55f9",
     "miro-verification=2494d255c4c50b1e521650a0659cbf3fa08b0072",
-    "facebook-domain-verification=n6cqjfucq6plswmtfbwnbbeu1qiq3v",
-    "yahoo-verification-key=Ay+djyw0qWQgXKWGA/jstjYryTMrKb+PBXI5l8u5/jw="
+    "Dynatrace-site-verification=7d881a7c-c13f-4146-9d27-2731459e2509__iqls0105tagglc",
+    "ValidationTokenValue=77a4a6de-da14-449c-83c4-85366e0f55f9",
+    "facebook-domain-verification=n6cqjfucq6plswmtfbwnbbeu1qiq3v"
   ],
   "tls2": {
     "alpn": "",
@@ -302,6 +323,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.apple.com/apevsecc1g1.crl"
+      ],
+      "san": [
+        "apple.com"
       ],
       "subject_dn": "311d301b060355040f0c1450726976617465204f7267616e697a6174696f6e31133011060b2b0601040182373c02010313025553311b3019060b2b0601040182373c0201020c0a43616c69666f726e69613111300f060355040513084330383036353932310b30090603550406130255533113301106035504080c0a43616c69666f726e69613112301006035504070c09437570657274696e6f31133011060355040a0c0a4170706c6520496e632e3112301006035504030c096170706c652e636f6d",
       "issuer_dn": "310b300906035504061302555331133011060355040a130a4170706c6520496e632e312d302b060355040313244170706c65205075626c696320455620536572766572204543432043412031202d204731",
@@ -326,54 +350,54 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "x12": {
     "status": 301,
     "ptr": [
-      "apple.com.co.",
-      "apple.com.sg.",
-      "apple.com.au.",
-      "www.brkgls.com.",
-      "apple.com.tt.",
-      "apple.com.cn.",
-      "iworktrialbuy.apple.com.",
-      "itunespartner.apple.com.",
-      "apple.com.py.",
-      "livepage.apple.com.",
-      "apple.it.",
-      "vipd-healthcheck.a01.3banana.com.",
-      "squeakytoytrainingcamp.com.",
-      "apple.com.",
-      "apple.com.mx.",
-      "apple.com.lk.",
-      "seminars.apple.com.",
-      "world-any.aaplimg.com.",
-      "podcast.apple.com.",
-      "apple.co.uk.",
-      "iphone.apple.com.",
-      "icloud.com.",
-      "shake.apple.com.",
-      "applejava.apple.com.",
-      "apple.nl.",
-      "advertising.apple.com.",
-      "apple.com.pa.",
-      "apple.ca.",
-      "apple.com.pe.",
-      "apple.es.",
-      "safaricampaign.apple.",
-      "guide.apple.com.",
-      "applescript.apple.com.",
-      "brkgls.com.",
-      "apple.com.hn.",
-      "apple.fr.",
-      "apple.com.ai.",
-      "apple.com.do.",
-      "asia.apple.com.",
-      "apple.com.bo.",
-      "firewire.apple.com.",
-      "apple.de.",
       "apple.com.gy.",
-      "apple.com.my.",
-      "applecomputer.co.kr.",
-      "aperturetrialbuy.apple.com.",
+      "apple.com.tt.",
+      "vipd-healthcheck.a01.3banana.com.",
+      "itunespartner.apple.com.",
+      "apple.fr.",
+      "apple.it.",
+      "livepage.apple.com.",
+      "apple.ca.",
+      "apple.de.",
       "apple.com.uy.",
-      "appstore.com."
+      "apple.com.mx.",
+      "firewire.apple.com.",
+      "icloud.com.",
+      "guide.apple.com.",
+      "apple.com.",
+      "apple.com.au.",
+      "apple.com.do.",
+      "podcast.apple.com.",
+      "aperturetrialbuy.apple.com.",
+      "apple.es.",
+      "apple.com.ai.",
+      "apple.com.py.",
+      "iphone.apple.com.",
+      "applecomputer.co.kr.",
+      "apple.com.pe.",
+      "applescript.apple.com.",
+      "advertising.apple.com.",
+      "safaricampaign.apple.",
+      "apple.com.bo.",
+      "apple.co.uk.",
+      "apple.com.hn.",
+      "asia.apple.com.",
+      "world-any.aaplimg.com.",
+      "iworktrialbuy.apple.com.",
+      "apple.com.cn.",
+      "apple.com.lk.",
+      "apple.nl.",
+      "appstore.com.",
+      "shake.apple.com.",
+      "squeakytoytrainingcamp.com.",
+      "apple.com.sg.",
+      "apple.com.my.",
+      "www.brkgls.com.",
+      "apple.com.pa.",
+      "applejava.apple.com.",
+      "brkgls.com.",
+      "seminars.apple.com.",
+      "apple.com.co."
     ]
   },
   "x13": {
@@ -410,8 +434,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "Fastly"
     ]
   },
-  "elapsed_s": 5.2,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "ocsp_http": "http://ocsp.apple.com/ocsp03-apevsecc1g101",
+    "via": "http/1.1 twtpe2-edge-fx-011.ts.apple.com (acdn/331.16659)"
+  },
+  "elapsed_s": 5.0,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -425,4 +453,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

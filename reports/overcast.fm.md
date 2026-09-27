@@ -7,12 +7,12 @@
 | Target | https://overcast.fm/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | overcast.fm |
-| Test date | 2026-09-27 01:29 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:40 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
+Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,9 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 | 15 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 17 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
+| 18 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 19 | info | H13 | Cross-origin isolation only partially configured | CWE-693 |
+| 20 | info | CT1 | 1 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -121,13 +124,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 45.79.46.187 carries PTR lb2.overcast.fm. for overcast.fm.
+- **Detail:** 45.79.15.101 carries PTR lb1.overcast.fm. for overcast.fm.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 15. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkgbpyoq6b6pfs.html -> 404; error page/headers match: Nginx.
+- **Detail:** GET /xkdo25dagjnl6j.html -> 404; error page/headers match: Nginx.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -142,6 +145,24 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - **Detail:** Root document of overcast.fm sends a CSP but contains 1 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
 - **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
 
+### 18. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of overcast.fm contains wildcard SAN entry(ies) *.overcast.fm; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 19. [INFO] Cross-origin isolation only partially configured (`H13`)
+
+- **CWE:** CWE-693
+- **Detail:** The root of overcast.fm sends COOP without COEP (same-origin); effective cross-origin isolation requires both COOP and COEP.
+- **Recommendation:** Add the missing header (or remove the partial configuration).
+
+### 20. [INFO] 1 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+
+- **CWE:** CWE-200
+- **Detail:** Notable hostnames: none flagged
+- **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -149,14 +170,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   "domain": "overcast.fm",
   "dns": {
     "a": [
-      "45.79.46.187",
-      "45.79.15.101"
+      "45.79.15.101",
+      "45.79.46.187"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "in2-smtp.messagingengine.com (pref 20)",
-      "in1-smtp.messagingengine.com (pref 10)"
+      "in1-smtp.messagingengine.com (pref 10)",
+      "in2-smtp.messagingengine.com (pref 20)"
     ],
     "ns": [
       "rocky.ns.cloudflare.com.",
@@ -176,7 +197,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=overcast.fm",
-    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR2",
+    "issuer": "countryName=US, organizationName=Let's Encrypt, commonName=YR1",
     "notBefore": "Sep 21 23:05:01 2026 GMT",
     "notAfter": "Dec 20 23:05:00 2026 GMT",
     "san": [
@@ -193,7 +214,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     }
   },
   "ports": {
-    "ip": "45.79.46.187",
+    "ip": "45.79.15.101",
     "open": []
   },
   "https": {
@@ -243,7 +264,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     "/api/": 404
   },
   "subdomains": {
-    "status": "ct-pending"
+    "source": "certspotter",
+    "count": 1,
+    "notable": [],
+    "sample": [
+      "overcast.fm"
+    ]
   },
   "apex_txt": [
     "apple-domain-verification=RVG8mJwNCKZ8sqDT"
@@ -258,15 +284,19 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": null,
-      "serial": 539749311855024865636868009026256271153453,
+      "serial": 466819062841605269866411028302162893351056,
       "cert_version": 3,
       "bc_ca": null,
       "bc_pathlen": null,
       "crl_urls": [
-        "http://yr2.c.lencr.org/46.crl"
+        "http://yr1.c.lencr.org/17.crl"
+      ],
+      "san": [
+        "*.overcast.fm",
+        "overcast.fm"
       ],
       "subject_dn": "311430120603550403130b6f766572636173742e666d",
-      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595232",
+      "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595231",
       "not_before": "20260921230501",
       "not_after": "20261220230500"
     }
@@ -274,7 +304,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   "x12": {
     "status": 200,
     "ptr": [
-      "lb2.overcast.fm."
+      "lb1.overcast.fm."
     ]
   },
   "x13": {
@@ -291,7 +321,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     "root_status": 200,
     "hsts": "max-age=63072000; includeSubDomains; preload",
     "crl": {
-      "url": "http://yr2.c.lencr.org/46.crl",
+      "url": "http://yr1.c.lencr.org/17.crl",
       "status": 200
     }
   },
@@ -303,8 +333,14 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   "x16": {
     "root_status": 200
   },
-  "elapsed_s": 104.1,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.overcast.fm"
+    ],
+    "isolation_partial": "COOP without COEP"
+  },
+  "elapsed_s": 57.8,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -318,4 +354,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

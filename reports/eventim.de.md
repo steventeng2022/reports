@@ -7,12 +7,12 @@
 | Target | https://eventim.de/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | eventim.de |
-| Test date | 2026-09-27 01:19 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:28 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 18 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 | 19 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 20 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
 
 ## Detailed findings
 
@@ -121,7 +122,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: dell-technologies-domain-verification=eventim.de_0294e23e-488b-47ff-a6f7-d1fe73b; jamf-site-verification=1mGbPXJW8-h7z9OTyuY-fg; google-site-verification=s_J1gtfGgebN6_0ZHBAGpeuFpD3Jz9qK7wjc8wTeC6k
+- **Detail:** Apex TXT records with verification/token content: shopify-verification-code=lq13eQZumd4BKaWYIyggeIVKHPtwvs; google-site-verification=s_J1gtfGgebN6_0ZHBAGpeuFpD3Jz9qK7wjc8wTeC6k; stripe-verification=AF5DD7294082E8A97C22C5A02EB429FA306374CFA56E6B747A47A6F83525
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -139,7 +140,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 16. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkve3vjzlzcsiy.html -> 403; error page/headers match: Akamai.
+- **Detail:** GET /xk2fcsh6vs22mp.html -> 403; error page/headers match: Akamai.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -160,6 +161,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** Response headers on eventim.de identify the edge as Akamai; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
+### 20. [INFO] Root document has no <html lang> declaration (`HTML15`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of eventim.de declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
+- **Recommendation:** Add lang to the <html> element.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -171,8 +178,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "23.210.215.208"
     ],
     "aaaa": [
-      "2600:1417:76::17d2:d7d0",
-      "2600:1417:76::17d2:d7cb"
+      "2600:1417:76::17d2:d7cb",
+      "2600:1417:76::17d2:d7d0"
     ],
     "cname": null,
     "mx": [
@@ -180,42 +187,42 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "mxa-0072c901.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "a13-67.akam.net.",
-      "a10-65.akam.net.",
-      "a3-64.akam.net.",
       "a1-222.akam.net.",
+      "a13-67.akam.net.",
       "a6-65.akam.net.",
-      "a12-66.akam.net."
+      "a3-64.akam.net.",
+      "a12-66.akam.net.",
+      "a10-65.akam.net."
     ],
     "caa": [],
     "spf": [
-      "dell-technologies-domain-verification=eventim.de_0294e23e-488b-47ff-a6f7-d1fe73b1524c_1756375967",
-      "jamf-site-verification=1mGbPXJW8-h7z9OTyuY-fg",
-      "google-site-verification=s_J1gtfGgebN6_0ZHBAGpeuFpD3Jz9qK7wjc8wTeC6k",
-      "_zyobswc54veb1thhshrfrn0eyyjrziu",
-      "_an4lngigs1w4891di1fcerxtiwz8kld",
-      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
-      "1password-site-verification=5EMB7KTOU5E5LF4C27XXNT4JRM",
-      "_zcu8mukkq7g0jjxpsz7ciwpnrsh11ed",
-      "atlassian-domain-verification=sRxNCVi7vbQFvIQOy3yD5wRhIsBfb/nlTssiVfRTkqhr2bN35VWGJsPaLo/7hvER",
-      "google-site-verification=F_ofMVEQrI9dLToCH3W8TD_pw5_J6-c8SzSxA8cC80Q",
-      "sending_domain1071343=7651b6fc060ab34ceea035d6cd9b65c21bc0e6c6ced9cdb9734e5b6fd53cd125",
-      "1password-site-verification=LFNAA7NAAZFULMFWJPXE5Q5JEQ",
-      "_x0m99eexri0eo0jy3oqceax1lsautou",
-      "facebook-domain-verification=gor6r8bwyofwjen3uatmmco60ne6cf",
-      "MS=ms55918227",
-      "onetrust-domain-verification=f6f96e3b0d334cc78bb3372701e00911",
-      "bw=Y2eRcRZKeuigrljql8ybFRciwBnMGGAfYm9hXTK35nip",
-      "apple-domain-verification=GOce9gVZOyTRkab6",
-      "openai-domain-verification=dv-LWOQZyUBe4v4LUx1ryWVZhwi",
-      "1password-site-verification=ZI4O7DDYBRHUVMKUSTM6RJ7RN4",
-      "miro-verification=2ae9c59047c26ca58554168f7baccaf715e607b4",
-      "stripe-verification=AF5DD7294082E8A97C22C5A02EB429FA306374CFA56E6B747A47A6F83525EF4A",
       "shopify-verification-code=lq13eQZumd4BKaWYIyggeIVKHPtwvs",
-      "mixpanel-domain-verify=cafd88b1-917f-4159-bc47-b1c7052ff275",
-      "mandrill_verify.RGbU4FqxJLlLqTEzZtTrXA",
+      "_x0m99eexri0eo0jy3oqceax1lsautou",
+      "google-site-verification=s_J1gtfGgebN6_0ZHBAGpeuFpD3Jz9qK7wjc8wTeC6k",
+      "stripe-verification=AF5DD7294082E8A97C22C5A02EB429FA306374CFA56E6B747A47A6F83525EF4A",
+      "jamf-site-verification=1mGbPXJW8-h7z9OTyuY-fg",
       "/dEZPSK+nF6rq7laQtMlbSXm01b+++Hl68NWiIIHiPIqS6GcjfZ+UaCfY1NgsYFDwHRno0/1a6DF6lfHx+idXw==",
-      "teamviewer-sso-verification=0775685533454aaf911ae2316becb5e1"
+      "1password-site-verification=ZI4O7DDYBRHUVMKUSTM6RJ7RN4",
+      "onetrust-domain-verification=f6f96e3b0d334cc78bb3372701e00911",
+      "_zyobswc54veb1thhshrfrn0eyyjrziu",
+      "google-site-verification=F_ofMVEQrI9dLToCH3W8TD_pw5_J6-c8SzSxA8cC80Q",
+      "apple-domain-verification=GOce9gVZOyTRkab6",
+      "1password-site-verification=LFNAA7NAAZFULMFWJPXE5Q5JEQ",
+      "MS=ms55918227",
+      "mandrill_verify.RGbU4FqxJLlLqTEzZtTrXA",
+      "openai-domain-verification=dv-LWOQZyUBe4v4LUx1ryWVZhwi",
+      "_zcu8mukkq7g0jjxpsz7ciwpnrsh11ed",
+      "mixpanel-domain-verify=cafd88b1-917f-4159-bc47-b1c7052ff275",
+      "sending_domain1071343=7651b6fc060ab34ceea035d6cd9b65c21bc0e6c6ced9cdb9734e5b6fd53cd125",
+      "1password-site-verification=5EMB7KTOU5E5LF4C27XXNT4JRM",
+      "bw=Y2eRcRZKeuigrljql8ybFRciwBnMGGAfYm9hXTK35nip",
+      "dell-technologies-domain-verification=eventim.de_0294e23e-488b-47ff-a6f7-d1fe73b1524c_1756375967",
+      "facebook-domain-verification=gor6r8bwyofwjen3uatmmco60ne6cf",
+      "miro-verification=2ae9c59047c26ca58554168f7baccaf715e607b4",
+      "teamviewer-sso-verification=0775685533454aaf911ae2316becb5e1",
+      "atlassian-domain-verification=sRxNCVi7vbQFvIQOy3yD5wRhIsBfb/nlTssiVfRTkqhr2bN35VWGJsPaLo/7hvER",
+      "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
+      "_an4lngigs1w4891di1fcerxtiwz8kld"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com,mailto:dmarc@eventim.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com,mailto:dmarc@eventim.com; pct=100;"
@@ -340,11 +347,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "dell-technologies-domain-verification=eventim.de_0294e23e-488b-47ff-a6f7-d1fe73b",
-    "jamf-site-verification=1mGbPXJW8-h7z9OTyuY-fg",
+    "shopify-verification-code=lq13eQZumd4BKaWYIyggeIVKHPtwvs",
     "google-site-verification=s_J1gtfGgebN6_0ZHBAGpeuFpD3Jz9qK7wjc8wTeC6k",
-    "1password-site-verification=5EMB7KTOU5E5LF4C27XXNT4JRM",
-    "atlassian-domain-verification=sRxNCVi7vbQFvIQOy3yD5wRhIsBfb/nlTssiVfRTkqhr2bN35V"
+    "stripe-verification=AF5DD7294082E8A97C22C5A02EB429FA306374CFA56E6B747A47A6F83525",
+    "jamf-site-verification=1mGbPXJW8-h7z9OTyuY-fg",
+    "1password-site-verification=ZI4O7DDYBRHUVMKUSTM6RJ7RN4"
   ],
   "tls2": {
     "alpn": "",
@@ -362,6 +369,28 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "bc_pathlen": null,
       "crl_urls": [
         "http://yr1.c.lencr.org/42.crl"
+      ],
+      "san": [
+        "billetlugen.dk",
+        "cts.eventim.bg",
+        "cts.eventim.hr",
+        "cts.eventim.hu",
+        "cts.eventim.ro",
+        "cts.eventim.si",
+        "entradas.com",
+        "eventim.ca",
+        "eventim.co.il",
+        "eventim.co.uk",
+        "eventim.com",
+        "eventim.com.ar",
+        "eventim.com.br",
+        "eventim.cz",
+        "eventim.de",
+        "eventim.fi",
+        "eventim.fr",
+        "eventim.hr",
+        "eventim.nl",
+        "eventim.no"
       ],
       "subject_dn": "311330110603550403130a6576656e74696d2e6465",
       "issuer_dn": "310b300906035504061302555331163014060355040a130d4c6574277320456e6372797074310c300a06035504031303595231",
@@ -404,8 +433,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "Akamai"
     ]
   },
-  "elapsed_s": 9.1,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {},
+  "elapsed_s": 11.0,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -419,4 +449,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

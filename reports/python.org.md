@@ -7,12 +7,12 @@
 | Target | https://python.org/ |
 | Bug bounty program | PSF |
 | Listed scope domain | python.org |
-| Test date | 2026-09-27 01:32 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:42 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
+Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,7 +36,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 | 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 19 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 | 20 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
-| 21 | info | CT1 | 48 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 21 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
+| 22 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
+| 23 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
+| 24 | info | CT1 | 48 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -135,7 +138,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=9852CbTRhQ51-9gCUayPbGYqJeBle_MXLb6E4AL_qQk; google-site-verification=dqhMiMzpbkSyEhgjGKyEOMlEg2tF0MSHD7UN-MYfD-M; google-site-verification=QALZObrGl2OVG8lWUE40uVSMCAka316yADn9ZfCU5OA
+- **Detail:** Apex TXT records with verification/token content: twilio-domain-verification=1c295667813cc0aaae819ed7657818f8; google-site-verification=w3b8mU3wU6cZ8uSrj3E_5f1frPejJskDpSp_nMWJ99o; _globalsign-domain-verification=B57sRQpmte4G4w-gavZbVNmmNsMxGp5kcL19UP2599
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -168,7 +171,25 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - **Detail:** Response headers on python.org identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
 - **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
-### 21. [INFO] 48 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 21. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of python.org contains wildcard SAN entry(ies) *.python.org; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
+
+### 22. [INFO] OCSP responder URL uses plaintext http:// (`TLS31`)
+
+- **CWE:** CWE-319
+- **Detail:** The OCSP URL in the leaf certificate of python.org is http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2025q4; OCSP requests and responses travel unencrypted.
+- **Recommendation:** Publish an https:// OCSP responder URL.
+
+### 23. [INFO] Proxy/edge hop chain disclosed via Via (`H12`)
+
+- **CWE:** CWE-200
+- **Detail:** The root of python.org discloses a 1-hop fronting chain (1.1 varnish); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
+- **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
+### 24. [INFO] 48 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.wiki.python.org, blog.python.org, jobs.python.org, mail.python.org, status.python.org, wiki.python.org
@@ -181,42 +202,42 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
   "domain": "python.org",
   "dns": {
     "a": [
-      "151.101.64.223",
-      "151.101.0.223",
       "151.101.192.223",
-      "151.101.128.223"
+      "151.101.64.223",
+      "151.101.128.223",
+      "151.101.0.223"
     ],
     "aaaa": [
-      "2a04:4e42:400::223",
       "2a04:4e42:200::223",
-      "2a04:4e42:600::223",
-      "2a04:4e42::223"
+      "2a04:4e42::223",
+      "2a04:4e42:400::223",
+      "2a04:4e42:600::223"
     ],
     "cname": null,
     "mx": [
       "mail.python.org (pref 50)"
     ],
     "ns": [
-      "ns-484.awsdns-60.com.",
       "ns-2046.awsdns-63.co.uk.",
-      "ns-1134.awsdns-13.org.",
-      "ns-981.awsdns-58.net."
+      "ns-484.awsdns-60.com.",
+      "ns-981.awsdns-58.net.",
+      "ns-1134.awsdns-13.org."
     ],
     "caa": [],
     "spf": [
-      "v=spf1 mx ip4:188.166.95.178/32 ip6:2a03:b0c0:2:d0::71:1 include:stspg-customer.com include:_spf.google.com include:mailgun.org ~all",
-      "888acb5757da46ad83b7e341ec544c64",
-      "google-site-verification=9852CbTRhQ51-9gCUayPbGYqJeBle_MXLb6E4AL_qQk",
-      "google-site-verification=dqhMiMzpbkSyEhgjGKyEOMlEg2tF0MSHD7UN-MYfD-M",
-      "libera-1298aas",
       "MS=73147F1EC0843C399CF17F586EC6B8EAF8C57961",
-      "google-site-verification=QALZObrGl2OVG8lWUE40uVSMCAka316yADn9ZfCU5OA",
-      "anthropic-domain-verification-x3xt87=cFLP3aL71pAYPZLQR7JKvRhcF",
+      "twilio-domain-verification=1c295667813cc0aaae819ed7657818f8",
       "google-site-verification=w3b8mU3wU6cZ8uSrj3E_5f1frPejJskDpSp_nMWJ99o",
       "_globalsign-domain-verification=B57sRQpmte4G4w-gavZbVNmmNsMxGp5kcL19UP2599",
-      "openai-domain-verification=dv-VgeNijVDgW7g56UZyGIVyKNr",
-      "twilio-domain-verification=1c295667813cc0aaae819ed7657818f8",
-      "status-page-domain-verification=9y2klhzbxsgk"
+      "google-site-verification=QALZObrGl2OVG8lWUE40uVSMCAka316yADn9ZfCU5OA",
+      "v=spf1 mx ip4:188.166.95.178/32 ip6:2a03:b0c0:2:d0::71:1 include:stspg-customer.com include:_spf.google.com include:mailgun.org ~all",
+      "google-site-verification=dqhMiMzpbkSyEhgjGKyEOMlEg2tF0MSHD7UN-MYfD-M",
+      "anthropic-domain-verification-x3xt87=cFLP3aL71pAYPZLQR7JKvRhcF",
+      "888acb5757da46ad83b7e341ec544c64",
+      "google-site-verification=9852CbTRhQ51-9gCUayPbGYqJeBle_MXLb6E4AL_qQk",
+      "status-page-domain-verification=9y2klhzbxsgk",
+      "libera-1298aas",
+      "openai-domain-verification=dv-VgeNijVDgW7g56UZyGIVyKNr"
     ],
     "dmarc": [
       "v=DMARC1; p=none; pct=100; rua=mailto:re+shb8ybr70a3@dmarc.postmarkapp.com; sp=none; aspf=r;"
@@ -247,7 +268,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     }
   },
   "ports": {
-    "ip": "151.101.64.223",
+    "ip": "151.101.192.223",
     "open": []
   },
   "https": {
@@ -331,11 +352,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
     ]
   },
   "apex_txt": [
-    "google-site-verification=9852CbTRhQ51-9gCUayPbGYqJeBle_MXLb6E4AL_qQk",
-    "google-site-verification=dqhMiMzpbkSyEhgjGKyEOMlEg2tF0MSHD7UN-MYfD-M",
+    "twilio-domain-verification=1c295667813cc0aaae819ed7657818f8",
+    "google-site-verification=w3b8mU3wU6cZ8uSrj3E_5f1frPejJskDpSp_nMWJ99o",
+    "_globalsign-domain-verification=B57sRQpmte4G4w-gavZbVNmmNsMxGp5kcL19UP2599",
     "google-site-verification=QALZObrGl2OVG8lWUE40uVSMCAka316yADn9ZfCU5OA",
-    "anthropic-domain-verification-x3xt87=cFLP3aL71pAYPZLQR7JKvRhcF",
-    "google-site-verification=w3b8mU3wU6cZ8uSrj3E_5f1frPejJskDpSp_nMWJ99o"
+    "google-site-verification=dqhMiMzpbkSyEhgjGKyEOMlEg2tF0MSHD7UN-MYfD-M"
   ],
   "tls2": {
     "alpn": "",
@@ -353,6 +374,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.globalsign.com/ca/gsatlasr3dvtlsca2025q4.crl"
+      ],
+      "san": [
+        "www.python.org",
+        "*.python.org",
+        "python.org"
       ],
       "subject_dn": "3117301506035504030c0e7777772e707974686f6e2e6f7267",
       "issuer_dn": "310b300906035504061302424531193017060355040a1310476c6f62616c5369676e206e762d7361312e302c06035504031325476c6f62616c5369676e2041746c617320523320445620544c532043412032303235205134",
@@ -406,8 +432,15 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
       "Fastly"
     ]
   },
-  "elapsed_s": 18.9,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.python.org"
+    ],
+    "ocsp_http": "http://ocsp.globalsign.com/ca/gsatlasr3dvtlsca2025q4",
+    "via": "1.1 varnish"
+  },
+  "elapsed_s": 18.7,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -421,4 +454,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,8 +7,8 @@
 | Target | https://keep.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | keep.google.com |
-| Test date | 2026-09-27 01:25 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 02:36 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint, retired/legacy-header surface (Public-Key-Pins/HPKP still deployed, deprecated Expect-CT, legacy Flash cross-domain-policy exposure, Via proxy-hop chain disclosure, partial COOP/COEP cross-origin isolation, explicit Permissions-Policy sensitive-feature allowance), certificate posture from the existing handshake evidence (wildcard SAN scope, plaintext http:// OCSP transport, 398-day cap for post-2026-03-15 issuances), dpop-jwks/origin-rsa-keys/llms.txt well-known publication, root-document surface (missing html lang, inline event handlers, leftover dev comments, legacy object/embed, data: URIs)). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -32,10 +32,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 | 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 15 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 16 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 18 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
-| 19 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
-| 20 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 17 | low | RD2 | HTTPS root redirects to a different domain | CWE-200 |
+| 18 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 19 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 20 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
 
 ## Detailed findings
 
@@ -140,29 +140,29 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - **Detail:** CSP of keep.google.com includes a report-uri/report-to endpoint; the endpoint URL and its acceptance behavior are exposed.
 - **Recommendation:** Verify the CSP report endpoint rate-limits and authenticates submissions.
 
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
-
-- **CWE:** CWE-200
-- **Detail:** 142.250.77.206 carries PTR del11s08-in-f14.1e100.net., lctsaa-ah-in-f14.1e100.net. for keep.google.com.
-- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
-
-### 18. [LOW] HTTPS root redirects to a different domain (`RD2`)
+### 17. [LOW] HTTPS root redirects to a different domain (`RD2`)
 
 - **CWE:** CWE-200
 - **Detail:** https://keep.google.com/ answered 302 with Location: https://accounts.google.com/ServiceLogin?service=memento&passive=1209600&continue=https://keep.google.com/&followup=https://keep.google.com/&ltmpl=keep (cross-domain handoff at the entry point).
 - **Recommendation:** Review the cross-domain redirect; it discloses the real entry point and can be abused in open-redirect-style flows.
 
-### 19. [INFO] App-association / digital-asset-links surface published (`WK1`)
+### 18. [INFO] App-association / digital-asset-links surface published (`WK1`)
 
 - **CWE:** CWE-200
 - **Detail:** Live JSON at /.well-known/assetlinks.json on keep.google.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
-### 20. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+### 19. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
 
 - **CWE:** CWE-200
 - **Detail:** The root response of keep.google.com carries alt-svc h3=":443"; ma=2592000,h3-29=":443"; ma=2592000; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
 - **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
+
+### 20. [INFO] Wildcard SAN on the leaf certificate (`TLS30`)
+
+- **CWE:** CWE-298
+- **Detail:** The leaf certificate of keep.google.com contains wildcard SAN entry(ies) *.keep.google.com; a single key compromise or mis-issuance covers every subdomain of that name.
+- **Recommendation:** Prefer per-host certificates for high-value subdomains (auth, API, admin).
 
 ## Evidence (raw response observations)
 
@@ -171,25 +171,32 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "domain": "keep.google.com",
   "dns": {
     "a": [
-      "142.250.77.206"
+      "142.251.150.176",
+      "142.251.155.176",
+      "142.251.156.176",
+      "142.251.153.176",
+      "142.251.154.176",
+      "142.251.151.176",
+      "142.251.157.176",
+      "142.251.152.176"
     ],
     "aaaa": [
-      "2001:4860:482c:b000::",
       "2001:4860:4828:b000::",
       "2001:4860:4829:b000::",
-      "2001:4860:4826:b000::",
-      "2001:4860:4827:b000::",
-      "2001:4860:482d:b000::",
+      "2001:4860:482c:b000::",
       "2001:4860:482b:b000::",
+      "2001:4860:4826:b000::",
+      "2001:4860:482d:b000::",
+      "2001:4860:4827:b000::",
       "2001:4860:482a:b000::"
     ],
     "cname": null,
     "mx": [
+      "gmr-smtp-in.l.google.com (pref 5)",
       "alt3.gmr-smtp-in.l.google.com (pref 30)",
-      "alt4.gmr-smtp-in.l.google.com (pref 40)",
-      "alt2.gmr-smtp-in.l.google.com (pref 20)",
       "alt1.gmr-smtp-in.l.google.com (pref 10)",
-      "gmr-smtp-in.l.google.com (pref 5)"
+      "alt4.gmr-smtp-in.l.google.com (pref 40)",
+      "alt2.gmr-smtp-in.l.google.com (pref 20)"
     ],
     "ns": [],
     "caa": [],
@@ -205,9 +212,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "version": "TLSv1.3",
     "cipher": "TLS_AES_256_GCM_SHA384",
     "subject": "commonName=keep.google.com",
-    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WR2",
-    "notBefore": "Sep 10 19:21:54 2026 GMT",
-    "notAfter": "Dec  3 19:21:53 2026 GMT",
+    "issuer": "countryName=US, organizationName=Google Trust Services, commonName=WE2",
+    "notBefore": "Sep 10 19:22:00 2026 GMT",
+    "notAfter": "Dec  3 19:21:59 2026 GMT",
     "san": [
       "keep.google.com",
       "*.keep.google.com",
@@ -223,7 +230,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     }
   },
   "ports": {
-    "ip": "142.250.77.206",
+    "ip": "142.251.150.176",
     "open": []
   },
   "https": {
@@ -280,30 +287,31 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "tls_ver": "TLSv1.3",
     "subject": "None",
     "cert": {
-      "sig_oid": "1.2.840.113549.1.1.11",
+      "sig_oid": "1.2.840.10045.4.3.2",
       "key_alg": "1.2.840.10045.2.1",
       "key_bits": 256,
       "curve": "1.2.840.10045.3.1.7",
       "aia_ocsp": null,
-      "serial": 17489724389385198261932770729503826239,
+      "serial": 74509678604640896957885875290013494540,
       "cert_version": 3,
       "bc_ca": null,
       "bc_pathlen": null,
       "crl_urls": [
-        "http://c.pki.goog/wr2/oQ6nyr8F0m0.crl"
+        "http://c.pki.goog/we2/xuzt3PU9F_w.crl"
+      ],
+      "san": [
+        "keep.google.com",
+        "*.keep.google.com",
+        "www.keep.google.com"
       ],
       "subject_dn": "311830160603550403130f6b6565702e676f6f676c652e636f6d",
-      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303575232",
-      "not_before": "20260910192154",
-      "not_after": "20261203192153"
+      "issuer_dn": "310b3009060355040613025553311e301c060355040a1315476f6f676c65205472757374205365727669636573310c300a06035504031303574532",
+      "not_before": "20260910192200",
+      "not_after": "20261203192159"
     }
   },
   "x12": {
-    "status": 302,
-    "ptr": [
-      "del11s08-in-f14.1e100.net.",
-      "lctsaa-ah-in-f14.1e100.net."
-    ]
+    "status": 302
   },
   "x13": {
     "root_status": 302,
@@ -323,7 +331,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "root_status": 302,
     "hsts": "max-age=31536000; includeSubDomains; preload",
     "crl": {
-      "url": "http://c.pki.goog/wr2/oQ6nyr8F0m0.crl",
+      "url": "http://c.pki.goog/we2/xuzt3PU9F_w.crl",
       "status": 200
     }
   },
@@ -336,8 +344,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "root_status": 302,
     "alt_svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
   },
-  "elapsed_s": 13.4,
-  "rechecked": "2026-09-27 01:08 UTC"
+  "x17": {
+    "wildcard_san": [
+      "*.keep.google.com"
+    ]
+  },
+  "elapsed_s": 14.9,
+  "rechecked": "2026-09-27 02:16 UTC"
 }
 ```
 
@@ -351,4 +364,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
+- re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
