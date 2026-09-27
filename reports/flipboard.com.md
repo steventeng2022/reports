@@ -7,12 +7,12 @@
 | Target | https://flipboard.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | flipboard.com |
-| Test date | 2026-09-26 23:27 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:18 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
+Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,7 +35,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 | 17 | info | REF1 | Referrer-Policy set to unsafe-url | CWE-200 |
 | 18 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
 | 19 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
-| 20 | info | CT1 | 12 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 20 | info | HTML7 | Insecure http:// references inside an HTTPS document | CWE-319 |
+| 21 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 22 | info | CT1 | 12 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -101,7 +103,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=196ICmalqDggbij227IKpDuO8wjKIGJOoWQUKVR0B0U; google-site-verification=BqjKftnKldO1vP49cSkz2ryHMLPk5y3V6-JlkIhUo1U; have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=EU2djlhiCyLFRE6dqL0HEIwLSclUSRLzkbvQ4ObXr7I; atlassian-domain-verification=dZ8g4eOwcpvhvx5AD10LH0gUSjKTUUgORwal07qANXl3412gq8; google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -119,7 +121,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.48 carries PTR server-54-192-248-48.tpe53.r.cloudfront.net. for flipboard.com.
+- **Detail:** 54.192.248.101 carries PTR server-54-192-248-101.tpe53.r.cloudfront.net. for flipboard.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 14. [LOW] Session-like cookie with >=30-day lifetime (`CK8`)
@@ -131,7 +133,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 15. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkga89y9fy9nyi.html -> 404; error page/headers match: CloudFront.
+- **Detail:** GET /xk1bx8r7ut9sxg.html -> 404; error page/headers match: CloudFront.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 16. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -158,7 +160,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - **Detail:** /sitemap.xml on flipboard.com lists 2023 <loc> URL(s) across 2024 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
-### 20. [INFO] 12 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 20. [INFO] Insecure http:// references inside an HTTPS document (`HTML7`)
+
+- **CWE:** CWE-319
+- **Detail:** Root document of flipboard.com references 4 distinct http:// URL(s) (e.g. http://b, http://cdn.flipboard.com/dev_O/insideflipboard/120318/YIR---US---1080X1080-A.jpg, http://cdn.flipboard.com/dev_O/insideflipboard/120318/YIR---US---800X600-A.jpg); using them drops to unencrypted transport.
+- **Recommendation:** Use https:// references or relative URLs.
+
+### 21. [INFO] Document references many third-party domains (`HTML11`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of flipboard.com references 20 distinct third-party registrable domains (e.g. flip.it, wsj.net, s-nbcnews.com, schema.org, bbci.co.uk); each is a supply-chain/trust dependency of the page.
+- **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
+
+### 22. [INFO] 12 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: none flagged
@@ -171,30 +185,30 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "domain": "flipboard.com",
   "dns": {
     "a": [
-      "54.192.248.48",
       "54.192.248.101",
       "54.192.248.119",
-      "54.192.248.59"
+      "54.192.248.59",
+      "54.192.248.48"
     ],
     "aaaa": [
-      "2600:9000:202f:5a00:15:d33e:2640:93a1",
-      "2600:9000:202f:9c00:15:d33e:2640:93a1",
-      "2600:9000:202f:2200:15:d33e:2640:93a1",
-      "2600:9000:202f:2600:15:d33e:2640:93a1",
-      "2600:9000:202f:d200:15:d33e:2640:93a1",
-      "2600:9000:202f:c400:15:d33e:2640:93a1",
-      "2600:9000:202f:7c00:15:d33e:2640:93a1",
-      "2600:9000:202f:ae00:15:d33e:2640:93a1"
+      "2600:9000:202f:7a00:15:d33e:2640:93a1",
+      "2600:9000:202f:c000:15:d33e:2640:93a1",
+      "2600:9000:202f:b800:15:d33e:2640:93a1",
+      "2600:9000:202f:9a00:15:d33e:2640:93a1",
+      "2600:9000:202f:4600:15:d33e:2640:93a1",
+      "2600:9000:202f:7600:15:d33e:2640:93a1",
+      "2600:9000:202f:e000:15:d33e:2640:93a1",
+      "2600:9000:202f:9c00:15:d33e:2640:93a1"
     ],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 10)",
-      "aspmx3.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 30)",
       "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx4.googlemail.com (pref 30)",
+      "aspmx.l.google.com (pref 10)",
       "aspmx5.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)"
+      "aspmx4.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
+      "aspmx3.googlemail.com (pref 30)"
     ],
     "ns": [
       "ns-60.awsdns-07.com.",
@@ -203,27 +217,27 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "ns-1510.awsdns-60.org."
     ],
     "caa": [
-      "0 issue \"pki.goog\"",
-      "0 issue \"awstrust.com\"",
-      "0 issue \"amazontrust.com\"",
-      "0 issue \"letsencrypt.org\"",
-      "0 issue \"amazon.com\"",
       "0 issue \"amazonaws.com\"",
-      "0 issue \"digicert.com\""
+      "0 issue \"digicert.com\"",
+      "0 issue \"pki.goog\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"awstrust.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"amazontrust.com\""
     ],
     "spf": [
-      "v=spf1 include:servers.mcsv.net include:sendgrid.net include:_spf.google.com -all",
-      "google-site-verification=196ICmalqDggbij227IKpDuO8wjKIGJOoWQUKVR0B0U",
-      "google-site-verification=BqjKftnKldO1vP49cSkz2ryHMLPk5y3V6-JlkIhUo1U",
-      "have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4",
-      "google-site-verification=47g-PnfQPJHjb8Ze5YYF-hF2ABg67yFQc-kwrSv8PAY",
-      "google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys",
-      "anthropic-domain-verification-1avd9b=GWlaVK7cM1UrnAecUR0PhzRI7",
       "google-site-verification=EU2djlhiCyLFRE6dqL0HEIwLSclUSRLzkbvQ4ObXr7I",
       "_wpengine-sso-challenge.flipboard.com= 2KkDEiUGF0IvgPeA6uHIcV57z9H",
-      "atlassian-domain-verification=dZ8g4eOwcpvhvx5AD10LH0gUSjKTUUgORwal07qANXl3412gq8IYKOlI4oa4llnl",
       "_wpengine-sso-challenge= 2KkDEiUGF0IvgPeA6uHIcV57z9H",
-      "google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4"
+      "atlassian-domain-verification=dZ8g4eOwcpvhvx5AD10LH0gUSjKTUUgORwal07qANXl3412gq8IYKOlI4oa4llnl",
+      "google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys",
+      "google-site-verification=47g-PnfQPJHjb8Ze5YYF-hF2ABg67yFQc-kwrSv8PAY",
+      "have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4",
+      "google-site-verification=9rExE5dYg3CPZ3GFGvrkj2MbbKAkdHHH5aRUYSnq9w4",
+      "google-site-verification=196ICmalqDggbij227IKpDuO8wjKIGJOoWQUKVR0B0U",
+      "v=spf1 include:servers.mcsv.net include:sendgrid.net include:_spf.google.com -all",
+      "google-site-verification=BqjKftnKldO1vP49cSkz2ryHMLPk5y3V6-JlkIhUo1U",
+      "anthropic-domain-verification-1avd9b=GWlaVK7cM1UrnAecUR0PhzRI7"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine;"
@@ -244,7 +258,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "www.flipboard.com",
       "flipboard.com"
     ],
-    "days_left": 166,
+    "days_left": 165,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -254,7 +268,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     }
   },
   "ports": {
-    "ip": "54.192.248.48",
+    "ip": "54.192.248.101",
     "open": []
   },
   "https": {
@@ -326,11 +340,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ]
   },
   "apex_txt": [
-    "google-site-verification=196ICmalqDggbij227IKpDuO8wjKIGJOoWQUKVR0B0U",
-    "google-site-verification=BqjKftnKldO1vP49cSkz2ryHMLPk5y3V6-JlkIhUo1U",
-    "have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4",
+    "google-site-verification=EU2djlhiCyLFRE6dqL0HEIwLSclUSRLzkbvQ4ObXr7I",
+    "atlassian-domain-verification=dZ8g4eOwcpvhvx5AD10LH0gUSjKTUUgORwal07qANXl3412gq8",
+    "google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys",
     "google-site-verification=47g-PnfQPJHjb8Ze5YYF-hF2ABg67yFQc-kwrSv8PAY",
-    "google-site-verification=eqogjmVDZB-9UMYUFvv5OlEO_a20KZadbY7DJw35Dys"
+    "have-i-been-pwned-verification=6b731851fd4ef8a6d49f6f8ff8f3eed4"
   ],
   "tls2": {
     "alpn": "",
@@ -378,7 +392,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "x12": {
     "status": 200,
     "ptr": [
-      "server-54-192-248-48.tpe53.r.cloudfront.net."
+      "server-54-192-248-101.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -407,8 +421,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "status": 200
     }
   },
-  "elapsed_s": 21.5,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 200
+  },
+  "elapsed_s": 20.6,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -420,4 +439,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

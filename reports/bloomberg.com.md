@@ -7,8 +7,8 @@
 | Target | https://bloomberg.com/ |
 | Bug bounty program | Bloomberg |
 | Listed scope domain | bloomberg.com |
-| Test date | 2026-09-26 23:20 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:11 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -97,7 +97,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a; airtable-verification=15d4376d6d99cc906abbcb295b4245da; lutron-domain-verification-p8wzsk=PQcs5tfle6vYve4ulSshxyMYi
+- **Detail:** Apex TXT records with verification/token content: airtable-verification=15d4376d6d99cc906abbcb295b4245da; jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ; cursor-domain-verification-asb77c=D43c1zjGqO3rTemQvZ121NSfi
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -115,7 +115,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 ### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 15.197.146.156 carries PTR aa2f66099ca87b6fe.awsglobalaccelerator.com. for bloomberg.com.
+- **Detail:** 3.33.146.110 carries PTR aa2f66099ca87b6fe.awsglobalaccelerator.com. for bloomberg.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 14. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
@@ -143,56 +143,56 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
   "domain": "bloomberg.com",
   "dns": {
     "a": [
-      "15.197.146.156",
-      "3.33.146.110"
+      "3.33.146.110",
+      "15.197.146.156"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mgcny2.bloomberg.com (pref 0)",
+      "mgcnj1.bloomberg.com (pref 0)",
       "mgcnj2.bloomberg.com (pref 0)",
-      "mgcny1.bloomberg.com (pref 0)",
-      "mgcnj1.bloomberg.com (pref 0)"
+      "mgcny2.bloomberg.com (pref 0)",
+      "mgcny1.bloomberg.com (pref 0)"
     ],
     "ns": [
-      "pdns1.ultradns.net.",
-      "pdns3.ultradns.org.",
-      "pdns5.ultradns.info.",
-      "dns1.p01.nsone.net.",
       "dns4.p01.nsone.net.",
-      "dns2.p01.nsone.net.",
-      "dns3.p01.nsone.net."
+      "pdns1.ultradns.net.",
+      "dns3.p01.nsone.net.",
+      "pdns5.ultradns.info.",
+      "pdns3.ultradns.org.",
+      "dns1.p01.nsone.net.",
+      "dns2.p01.nsone.net."
     ],
     "caa": [
-      "0 issue \"amazon.com\"",
-      "0 issuewild \"digicert.com\"",
       "0 issue \"digicert.com\"",
-      "0 iodef \"mailto:reportvuln@bloomberg.net\""
+      "0 iodef \"mailto:reportvuln@bloomberg.net\"",
+      "0 issue \"amazon.com\"",
+      "0 issuewild \"digicert.com\""
     ],
     "spf": [
-      "parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a5e941f5379c267",
-      "2smsverify=08qXd7f0aUa5IPq0N4ETgQ",
-      "OSSRH-64276",
-      "QnH3utpbwmcXnxwnErM2by/pp37P7fYtF9si0rMmb9FgwB98zU8UAzdl1GbyQMdyNFLKobFRdX6FfLlH/LG+og==",
-      "airtable-verification=15d4376d6d99cc906abbcb295b4245da",
-      "lutron-domain-verification-p8wzsk=PQcs5tfle6vYve4ulSshxyMYi",
-      "cursor-domain-verification-asb77c=D43c1zjGqO3rTemQvZ121NSfi",
-      "apple-domain-verification=9cs9hMRccEtbVb8h",
-      "Ymxvb21iZXJn",
-      "google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8",
       "MS=ms33692690",
-      "jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ",
       "F2QdzLTE6LTOyOQ7pQzoSY2pnwVM5pnfiqY3zOoYvS3LoVmIUr0J3op5vQI8Tg8VQwt24UK8v7oFWfbrCBWYYw==",
-      "v=spf1 ip4:69.184.0.0/13 ip4:199.172.169.0/24 ip4:208.22.56.0/24 ip4:69.191.241.124 -all",
-      "google-site-verification=CI2IKDBbk_gcKk_9CFFUrF-ZLZToKXQ7SAJ96fjqZ_I",
-      "openai-domain-verification=dv-XaK3IjuwWpMmfss9VYKwn0eY",
-      "ZOOM_verify_8UDWCiGoiAVgGEuiZNG9Ld",
-      "google-gws-recovery-domain-verification=72311760",
+      "airtable-verification=15d4376d6d99cc906abbcb295b4245da",
+      "jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ",
+      "MS=ms99943004",
+      "cursor-domain-verification-asb77c=D43c1zjGqO3rTemQvZ121NSfi",
       "atlassian-domain-verification=gK9LJEftkavNAe/keDgXDWOhGwUV02GQTz9BbfKLplkTTtpciOH5eL1W6u7BRfVR",
+      "v=spf1 ip4:69.184.0.0/13 ip4:199.172.169.0/24 ip4:208.22.56.0/24 ip4:69.191.241.124 -all",
+      "2smsverify=08qXd7f0aUa5IPq0N4ETgQ",
+      "ZOOM_verify_8UDWCiGoiAVgGEuiZNG9Ld",
+      "google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8",
+      "google-gws-recovery-domain-verification=72311760",
+      "openai-domain-verification=dv-XaK3IjuwWpMmfss9VYKwn0eY",
       "ZOOM_verify_rl-mcFScS8W6864E30mlZg",
+      "apple-domain-verification=9cs9hMRccEtbVb8h",
       "extensis-domain-verification=707df5b4-0868-499f-af75-51718e082698",
-      "google-site-verification=ClT3QBQ-Rd4b3AAq2gmQ-u_94EliZRmC2e-Kb4t9zEo",
-      "MS=ms99943004"
+      "parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a5e941f5379c267",
+      "google-site-verification=CI2IKDBbk_gcKk_9CFFUrF-ZLZToKXQ7SAJ96fjqZ_I",
+      "OSSRH-64276",
+      "lutron-domain-verification-p8wzsk=PQcs5tfle6vYve4ulSshxyMYi",
+      "QnH3utpbwmcXnxwnErM2by/pp37P7fYtF9si0rMmb9FgwB98zU8UAzdl1GbyQMdyNFLKobFRdX6FfLlH/LG+og==",
+      "Ymxvb21iZXJn",
+      "google-site-verification=ClT3QBQ-Rd4b3AAq2gmQ-u_94EliZRmC2e-Kb4t9zEo"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; adkim=r; aspf=r; ruf=mailto:dmarc-ruf@dmarc-bloomberg.com; fo=1; rua=mailto:dmarc-rua@dmarc-bloomberg.com"
@@ -261,7 +261,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "bloombergcompany.com",
       "bloombergcontentservice.com"
     ],
-    "days_left": 125,
+    "days_left": 124,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -271,7 +271,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     }
   },
   "ports": {
-    "ip": "15.197.146.156",
+    "ip": "3.33.146.110",
     "open": []
   },
   "https": {
@@ -324,11 +324,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "parallels-domain-verification=47460854911b478da11221dc20e8cc0340a92adf1e6b4ff08a",
     "airtable-verification=15d4376d6d99cc906abbcb295b4245da",
-    "lutron-domain-verification-p8wzsk=PQcs5tfle6vYve4ulSshxyMYi",
+    "jamf-site-verification=VJNRhgJ90SmyugkIPAdfCQ",
     "cursor-domain-verification-asb77c=D43c1zjGqO3rTemQvZ121NSfi",
-    "apple-domain-verification=9cs9hMRccEtbVb8h"
+    "atlassian-domain-verification=gK9LJEftkavNAe/keDgXDWOhGwUV02GQTz9BbfKLplkTTtpciO",
+    "google-site-verification=vH_zs-JrwvXxkyuUqmeN9t3iMYZqyt1-BJUsoyN3ca8"
   ],
   "tls2": {
     "alpn": "",
@@ -400,8 +400,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
       "status": 200
     }
   },
-  "elapsed_s": 27.6,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 28.3,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -413,4 +418,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

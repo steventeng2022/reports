@@ -7,12 +7,12 @@
 | Target | https://giphy.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | giphy.com |
-| Test date | 2026-09-26 23:28 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:19 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
+Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,8 +34,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 | 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 17 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 19 | info | CT1 | 25 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 20 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 19 | info | HTML7 | Insecure http:// references inside an HTTPS document | CWE-319 |
+| 20 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 21 | info | CT1 | 25 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 22 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -115,7 +117,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=m6PPLfObSkbjxTzE2TMYuB8ep11oITy1i3O2GqkEQ3A; atlassian-domain-verification=2ZiBk8nroSamkeHuamMoEH9zYMfA1R0XO1ZWlq1mnt3E02TV0e; google-site-verification=wWrXYq5cDpNdZjgDPtJ30mM87mlOArvOCGrkEVndkko
+- **Detail:** Apex TXT records with verification/token content: status-page-domain-verification=9qs86qrhsgnd; atlassian-domain-verification=2ZiBk8nroSamkeHuamMoEH9zYMfA1R0XO1ZWlq1mnt3E02TV0e; apple-domain-verification=Fii0eNOZHns9TIAc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -154,13 +156,25 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - **Detail:** No CAA record found for giphy.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 19. [INFO] 25 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 19. [INFO] Insecure http:// references inside an HTTPS document (`HTML7`)
+
+- **CWE:** CWE-319
+- **Detail:** Root document of giphy.com references 11 distinct http:// URL(s) (e.g. http://ethanbarnowsky.com/\, http://facebook.com/floridagators\, http://facebook.com/hawkeyesports\); using them drops to unencrypted transport.
+- **Recommendation:** Use https:// references or relative URLs.
+
+### 20. [INFO] Document references many third-party domains (`HTML11`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of giphy.com references 17 distinct third-party registrable domains (e.g. gph.is, schema.org, schema.org\, giphy.com\, w3.org); each is a supply-chain/trust dependency of the page.
+- **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
+
+### 21. [INFO] 25 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.giphy.com, beta.giphy.com, blog.giphy.com, dev.giphy.com, media.giphy.com, status.giphy.com, support.giphy.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 20. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 22. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: beta.giphy.com, dev.giphy.com; content may still be served via virtual-host fallback.
@@ -173,37 +187,37 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
   "domain": "giphy.com",
   "dns": {
     "a": [
-      "151.101.65.55",
-      "151.101.1.55",
+      "151.101.129.55",
       "151.101.193.55",
-      "151.101.129.55"
+      "151.101.65.55",
+      "151.101.1.55"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "aspmx2.googlemail.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
-      "aspmx2.googlemail.com (pref 10)"
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "ns-688.awsdns-22.net.",
+      "ns-8.awsdns-01.com.",
       "ns-1507.awsdns-60.org.",
-      "ns-1872.awsdns-42.co.uk.",
-      "ns-8.awsdns-01.com."
+      "ns-688.awsdns-22.net.",
+      "ns-1872.awsdns-42.co.uk."
     ],
     "caa": [],
     "spf": [
+      "status-page-domain-verification=9qs86qrhsgnd",
+      "atlassian-domain-verification=2ZiBk8nroSamkeHuamMoEH9zYMfA1R0XO1ZWlq1mnt3E02TV0eaz56swmTVIdMH3",
+      "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC1eUbX0WlXcwRefEWDxiZRQI59QABCL+n7ynL/9jASPtr4Nhlqff+AbbImJ7OgWkd6viDUk5RNsafT5dhtjGZTRLooTp2C1UWev9vIM5VBU4MIcW9ZGHuhTNrKPwiLS/TxJAFSE1lGWHmBp0+21XmdMbF/kF8k9WioazM093qmHwIDAQAB",
+      "apple-domain-verification=Fii0eNOZHns9TIAc",
+      "00D1U000000q2bj=1TBWj00000001gr",
+      "google-site-verification=wWrXYq5cDpNdZjgDPtJ30mM87mlOArvOCGrkEVndkko",
+      "google-site-verification=84mKsZZUB9XYo-Ci3C6ODMErVHAtxe317JWYTbUQjFw",
       "TAILSCALE-S8njngbH6JUB9eUyI3hA",
       "google-site-verification=m6PPLfObSkbjxTzE2TMYuB8ep11oITy1i3O2GqkEQ3A",
-      "atlassian-domain-verification=2ZiBk8nroSamkeHuamMoEH9zYMfA1R0XO1ZWlq1mnt3E02TV0eaz56swmTVIdMH3",
-      "google-site-verification=wWrXYq5cDpNdZjgDPtJ30mM87mlOArvOCGrkEVndkko",
-      "00D1U000000q2bj=1TBWj00000001gr",
       "openai-domain-verification=dv-Sagm5Hc2GH6IccoTx7kqsIPO",
-      "status-page-domain-verification=9qs86qrhsgnd",
-      "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC1eUbX0WlXcwRefEWDxiZRQI59QABCL+n7ynL/9jASPtr4Nhlqff+AbbImJ7OgWkd6viDUk5RNsafT5dhtjGZTRLooTp2C1UWev9vIM5VBU4MIcW9ZGHuhTNrKPwiLS/TxJAFSE1lGWHmBp0+21XmdMbF/kF8k9WioazM093qmHwIDAQAB",
-      "google-site-verification=84mKsZZUB9XYo-Ci3C6ODMErVHAtxe317JWYTbUQjFw",
-      "apple-domain-verification=Fii0eNOZHns9TIAc",
       "v=spf1 include:sendgrid.net include:_spf.google.com include:_spf.mailgun.org include:_spf.eu.mailgun.org include:servers.mcsv.net exists:%{i}._spf.mta.salesforce.com -all"
     ],
     "dmarc": [
@@ -234,7 +248,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     }
   },
   "ports": {
-    "ip": "151.101.65.55",
+    "ip": "151.101.129.55",
     "open": []
   },
   "https": {
@@ -320,11 +334,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     ]
   },
   "apex_txt": [
-    "google-site-verification=m6PPLfObSkbjxTzE2TMYuB8ep11oITy1i3O2GqkEQ3A",
+    "status-page-domain-verification=9qs86qrhsgnd",
     "atlassian-domain-verification=2ZiBk8nroSamkeHuamMoEH9zYMfA1R0XO1ZWlq1mnt3E02TV0e",
+    "apple-domain-verification=Fii0eNOZHns9TIAc",
     "google-site-verification=wWrXYq5cDpNdZjgDPtJ30mM87mlOArvOCGrkEVndkko",
-    "openai-domain-verification=dv-Sagm5Hc2GH6IccoTx7kqsIPO",
-    "status-page-domain-verification=9qs86qrhsgnd"
+    "google-site-verification=84mKsZZUB9XYo-Ci3C6ODMErVHAtxe317JWYTbUQjFw"
   ],
   "tls2": {
     "alpn": "",
@@ -382,8 +396,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "status": 200
     }
   },
-  "elapsed_s": 24.6,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 200
+  },
+  "elapsed_s": 25.5,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -395,4 +414,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

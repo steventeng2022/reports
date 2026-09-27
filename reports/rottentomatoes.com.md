@@ -7,8 +7,8 @@
 | Target | https://rottentomatoes.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | rottentomatoes.com |
-| Test date | 2026-09-26 23:37 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:30 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -102,7 +102,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe985; dropbox-domain-verification=qwg79uqdchth; google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ
+- **Detail:** Apex TXT records with verification/token content: dropbox-domain-verification=qwg79uqdchth; adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe985; airtable-verification=a25c5929bf27eceab120aa631f5b34cb
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -120,7 +120,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 ### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 23.210.215.218 carries PTR a23-210-215-218.deploy.static.akamaitechnologies.com. for rottentomatoes.com.
+- **Detail:** 23.210.215.203 carries PTR a23-210-215-203.deploy.static.akamaitechnologies.com. for rottentomatoes.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ## Evidence (raw response observations)
@@ -130,53 +130,53 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
   "domain": "rottentomatoes.com",
   "dns": {
     "a": [
-      "23.210.215.218",
-      "23.210.215.203"
+      "23.210.215.203",
+      "23.210.215.218"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxa-00a17301.gslb.pphosted.com (pref 10)",
       "mx0a-00a17301.pphosted.com (pref 20)",
-      "mx0b-00a17301.pphosted.com (pref 20)",
-      "mxb-00a17301.gslb.pphosted.com (pref 10)"
+      "mxb-00a17301.gslb.pphosted.com (pref 10)",
+      "mxa-00a17301.gslb.pphosted.com (pref 10)",
+      "mx0b-00a17301.pphosted.com (pref 20)"
     ],
     "ns": [
-      "udns2.ultradns.net.",
-      "a13-65.akam.net.",
-      "a5-66.akam.net.",
-      "a22-67.akam.net.",
-      "udns1.ultradns.net.",
       "a4-66.akam.net.",
       "a2-65.akam.net.",
+      "a13-65.akam.net.",
+      "udns2.ultradns.net.",
+      "udns1.ultradns.net.",
+      "a5-66.akam.net.",
+      "a22-67.akam.net.",
       "a1-42.akam.net."
     ],
     "caa": [
-      "0 issue \"letsencrypt.org\"",
-      "0 issue \"awstrust.com\"",
       "0 issuewild \"pki.goog\"",
-      "0 issue \"sectigo.com\"",
-      "0 issue \"amazon.com\"",
-      "0 issue \"amazontrust.com\"",
-      "0 issue \"pki.goog\"",
       "0 issue \"digicert.com\"",
+      "0 issue \"amazonaws.com\"",
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"sectigo.com\"",
+      "0 issue \"pki.goog\"",
       "0 issuewild \"digicert.com\"",
-      "0 issue \"amazonaws.com\""
+      "0 issue \"awstrust.com\"",
+      "0 issue \"amazon.com\"",
+      "0 issue \"amazontrust.com\""
     ],
     "spf": [
-      "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe98526fe9bcd1502",
       "dropbox-domain-verification=qwg79uqdchth",
+      "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe98526fe9bcd1502",
       "smartsheet-site-validation=EeqHILQCPlyqRLZalbWSAPzmPdLJqa5q",
+      "airtable-verification=a25c5929bf27eceab120aa631f5b34cb",
+      "spf2.0/pra mx include:spf.mandrillapp.com -all",
+      "yahoo-verification-key=viW+9OzMd5GimBzrAwyj8fCdyyRNhzqHo0Z7SrHM2ec=",
+      "airtable-verification=1ee1c3d067dcf9300bc65f995e7c794b",
       "ZOOM_verify_rdYl4DWQCzWA3NSpJbBCXa",
+      "MS=ms76165705",
+      "ZOOM_verify_oGsblYdrOBX5vRITDGidMv",
       "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com -all",
       "google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ",
-      "google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ",
-      "airtable-verification=a25c5929bf27eceab120aa631f5b34cb",
-      "ZOOM_verify_oGsblYdrOBX5vRITDGidMv",
-      "yahoo-verification-key=viW+9OzMd5GimBzrAwyj8fCdyyRNhzqHo0Z7SrHM2ec=",
-      "MS=ms76165705",
-      "spf2.0/pra mx include:spf.mandrillapp.com -all",
-      "airtable-verification=1ee1c3d067dcf9300bc65f995e7c794b"
+      "google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ"
     ],
     "dmarc": [
       "v=DMARC1; p=none; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com"
@@ -196,7 +196,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
       "*.rottentomatoes.com",
       "rottentomatoes.com"
     ],
-    "days_left": 163,
+    "days_left": 162,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -206,7 +206,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
     }
   },
   "ports": {
-    "ip": "23.210.215.218",
+    "ip": "23.210.215.203",
     "open": []
   },
   "https": {
@@ -262,11 +262,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe985",
     "dropbox-domain-verification=qwg79uqdchth",
-    "google-site-verification=zJOWtCsOIqoH7c20uzDEK2ZbjELwSglEmrNiPMdJxdQ",
-    "google-site-verification=SOiuNurCT5KQ4utFqj2pH9D2Oww8G4r1K_Gnt27e-hQ",
-    "airtable-verification=a25c5929bf27eceab120aa631f5b34cb"
+    "adobe-idp-site-verification=d266b426130588069c9d5b76db345b36532058a66f36380fe985",
+    "airtable-verification=a25c5929bf27eceab120aa631f5b34cb",
+    "yahoo-verification-key=viW+9OzMd5GimBzrAwyj8fCdyyRNhzqHo0Z7SrHM2ec=",
+    "airtable-verification=1ee1c3d067dcf9300bc65f995e7c794b"
   ],
   "tls2": {
     "alpn": "",
@@ -296,7 +296,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
   "x12": {
     "status": 403,
     "ptr": [
-      "a23-210-215-218.deploy.static.akamaitechnologies.com."
+      "a23-210-215-203.deploy.static.akamaitechnologies.com."
     ]
   },
   "x13": {
@@ -318,8 +318,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
       "status": 200
     }
   },
-  "elapsed_s": 8.5,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 403
+  },
+  "elapsed_s": 5.4,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -331,4 +336,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

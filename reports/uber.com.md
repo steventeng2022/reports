@@ -7,8 +7,8 @@
 | Target | https://uber.com/ |
 | Bug bounty program | Uber |
 | Listed scope domain | uber.com |
-| Test date | 2026-09-26 23:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:33 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -47,7 +47,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 ### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000
 - **Recommendation:** Verify the advertised protocol endpoints are configured.
 
 ### 4. [LOW] Missing CSP header (`H2`)
@@ -107,7 +107,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: Dynatrace-site-verification=95915cac-be11-4e1a-81b7-9580122d59d1__vrv8sf7b41uebr; postman-domain-verification=4c640467e16a94ba218b31f435eb42e0749d16ab4168939f9ad5; apple-domain-verification=NGLGgklojeSRTo9T
+- **Detail:** Apex TXT records with verification/token content: lovable_verification=workspace_01jz0y1v0ff9cv8hsxkbvawqhx; duo_sso_verification=efpKKW3WtEX7Ln6CBDAQyyNA5mwOU0KxFopDN2LtcawWUcGa6BByYIq5LG6; beautifulai-site-verification=ed0fad99-1b20-4963-ab5b-538f0f915117
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -123,67 +123,67 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
   "domain": "uber.com",
   "dns": {
     "a": [
-      "104.36.194.73"
+      "69.48.216.121"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 2)",
       "alt1.aspmx.l.google.com (pref 5)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "aspmx.l.google.com (pref 2)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "edns126.ultradns.com.",
-      "edns126.ultradns.net.",
       "edns126.ultradns.biz.",
-      "edns126.ultradns.org."
+      "edns126.ultradns.net.",
+      "edns126.ultradns.org.",
+      "edns126.ultradns.com."
     ],
     "caa": [],
     "spf": [
-      "Dynatrace-site-verification=95915cac-be11-4e1a-81b7-9580122d59d1__vrv8sf7b41uebre15lgg3c5tko",
-      "postman-domain-verification=4c640467e16a94ba218b31f435eb42e0749d16ab4168939f9ad5eb4ec3abb91cd63ca90ef5ccd3e4a8f4049444c3a267225ffde0ea6a9c8d84bb6e904034a1cc",
-      "MS=607A6B094E5395250B2F88D76D42FFB6DC2C18A4",
-      "apple-domain-verification=NGLGgklojeSRTo9T",
-      "beautifulai-site-verification=ed0fad99-1b20-4963-ab5b-538f0f915117",
       "c9s6q2+D+iTzxyax7z2ol/gbj0Rqq8Loojleaq22ZDM=",
-      "AD5-G1R-7NJ",
-      "google-site-verification=yHvJ7x6qUkjrzRfaPzSO5Iu42eP70uSS0Q88xPFBbSU",
-      "notion-domain-verification=ReKaEX54F5cGF2V3IKgyilPZF3TjQ34Iua63ng0LHDC",
-      "v=spf1 include:uber.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:mailgun.org ~all",
-      "omnissa-connect-verification-da151bda-e79c-445f-9099-1fead7f31add",
       "mandrill_verify.UYz1FLL51N9Ky3RCgCUZGQ",
-      "hpe-greenlake-domain-verification=6553304837784b7232736d71514737737353622d6854354e343534554c71754f",
-      "uber-site-verification=56157b0f-0f5f-4bdc-8a64-9c313ac173a5",
-      "google-site-verification=p21addAHCLTiBqVhN6P3leSJNO2ob8edJtQbICdXCj8",
-      "atlassian-domain-verification=MMotF76tU47LiNcsEf06+lzKmWly4PgbYpYZqHy3a9YdTdY4S43ay72YkkxTmzff",
-      "crz6wwryflvvfk4kvk5lqfk78p02dc7m",
-      "docker-verification=e121526a-c4bd-4829-8f6b-c4a3c93f0029",
-      "google-site-verification=9kwu-dlf_JSf0XtaHK2xK-Cowpra8TnHbfTRCa7NBk0",
-      "mandrill_verify.5Qnmy5yihDZ4mJwXJ0VP7w",
-      "paloaltonetworks-site-verification=f567a8ba5a35da704fb1e540c1e50bbaa33bc2ea6b87193c22e1c9ae29348b2a",
-      "duo_sso_verification=EArnP8qJQk9QUv3i30tGmhVOfsuivQxEgBlNLIF8EaD3ZimeyV2Iq5rBJQHWcaUMl",
-      "apple-domain-verification=Da2R4Md5eAUVUg038WJnE-_ifFtCwYYc_Dlmx3EaPsU",
       "lovable_verification=workspace_01jz0y1v0ff9cv8hsxkbvawqhx",
-      "autodesk-domain-verification=wa1khlrPnOY-93pE5_nH",
-      "mixpanel-domain-verify=a35ee3f7-3848-4a0b-822e-d429b507c0c6",
-      "openai-domain-verification=dv-wtb3VIyo0DtnGsiQN4DnZ4c7",
-      "google-site-verification=bywbMPdGdGaSev-nAuHwbdYjZziw9oPeGkOgBD5UyK0",
-      "stripe-verification=79f7b9921824c7fd1cd4ffc20fc10f662a5322317c8290f124b4e18d9ebd19e0",
-      "tiktok-developers-site-verification=cCZKENHfoFc48Ks8x4K7IMa9NCyD1ggk",
-      "dtm-domain-verification=EtPupN9aHsJIAtWeUzmu_aAa6o5BQsvO73iDfQIKkx4",
-      "workplace-domain-verification=HhUs1CkDiWsL4Nlmkdb6IOVjrebKb1",
-      "atlassian-domain-verification=M5S2mTVz1nn58QsIgP0q4BLRplQvKva5IHHG5usoAYecrD00FTI5zR2tzAmNnI9L",
-      "facebook-domain-verification=fgnbsxqefhg2pzugzl4vcw82ylgagg",
+      "duo_sso_verification=efpKKW3WtEX7Ln6CBDAQyyNA5mwOU0KxFopDN2LtcawWUcGa6BByYIq5LG69lDrq",
       "f621e431-a485-4094-8587-2f76f441ccab",
-      "ca3-ffffa27c6ab6493ba5e2ffd4f8961467",
-      "docusign=ce93a9f0-d430-4abb-aee8-ec66524c1f12",
+      "beautifulai-site-verification=ed0fad99-1b20-4963-ab5b-538f0f915117",
       "docusign=635f0402-4f58-42de-8e07-e1da6d8a971a",
-      "SFMC-4eGhjXSll4RESL8vyX0CBVbTfffzejZShsyAXBrT",
-      "_26a8qlr3df4hbl6zve94e918z0g5wud",
+      "ca3-ffffa27c6ab6493ba5e2ffd4f8961467",
+      "facebook-domain-verification=fgnbsxqefhg2pzugzl4vcw82ylgagg",
+      "MS=607A6B094E5395250B2F88D76D42FFB6DC2C18A4",
+      "stripe-verification=79f7b9921824c7fd1cd4ffc20fc10f662a5322317c8290f124b4e18d9ebd19e0",
+      "apple-domain-verification=NGLGgklojeSRTo9T",
+      "tiktok-developers-site-verification=cCZKENHfoFc48Ks8x4K7IMa9NCyD1ggk",
+      "uber-site-verification=56157b0f-0f5f-4bdc-8a64-9c313ac173a5",
+      "google-site-verification=yHvJ7x6qUkjrzRfaPzSO5Iu42eP70uSS0Q88xPFBbSU",
+      "mandrill_verify.5Qnmy5yihDZ4mJwXJ0VP7w",
+      "docker-verification=e121526a-c4bd-4829-8f6b-c4a3c93f0029",
       "atlassian-sending-domain-verification=0302bdf3-f835-4464-979d-7beeda0dbe97",
-      "duo_sso_verification=efpKKW3WtEX7Ln6CBDAQyyNA5mwOU0KxFopDN2LtcawWUcGa6BByYIq5LG69lDrq"
+      "mixpanel-domain-verify=a35ee3f7-3848-4a0b-822e-d429b507c0c6",
+      "v=spf1 include:uber.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:mailgun.org ~all",
+      "google-site-verification=p21addAHCLTiBqVhN6P3leSJNO2ob8edJtQbICdXCj8",
+      "workplace-domain-verification=HhUs1CkDiWsL4Nlmkdb6IOVjrebKb1",
+      "postman-domain-verification=4c640467e16a94ba218b31f435eb42e0749d16ab4168939f9ad5eb4ec3abb91cd63ca90ef5ccd3e4a8f4049444c3a267225ffde0ea6a9c8d84bb6e904034a1cc",
+      "docusign=ce93a9f0-d430-4abb-aee8-ec66524c1f12",
+      "duo_sso_verification=EArnP8qJQk9QUv3i30tGmhVOfsuivQxEgBlNLIF8EaD3ZimeyV2Iq5rBJQHWcaUMl",
+      "autodesk-domain-verification=wa1khlrPnOY-93pE5_nH",
+      "openai-domain-verification=dv-wtb3VIyo0DtnGsiQN4DnZ4c7",
+      "apple-domain-verification=Da2R4Md5eAUVUg038WJnE-_ifFtCwYYc_Dlmx3EaPsU",
+      "_26a8qlr3df4hbl6zve94e918z0g5wud",
+      "paloaltonetworks-site-verification=f567a8ba5a35da704fb1e540c1e50bbaa33bc2ea6b87193c22e1c9ae29348b2a",
+      "omnissa-connect-verification-da151bda-e79c-445f-9099-1fead7f31add",
+      "notion-domain-verification=ReKaEX54F5cGF2V3IKgyilPZF3TjQ34Iua63ng0LHDC",
+      "hpe-greenlake-domain-verification=6553304837784b7232736d71514737737353622d6854354e343534554c71754f",
+      "atlassian-domain-verification=MMotF76tU47LiNcsEf06+lzKmWly4PgbYpYZqHy3a9YdTdY4S43ay72YkkxTmzff",
+      "atlassian-domain-verification=M5S2mTVz1nn58QsIgP0q4BLRplQvKva5IHHG5usoAYecrD00FTI5zR2tzAmNnI9L",
+      "dtm-domain-verification=EtPupN9aHsJIAtWeUzmu_aAa6o5BQsvO73iDfQIKkx4",
+      "crz6wwryflvvfk4kvk5lqfk78p02dc7m",
+      "AD5-G1R-7NJ",
+      "SFMC-4eGhjXSll4RESL8vyX0CBVbTfffzejZShsyAXBrT",
+      "google-site-verification=bywbMPdGdGaSev-nAuHwbdYjZziw9oPeGkOgBD5UyK0",
+      "Dynatrace-site-verification=95915cac-be11-4e1a-81b7-9580122d59d1__vrv8sf7b41uebre15lgg3c5tko",
+      "google-site-verification=9kwu-dlf_JSf0XtaHK2xK-Cowpra8TnHbfTRCa7NBk0"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@vali.email"
@@ -203,7 +203,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "*.uber.com",
       "uber.com"
     ],
-    "days_left": 143,
+    "days_left": 142,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -213,7 +213,7 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     }
   },
   "ports": {
-    "ip": "104.36.194.73",
+    "ip": "69.48.216.121",
     "open": []
   },
   "https": {
@@ -266,11 +266,11 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "Dynatrace-site-verification=95915cac-be11-4e1a-81b7-9580122d59d1__vrv8sf7b41uebr",
-    "postman-domain-verification=4c640467e16a94ba218b31f435eb42e0749d16ab4168939f9ad5",
-    "apple-domain-verification=NGLGgklojeSRTo9T",
+    "lovable_verification=workspace_01jz0y1v0ff9cv8hsxkbvawqhx",
+    "duo_sso_verification=efpKKW3WtEX7Ln6CBDAQyyNA5mwOU0KxFopDN2LtcawWUcGa6BByYIq5LG6",
     "beautifulai-site-verification=ed0fad99-1b20-4963-ab5b-538f0f915117",
-    "google-site-verification=yHvJ7x6qUkjrzRfaPzSO5Iu42eP70uSS0Q88xPFBbSU"
+    "facebook-domain-verification=fgnbsxqefhg2pzugzl4vcw82ylgagg",
+    "stripe-verification=79f7b9921824c7fd1cd4ffc20fc10f662a5322317c8290f124b4e18d9ebd"
   ],
   "tls2": {
     "alpn": "",
@@ -318,8 +318,13 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
       "status": 200
     }
   },
-  "elapsed_s": 13.7,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 429
+  },
+  "elapsed_s": 14.5,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -331,4 +336,5 @@ Total findings: **13** (High: 0, Medium: 0, Low: 1, Info: 12)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://wordpress.org/ |
 | Bug bounty program | WordPress |
 | Listed scope domain | wordpress.org |
-| Test date | 2026-09-26 23:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:35 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
+Total findings: **27** (High: 0, Medium: 0, Low: 7, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,8 +39,10 @@ Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
 | 21 | info | HTML3 | Third-party <iframe> embedded in root document | CWE-643 |
 | 22 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 | 23 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
-| 24 | info | CT1 | 10 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 25 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 24 | info | HTML4 | Meta generator tag discloses site technology | CWE-200 |
+| 25 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 26 | info | CT1 | 10 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 27 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -126,7 +128,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
 ### 13. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (4cz9d7ulqci81k.wordpress.org and ww0ye29wexs9ms.wordpress.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (d3yqbq42r2j6l7.wordpress.org and 7wsi3rbptdm4uo.wordpress.org) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -162,7 +164,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
 ### 19. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkjzixstkv1jwv.html -> 404; error page/headers match: Nginx, WordPress.
+- **Detail:** GET /xkc8t25kp0dxkf.html -> 404; error page/headers match: Nginx, WordPress.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 20. [INFO] Third-party <script> loaded without Subresource Integrity (`HTML2`)
@@ -189,13 +191,25 @@ Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
 - **Detail:** /sitemap.xml on wordpress.org lists 3 <loc> URL(s) across 4 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
-### 24. [INFO] 10 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 24. [INFO] Meta generator tag discloses site technology (`HTML4`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of wordpress.org declares generator: WordPress 7.2-alpha-63914; generator tags fingerprint the site builder/CMS for targeted attacks.
+- **Recommendation:** Remove the generator meta tag or keep it consistent with the deployed version.
+
+### 25. [INFO] Document references many third-party domains (`HTML11`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of wordpress.org references 27 distinct third-party registrable domains (e.g. w3.org, wp.com, w.org, googletagmanager.com, facebook.com); each is a supply-chain/trust dependency of the page.
+- **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
+
+### 26. [INFO] 10 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: git.wordpress.org, status.wordpress.org, wiki.wordpress.org
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 25. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 27. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: git.wordpress.org; content may still be served via virtual-host fallback.
@@ -215,14 +229,14 @@ Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
     ],
     "cname": null,
     "mx": [
-      "smtp1-dca.wordpress.org (pref 10)",
-      "smtp2-dca.wordpress.org (pref 10)"
+      "smtp2-dca.wordpress.org (pref 10)",
+      "smtp1-dca.wordpress.org (pref 10)"
     ],
     "ns": [
-      "ns3.wordpress.org.",
-      "ns1.wordpress.org.",
+      "ns4.wordpress.org.",
       "ns2.wordpress.org.",
-      "ns4.wordpress.org."
+      "ns1.wordpress.org.",
+      "ns3.wordpress.org."
     ],
     "caa": [
       "0 issue \"letsencrypt.org;validationmethods=dns-01;accounturi=https://acme-v02.api.letsencrypt.org/acme/acct/53691143\"",
@@ -230,8 +244,8 @@ Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
     ],
     "spf": [
       "google-site-verification=UL0sGJ1dZbCT4J7pGrLW3hqM_I1LJ8pUi2WBEI_98kI",
-      "v=spf1 ip4:66.6.42.0/24 ip4:66.155.40.0/24 include:helpscoutemail.com -all",
-      "google-site-verification=t8FjG1vzC4OFZJ8qL4SkR8xxtLyKldXKbswyeemQS5w"
+      "google-site-verification=t8FjG1vzC4OFZJ8qL4SkR8xxtLyKldXKbswyeemQS5w",
+      "v=spf1 ip4:66.6.42.0/24 ip4:66.155.40.0/24 include:helpscoutemail.com -all"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:0bqp2jnw@ag.dmarcian.com; ruf=mailto:0bqp2jnw@fr.dmarcian.com;"
@@ -401,8 +415,13 @@ Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
       "status": 200
     }
   },
-  "elapsed_s": 38.6,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 200
+  },
+  "elapsed_s": 40.7,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -414,4 +433,5 @@ Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,8 +7,8 @@
 | Target | https://getresponse.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | getresponse.com |
-| Test date | 2026-09-26 23:28 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:19 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -112,13 +112,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 ### 12. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (zawp3hkrfwpa8m.getresponse.com and oso5ltzeojvgw6.getresponse.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (hg17uwkq7g5cc9.getresponse.com and syugzs7tktg45a.getresponse.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=fMdXexz-UeermTKRO7SNU9jaU8iWvBjkLyUjux2p1s8; google-site-verification=qQY936ygxuK-lM39J2ouZcOYciA1FsHBrh2N6K8aGho; google-site-verification=Dp1TRtq03Oinzgwpx4tg0nfgchSB7UYGTHaTvgRuvQA
+- **Detail:** Apex TXT records with verification/token content: perplexity-ai-domain-verification-xhench=mT1d7pxsOX0OQ99IarJY2WASZ; mojecertpl-site-verification-pTZqxhVN4nRsImMtqYHyUrnng6ILpAqJ; google-site-verification=fMdXexz-UeermTKRO7SNU9jaU8iWvBjkLyUjux2p1s8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -154,45 +154,45 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
       "getresponse-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns0.dnsmadeeasy.com.",
       "ns4.dnsmadeeasy.com.",
-      "ns3.dnsmadeeasy.com.",
       "ns2.dnsmadeeasy.com.",
-      "ns1.dnsmadeeasy.com."
+      "ns0.dnsmadeeasy.com.",
+      "ns1.dnsmadeeasy.com.",
+      "ns3.dnsmadeeasy.com."
     ],
     "caa": [
-      "0 issuewild \"certum.pl\"",
       "0 issue \"letsencrypt.org\"",
       "0 iodef \"mailto:security@getresponse.com\"",
-      "0 issue \"godaddy.com\"",
-      "0 issue \"digicert.com\"",
-      "0 issue \"rapidssl.com\"",
       "0 issuewild \"godaddy.com\"",
+      "0 issue \"digicert.com\"",
+      "0 issuewild \"rapidssl.com\"",
+      "0 issuewild \"certum.pl\"",
       "0 issue \"certum.pl\"",
-      "0 issuewild \"rapidssl.com\""
+      "0 issue \"rapidssl.com\"",
+      "0 issue \"godaddy.com\""
     ],
     "spf": [
+      "perplexity-ai-domain-verification-xhench=mT1d7pxsOX0OQ99IarJY2WASZ",
+      "mojecertpl-site-verification-pTZqxhVN4nRsImMtqYHyUrnng6ILpAqJ",
       "google-site-verification=fMdXexz-UeermTKRO7SNU9jaU8iWvBjkLyUjux2p1s8",
       "google-site-verification=qQY936ygxuK-lM39J2ouZcOYciA1FsHBrh2N6K8aGho",
-      "google-site-verification=Dp1TRtq03Oinzgwpx4tg0nfgchSB7UYGTHaTvgRuvQA",
-      "perplexity-ai-domain-verification-xhench=mT1d7pxsOX0OQ99IarJY2WASZ",
-      "anthropic-domain-verification-venw22=ZeM4NT230jUX4wYrLH2xiewmQ",
-      "openai-domain-verification=dv-Rf8rPeAU2o96nKUYvGJOqGKG",
       "1password-site-verification=BMMLC4IXRBCU3G5UCBKCF5MINM",
-      "facebook-domain-verification=hzu8jvt165inp6e47scduae2y0smll",
-      "jamf-site-verification=EMDHC_pNcl7T-4-V0hfEIQ",
-      "5ce38e29469ad11f7177b24c1922672b63abf6680d6a0726116fd210c7e8cc6",
-      "pandadoc-domain-verification=URaRjh7TeRXzEYB2xiZ72o",
-      "v=spf1 mx a ip4:104.160.64.0/23 ip4:104.160.67.63/32 ip4:104.160.67.128/25 ip4:104.160.68.224/27 ip4:104.160.69.0/27 ip4:104.160.66.254 ip4:178.16.117.0/24 include:spf.protection.outlook.com include:_spf.psm.knowbe4.com -all",
-      "google-site-verification=zr4OhPflVzGIZtxchXz72jWuNqjvgDlHrPUpiiJY0-k",
-      "atlassian-domain-verification=LK2p1objuTfwluXVqD2rSagYcHzknb4lAGe2sOnklu3lYjE6x2o6yfOxo1T4OK5u",
-      "mojecertpl-site-verification-pTZqxhVN4nRsImMtqYHyUrnng6ILpAqJ",
-      "google-site-verification=Z8jVzgnaG8CjbUygDISY-3uP8uIqGzn5At2bo5nzHqQ",
-      "miro-verification= 79b13564da36f9da3d95258202fd70c9462a2a62",
-      "google-site-verification=j5cNpXTozrVnhuElGV-BdoIZaBOqg8wtr_z2hiO_1CY",
       "google-site-verification=QeBji-07N-gsBMjY9YfUf5LXyTluvf76nuzqSX3PTsQ",
+      "openai-domain-verification=dv-Rf8rPeAU2o96nKUYvGJOqGKG",
+      "jamf-site-verification=EMDHC_pNcl7T-4-V0hfEIQ",
       "Dynatrace-site-verification=e1a175f3-bb98-4294-b96d-7da32368958c__5e1a4oqvdp0fv5mdkt0iek9bk3",
-      "sf9v0knq1ugotc1jqte1ractie"
+      "google-site-verification=j5cNpXTozrVnhuElGV-BdoIZaBOqg8wtr_z2hiO_1CY",
+      "google-site-verification=zr4OhPflVzGIZtxchXz72jWuNqjvgDlHrPUpiiJY0-k",
+      "sf9v0knq1ugotc1jqte1ractie",
+      "anthropic-domain-verification-venw22=ZeM4NT230jUX4wYrLH2xiewmQ",
+      "atlassian-domain-verification=LK2p1objuTfwluXVqD2rSagYcHzknb4lAGe2sOnklu3lYjE6x2o6yfOxo1T4OK5u",
+      "miro-verification= 79b13564da36f9da3d95258202fd70c9462a2a62",
+      "5ce38e29469ad11f7177b24c1922672b63abf6680d6a0726116fd210c7e8cc6",
+      "google-site-verification=Z8jVzgnaG8CjbUygDISY-3uP8uIqGzn5At2bo5nzHqQ",
+      "v=spf1 mx a ip4:104.160.64.0/23 ip4:104.160.67.63/32 ip4:104.160.67.128/25 ip4:104.160.68.224/27 ip4:104.160.69.0/27 ip4:104.160.66.254 ip4:178.16.117.0/24 include:spf.protection.outlook.com include:_spf.psm.knowbe4.com -all",
+      "facebook-domain-verification=hzu8jvt165inp6e47scduae2y0smll",
+      "pandadoc-domain-verification=URaRjh7TeRXzEYB2xiZ72o",
+      "google-site-verification=Dp1TRtq03Oinzgwpx4tg0nfgchSB7UYGTHaTvgRuvQA"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:dmarc_agg@dmarc.everest.email; ruf=mailto:dmarc_fr@dmarc.everest.email; fo=1; pct=100; rf=afrf"
@@ -212,7 +212,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
       "*.getresponse.com",
       "getresponse.com"
     ],
-    "days_left": 175,
+    "days_left": 174,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -273,11 +273,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
   },
   "wildcard_dns": true,
   "apex_txt": [
+    "perplexity-ai-domain-verification-xhench=mT1d7pxsOX0OQ99IarJY2WASZ",
+    "mojecertpl-site-verification-pTZqxhVN4nRsImMtqYHyUrnng6ILpAqJ",
     "google-site-verification=fMdXexz-UeermTKRO7SNU9jaU8iWvBjkLyUjux2p1s8",
     "google-site-verification=qQY936ygxuK-lM39J2ouZcOYciA1FsHBrh2N6K8aGho",
-    "google-site-verification=Dp1TRtq03Oinzgwpx4tg0nfgchSB7UYGTHaTvgRuvQA",
-    "perplexity-ai-domain-verification-xhench=mT1d7pxsOX0OQ99IarJY2WASZ",
-    "anthropic-domain-verification-venw22=ZeM4NT230jUX4wYrLH2xiewmQ"
+    "1password-site-verification=BMMLC4IXRBCU3G5UCBKCF5MINM"
   ],
   "tls2": {
     "alpn": "",
@@ -351,8 +351,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
       "status": 200
     }
   },
-  "elapsed_s": 40.7,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 42.1,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -364,4 +369,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 6, Info: 10)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

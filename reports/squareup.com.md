@@ -7,8 +7,8 @@
 | Target | https://squareup.com/ |
 | Bug bounty program | Square |
 | Listed scope domain | squareup.com |
-| Test date | 2026-09-26 23:38 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:32 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -138,7 +138,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: stripe-verification=5a8a00371398aa2466b713faf14e6edc9140160c32f51d02067af5dcd859; stripe-verification=cfd5f1b3267861ed07fba1b121f0161da96c9fb30c97f590fc88db51506b; pinterest-site-verification=49699bc2c694be95ffea5692960d72b4
+- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=cx3tov4g02lrdyzawmw6zfl8zgrc5c; apple-domain-verification=sRlD9NsdK27SFZHX; reachdesk-verification=IjVgh43q7kQHr9cSU6FYVjktOt6FNW6I1VKqC7cLSPXDW0hqMpa5pPjEJ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -174,7 +174,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 ### 21. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkx9elzy6akfii.html -> 404; error page/headers match: Cloudflare.
+- **Detail:** GET /xkylw01wexw0ir.html -> 404; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 22. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -208,91 +208,91 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx3.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx5.googlemail.com (pref 30)",
       "aspmx4.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx2.googlemail.com (pref 30)",
-      "aspmx.l.google.com (pref 10)"
+      "aspmx.l.google.com (pref 10)",
+      "aspmx3.googlemail.com (pref 30)",
+      "alt1.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
-      "ns-810.awsdns-37.net.",
-      "ns-1248.awsdns-28.org.",
+      "ns-311.awsdns-38.com.",
       "ns-1816.awsdns-35.co.uk.",
-      "ns-311.awsdns-38.com."
+      "ns-1248.awsdns-28.org.",
+      "ns-810.awsdns-37.net."
     ],
     "caa": [],
     "spf": [
-      "ca3-37fc58abdd5a4cf8ab5e8893db8298be",
-      "stripe-verification=5a8a00371398aa2466b713faf14e6edc9140160c32f51d02067af5dcd8591cc8",
-      "stripe-verification=cfd5f1b3267861ed07fba1b121f0161da96c9fb30c97f590fc88db51506b4710",
-      "ca3-52a6dd26ecd1423ca816dac4d4b00678",
-      "pinterest-site-verification=49699bc2c694be95ffea5692960d72b4",
-      "NRZYY",
-      "traction-guest=2bfeba2a-05af-4152-a3ab-93d855c8746f",
-      "_github-challenge-squareup.squareup.com.=7725774663",
-      "google-site-verification=lIzmfEdVTz2PAEu4n8NckVPZhd-mQiGTlc0xBXlOhtU",
-      "_ek1nrewwbsrikaiet5cox7909jno0th",
-      "v=spf1 include:squareup.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:stspg-customer.com ~all",
-      "ca3-c491f3300b6641e1b8a3104b693d7bb3",
-      "pinterest-site-verification=0fef3763fa30d8b29fca02b8d1e77626",
-      "ca3-8bbc566c4b4c4974950a83527517492d",
-      "ca3-e9926e04f8c148e89e7c600213cb986a",
-      "parsec-domain-verification=td_2c0ZaSdVBfxDHQsb5HjmvQCHaKF",
-      "facebook-domain-verification=ddco927gzciui72ra27s2aq1301vjo",
-      "_y1htjeszjqrpqpxssty0ae0ks9losgo",
-      "logmein-verification-code=d29bfe7e-a479-4ca9-862a-c87f1072f273",
-      "smartsheet-site-validation=W_x3SnUQHna2UrcNnqg-4GMu73nsWryz",
-      "miro-verification=eb2231722e9ee6e925e69e31c221403361bbc1cb",
-      "ca3-a19f55866123448fb9e26ff3ed0d6d86",
       "notion_verify_3U}dr=+.N}vm0w.DoqiC%JJ}N0W5^}hnd1Wus9zb^EVJDw9pD%jG)hQ}V__qkd3U)4s!Xp",
-      "ca3-61da443be93c4975accb29e3bbf89560",
-      "amp-by-sourcegraph-domain-verification-w953qg=xBRagiAevq79uusplKZZPSBsg",
-      "1e2c0716300b68209485e2fa5284112046f593dcafc636f07969741ef148c441",
       "facebook-domain-verification=cx3tov4g02lrdyzawmw6zfl8zgrc5c",
-      "onetrust-domain-verification=c01f4d184d3c4f2ba9503a4583e88101",
-      "drift-domain-verification=71b345a7ff662bf9535a86f2ddbb50016872b37a56c6988edd6c39542a3ccd68",
-      "ca3-a3666da4d1ec4264a8d59cb8616cf0ed",
-      "cursor-domain-verification-zvsqws=WAenirNPzeew2GcY4MKkAk41T",
-      "docusign=35ce9b6e-d74a-48ad-b437-690ad0602f81",
-      "elevenlabs=SBg1u4pIdlsVtIaiXt8QeVV3yNEzeNtNs51br5upR4g",
-      "_github-challenge-squareup.squareup.com=7725774663",
-      "stripe-verification=65D5F85D03979AEEF3452A27D1EFACD75E9D04DCC44E1BC99F4EBBCFCB7F8F26",
-      "ca3-4725c4c959644520b1df50805f72dca7",
-      "atlassian-domain-verification=9iYUpJGNkg1t97CI3rPIi2JSZhPPPq2vqa29bn1XafOtu0579nFxEzSX3VzIvcRm",
+      "1e2c0716300b68209485e2fa5284112046f593dcafc636f07969741ef148c441",
       "apple-domain-verification=sRlD9NsdK27SFZHX",
-      "anthropic-domain-verification-7xmqab=NeSCp0Pj0sOrdc5jJgJiOsHFb",
-      "docusign=60c2f7db-b230-4b3d-91be-06a59569d253",
-      "asv=2196a8f94eda64bc9d0abd83d4b93284",
-      "ca3-bd8eae9a6ea245b68811b976990fc57d",
-      "atlassian-sending-domain-verification=e540d827-02ac-4946-acee-a77c1df352f6",
-      "docker-verification=4ed46600-9205-400a-b12d-d0135704e9e9",
-      "gitkraken-domain-verification=8e6bcedb6a5ded444186409140245b606ca0417109d394ee4e5b2b7df5e56ee0",
-      "bugcrowd-verification=2aa613d4e374f9460060422314f1098d",
-      "loom-site-verification=0036b963640944f580e4c1fec45c8d9d",
-      "google-site-verification=mlc7S_Dm5aPcPQjEe_Pj3GuiF9_svNtafsWw_kPeN48",
-      "google-site-verification=OuiYXiYuWdfPSus7uBL6EhJawkg5BOERlvclE-QXVcs",
-      "lucidlink-verification=9W8003J10X2KM6X9SS663MSG08",
-      "wiz-domain-verification=e401377ed0542bf72e67d32b62781795a75cfc1a84c18520e6263bfdf415cd0e",
-      "decagon-domain-verification-r97he8=KlORBvkU6R2syjbUBJ4eWNRp2",
-      "google-site-verification=xoi3YhHkHmKwoyDO259v-DxMgY38xT08RNKMLTtTJ3A",
-      "1password-site-verification=DREX2J7TXBEY5FGM2RYXBK366U",
-      "figma-domain-verification=be3dd0262e644143f217f04e38b0e10fdf5a22fd0f1552912f229dbc5cfc04ef-1785184551",
-      "onetrust-domain-verification=0c79435fab8d45ac85eb4ac5041ab282",
-      "postman-domain-verification=a3440d0a55ffe5831bf45b9bb5136601ebf884dd1cb5a755daaa73104b1f682d6d88d0a4741b6eef6a33b6d69f1856366a06433b7902f85bafb358ea854552f9",
-      "status-page-domain-verification=75bhj6n7cwrd",
-      "zapier-domain-verification-challenge=9b5ca019-06d3-40bb-a52b-915e42e1d884",
-      "wrike-verification=MzIwNzgwMDo2MGE1NjUwYThkMmExMjkzZDg3MGVmMDE3MzkzMDJlOTE4YTY5YmZlMjNlZGE5MGY5MWMzODFhNTFmNDU5MTNi",
-      "ca3-60ed3ea4c1e141c79e4715175c4342f3",
-      "google-site-verification=DsJnK_h3aiHyf-DRKaVdc_iNooeRxSGu8PqkY2KTd74",
-      "google-site-verification=Pqbi42Git5I6oJ6ShnRd4aUd2umxUHL5JAKHf_kSQwQ",
-      "MS=ms66034408",
-      "ca3-6a7c53b6aded4260a698de411a9640b8",
       "reachdesk-verification=IjVgh43q7kQHr9cSU6FYVjktOt6FNW6I1VKqC7cLSPXDW0hqMpa5pPjEJ39dnG99",
-      "docusign=83d5eb19-7a3d-4191-99f9-1f2c4e94fdfa",
+      "miro-verification=eb2231722e9ee6e925e69e31c221403361bbc1cb",
+      "traction-guest=2bfeba2a-05af-4152-a3ab-93d855c8746f",
+      "_y1htjeszjqrpqpxssty0ae0ks9losgo",
+      "elevenlabs=SBg1u4pIdlsVtIaiXt8QeVV3yNEzeNtNs51br5upR4g",
+      "amp-by-sourcegraph-domain-verification-w953qg=xBRagiAevq79uusplKZZPSBsg",
+      "smartsheet-site-validation=W_x3SnUQHna2UrcNnqg-4GMu73nsWryz",
+      "atlassian-domain-verification=9iYUpJGNkg1t97CI3rPIi2JSZhPPPq2vqa29bn1XafOtu0579nFxEzSX3VzIvcRm",
+      "MS=ms66034408",
+      "cursor-domain-verification-zvsqws=WAenirNPzeew2GcY4MKkAk41T",
+      "stripe-verification=65D5F85D03979AEEF3452A27D1EFACD75E9D04DCC44E1BC99F4EBBCFCB7F8F26",
+      "_github-challenge-squareup.squareup.com=7725774663",
+      "decagon-domain-verification-r97he8=KlORBvkU6R2syjbUBJ4eWNRp2",
+      "docker-verification=4ed46600-9205-400a-b12d-d0135704e9e9",
+      "google-site-verification=UVRQgeyjSjLUSa6l8xBu1fNQBxxKOL85Pg4457B-oms",
       "ca3-2cc3579a5da949a0bd2bc349e2b82c52",
-      "google-site-verification=UVRQgeyjSjLUSa6l8xBu1fNQBxxKOL85Pg4457B-oms"
+      "google-site-verification=xoi3YhHkHmKwoyDO259v-DxMgY38xT08RNKMLTtTJ3A",
+      "postman-domain-verification=a3440d0a55ffe5831bf45b9bb5136601ebf884dd1cb5a755daaa73104b1f682d6d88d0a4741b6eef6a33b6d69f1856366a06433b7902f85bafb358ea854552f9",
+      "pinterest-site-verification=49699bc2c694be95ffea5692960d72b4",
+      "asv=2196a8f94eda64bc9d0abd83d4b93284",
+      "drift-domain-verification=71b345a7ff662bf9535a86f2ddbb50016872b37a56c6988edd6c39542a3ccd68",
+      "figma-domain-verification=be3dd0262e644143f217f04e38b0e10fdf5a22fd0f1552912f229dbc5cfc04ef-1785184551",
+      "google-site-verification=lIzmfEdVTz2PAEu4n8NckVPZhd-mQiGTlc0xBXlOhtU",
+      "1password-site-verification=DREX2J7TXBEY5FGM2RYXBK366U",
+      "_github-challenge-squareup.squareup.com.=7725774663",
+      "NRZYY",
+      "google-site-verification=OuiYXiYuWdfPSus7uBL6EhJawkg5BOERlvclE-QXVcs",
+      "loom-site-verification=0036b963640944f580e4c1fec45c8d9d",
+      "docusign=60c2f7db-b230-4b3d-91be-06a59569d253",
+      "ca3-a19f55866123448fb9e26ff3ed0d6d86",
+      "stripe-verification=5a8a00371398aa2466b713faf14e6edc9140160c32f51d02067af5dcd8591cc8",
+      "ca3-60ed3ea4c1e141c79e4715175c4342f3",
+      "ca3-4725c4c959644520b1df50805f72dca7",
+      "logmein-verification-code=d29bfe7e-a479-4ca9-862a-c87f1072f273",
+      "_ek1nrewwbsrikaiet5cox7909jno0th",
+      "bugcrowd-verification=2aa613d4e374f9460060422314f1098d",
+      "ca3-e9926e04f8c148e89e7c600213cb986a",
+      "facebook-domain-verification=ddco927gzciui72ra27s2aq1301vjo",
+      "onetrust-domain-verification=0c79435fab8d45ac85eb4ac5041ab282",
+      "v=spf1 include:squareup.com._nspf.vali.email include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:stspg-customer.com ~all",
+      "ca3-6a7c53b6aded4260a698de411a9640b8",
+      "zapier-domain-verification-challenge=9b5ca019-06d3-40bb-a52b-915e42e1d884",
+      "lucidlink-verification=9W8003J10X2KM6X9SS663MSG08",
+      "google-site-verification=DsJnK_h3aiHyf-DRKaVdc_iNooeRxSGu8PqkY2KTd74",
+      "ca3-8bbc566c4b4c4974950a83527517492d",
+      "atlassian-sending-domain-verification=e540d827-02ac-4946-acee-a77c1df352f6",
+      "onetrust-domain-verification=c01f4d184d3c4f2ba9503a4583e88101",
+      "google-site-verification=Pqbi42Git5I6oJ6ShnRd4aUd2umxUHL5JAKHf_kSQwQ",
+      "ca3-c491f3300b6641e1b8a3104b693d7bb3",
+      "ca3-bd8eae9a6ea245b68811b976990fc57d",
+      "wiz-domain-verification=e401377ed0542bf72e67d32b62781795a75cfc1a84c18520e6263bfdf415cd0e",
+      "stripe-verification=cfd5f1b3267861ed07fba1b121f0161da96c9fb30c97f590fc88db51506b4710",
+      "ca3-37fc58abdd5a4cf8ab5e8893db8298be",
+      "parsec-domain-verification=td_2c0ZaSdVBfxDHQsb5HjmvQCHaKF",
+      "docusign=83d5eb19-7a3d-4191-99f9-1f2c4e94fdfa",
+      "ca3-52a6dd26ecd1423ca816dac4d4b00678",
+      "gitkraken-domain-verification=8e6bcedb6a5ded444186409140245b606ca0417109d394ee4e5b2b7df5e56ee0",
+      "wrike-verification=MzIwNzgwMDo2MGE1NjUwYThkMmExMjkzZDg3MGVmMDE3MzkzMDJlOTE4YTY5YmZlMjNlZGE5MGY5MWMzODFhNTFmNDU5MTNi",
+      "ca3-a3666da4d1ec4264a8d59cb8616cf0ed",
+      "pinterest-site-verification=0fef3763fa30d8b29fca02b8d1e77626",
+      "ca3-61da443be93c4975accb29e3bbf89560",
+      "google-site-verification=mlc7S_Dm5aPcPQjEe_Pj3GuiF9_svNtafsWw_kPeN48",
+      "docusign=35ce9b6e-d74a-48ad-b437-690ad0602f81",
+      "status-page-domain-verification=75bhj6n7cwrd",
+      "anthropic-domain-verification-7xmqab=NeSCp0Pj0sOrdc5jJgJiOsHFb"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@vali.email,mailto:postmasters@squareup.com,mailto:square-dmarc@datafeeds.phishlabs.com; ruf=mailto:dmarc-ruf@squareup.com,mailto:square-dmarc@datafeeds.phishlabs.com"
@@ -403,11 +403,11 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "stripe-verification=5a8a00371398aa2466b713faf14e6edc9140160c32f51d02067af5dcd859",
-    "stripe-verification=cfd5f1b3267861ed07fba1b121f0161da96c9fb30c97f590fc88db51506b",
-    "pinterest-site-verification=49699bc2c694be95ffea5692960d72b4",
-    "google-site-verification=lIzmfEdVTz2PAEu4n8NckVPZhd-mQiGTlc0xBXlOhtU",
-    "pinterest-site-verification=0fef3763fa30d8b29fca02b8d1e77626"
+    "facebook-domain-verification=cx3tov4g02lrdyzawmw6zfl8zgrc5c",
+    "apple-domain-verification=sRlD9NsdK27SFZHX",
+    "reachdesk-verification=IjVgh43q7kQHr9cSU6FYVjktOt6FNW6I1VKqC7cLSPXDW0hqMpa5pPjEJ",
+    "miro-verification=eb2231722e9ee6e925e69e31c221403361bbc1cb",
+    "amp-by-sourcegraph-domain-verification-w953qg=xBRagiAevq79uusplKZZPSBsg"
   ],
   "tls2": {
     "alpn": "",
@@ -481,8 +481,13 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
       "status": 200
     }
   },
-  "elapsed_s": 10.0,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 10.3,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -494,4 +499,5 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

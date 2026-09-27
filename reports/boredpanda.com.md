@@ -7,8 +7,8 @@
 | Target | https://boredpanda.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | boredpanda.com |
-| Test date | 2026-09-26 23:20 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:11 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -146,7 +146,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-qp0t5e=qyjWbKPmD6hTz77lb10rBJ2hi; google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM; google-site-verification=KIIUiAJna3_1-eDilP2A9ENUy2oiWftdyHXyCMhnz3s
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=MxIMpuiT8s52Vltu5GksnMWb3AmEfjHaawL4ii8SD_Q; google-site-verification=XuF5a9eahvWOgNLrh7WkeiFQpnIjdbpEgbWPZ0a1oYY; google-site-verification=KIIUiAJna3_1-eDilP2A9ENUy2oiWftdyHXyCMhnz3s
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -164,7 +164,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 ### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 44.221.107.254 carries PTR ec2-44-221-107-254.compute-1.amazonaws.com. for boredpanda.com.
+- **Detail:** 35.168.213.86 carries PTR ec2-35-168-213-86.compute-1.amazonaws.com. for boredpanda.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 20. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -198,10 +198,10 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
   "domain": "boredpanda.com",
   "dns": {
     "a": [
+      "35.168.213.86",
       "44.221.107.254",
-      "54.204.103.197",
       "44.220.98.194",
-      "35.168.213.86"
+      "54.204.103.197"
     ],
     "aaaa": [],
     "cname": null,
@@ -209,27 +209,27 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
       "smtp.google.com (pref 1)"
     ],
     "ns": [
-      "ns-173.awsdns-21.com.",
-      "ns-972.awsdns-57.net.",
       "ns-1985.awsdns-56.co.uk.",
-      "ns-1425.awsdns-50.org."
+      "ns-972.awsdns-57.net.",
+      "ns-1425.awsdns-50.org.",
+      "ns-173.awsdns-21.com."
     ],
     "caa": [],
     "spf": [
-      "anthropic-domain-verification-qp0t5e=qyjWbKPmD6hTz77lb10rBJ2hi",
-      "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM",
-      "brevo-code:59ddf176bd2029a7dea7a297ba5967ef",
-      "google-site-verification=KIIUiAJna3_1-eDilP2A9ENUy2oiWftdyHXyCMhnz3s",
-      "apple-domain-verification=hops-EdsP_znUZ0tgSnyMFqx9WcQ6J6CLUlLwNJuseY",
       "google-site-verification=MxIMpuiT8s52Vltu5GksnMWb3AmEfjHaawL4ii8SD_Q",
-      "google-site-verification=E-VWzamHJVxn2aKoEbD2dNX18GG_rEuHAJIAcsZ9JQY",
-      "facebook-domain-verification=fgwdxllanmj6qtcuvmke1si9ec60ia",
-      "MS=E04C457D679181C1054598D9F097241502D2B900",
       "google-site-verification=XuF5a9eahvWOgNLrh7WkeiFQpnIjdbpEgbWPZ0a1oYY",
+      "google-site-verification=KIIUiAJna3_1-eDilP2A9ENUy2oiWftdyHXyCMhnz3s",
       "trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d",
+      "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM",
+      "apple-domain-verification=hops-EdsP_znUZ0tgSnyMFqx9WcQ6J6CLUlLwNJuseY",
+      "v=spf1 a mx include:_spf.mlsend.com include:_spf.google.com include:spf.mailjet.com ~all",
+      "facebook-domain-verification=fgwdxllanmj6qtcuvmke1si9ec60ia",
+      "brevo-code:59ddf176bd2029a7dea7a297ba5967ef",
+      "google-site-verification=E-VWzamHJVxn2aKoEbD2dNX18GG_rEuHAJIAcsZ9JQY",
       "MS=ms42183495",
-      "google-site-verification=QyUw3s4mkxY3wZMMy4oMT3yHhdCqtiBuusYhmvAdgVM",
-      "v=spf1 a mx include:_spf.mlsend.com include:_spf.google.com include:spf.mailjet.com ~all"
+      "anthropic-domain-verification-qp0t5e=qyjWbKPmD6hTz77lb10rBJ2hi",
+      "MS=E04C457D679181C1054598D9F097241502D2B900",
+      "google-site-verification=QyUw3s4mkxY3wZMMy4oMT3yHhdCqtiBuusYhmvAdgVM"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:ipm7lrx@ar.glockapps.com,mailto:ipm5swv@ar.glockapps.com,mailto:dmarc_agg@vali.email; ruf=mailto:ipm7lrx@fr.glockapps.com,mailto:ipm5swv@fr.glockapps.com; fo=1;"
@@ -251,7 +251,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
       "boredpanda.com",
       "mirror.boredpanda.com"
     ],
-    "days_left": 154,
+    "days_left": 153,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -261,7 +261,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
     }
   },
   "ports": {
-    "ip": "44.221.107.254",
+    "ip": "35.168.213.86",
     "open": []
   },
   "https": {
@@ -353,11 +353,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
     ]
   },
   "apex_txt": [
-    "anthropic-domain-verification-qp0t5e=qyjWbKPmD6hTz77lb10rBJ2hi",
-    "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM",
+    "google-site-verification=MxIMpuiT8s52Vltu5GksnMWb3AmEfjHaawL4ii8SD_Q",
+    "google-site-verification=XuF5a9eahvWOgNLrh7WkeiFQpnIjdbpEgbWPZ0a1oYY",
     "google-site-verification=KIIUiAJna3_1-eDilP2A9ENUy2oiWftdyHXyCMhnz3s",
-    "apple-domain-verification=hops-EdsP_znUZ0tgSnyMFqx9WcQ6J6CLUlLwNJuseY",
-    "google-site-verification=MxIMpuiT8s52Vltu5GksnMWb3AmEfjHaawL4ii8SD_Q"
+    "trustpilot-one-time-verification-id=9eb08d90-b03e-4784-821f-4256acbae37d",
+    "google-site-verification=7IVwsmZnsAkCK_7cAFwmFfKsOt-dEkibijx09hJfQhM"
   ],
   "tls2": {
     "alpn": "",
@@ -401,7 +401,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-44-221-107-254.compute-1.amazonaws.com."
+      "ec2-35-168-213-86.compute-1.amazonaws.com."
     ]
   },
   "x13": {
@@ -427,8 +427,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
       "status": 200
     }
   },
-  "elapsed_s": 49.4,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "ECDHE-RSA-AES128-GCM-SHA256",
+    "cipher_ver": "TLSv1.2",
+    "root_status": 301
+  },
+  "elapsed_s": 50.9,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -440,4 +445,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 6, Info: 17)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

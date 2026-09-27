@@ -7,8 +7,8 @@
 | Target | https://opera.com/ |
 | Bug bounty program | Opera Public Bug Bounty |
 | Listed scope domain | opera.com |
-| Test date | 2026-09-26 23:34 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:27 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -17,16 +17,16 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | info | DNS2 | DNSSEC not authenticated (no AD flag from resolvers) | CWE-399 |
-| 2 | info | MAIL1 | Mail servers exist (MX) but no SPF record | CWE-200 |
-| 3 | info | TECH1 | Technology fingerprint | CWE-200 |
-| 4 | low | H2 | Missing CSP header | CWE-1021 |
-| 5 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
-| 6 | low | H4 | No clickjacking protection | CWE-1023 |
-| 7 | info | H5 | Missing Referrer-Policy | CWE-200 |
-| 8 | info | H7 | Missing Permissions-Policy | CWE-200 |
-| 9 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
-| 10 | info | H6 | Server technology disclosure | CWE-200 |
-| 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 2 | info | TECH1 | Technology fingerprint | CWE-200 |
+| 3 | low | H2 | Missing CSP header | CWE-1021 |
+| 4 | low | H3 | Missing X-Content-Type-Options | CWE-1194 |
+| 5 | low | H4 | No clickjacking protection | CWE-1023 |
+| 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | H7 | Missing Permissions-Policy | CWE-200 |
+| 8 | info | H8 | No cross-origin isolation headers (COOP/COEP) | CWE-200 |
+| 9 | info | H6 | Server technology disclosure | CWE-200 |
+| 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
+| 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
 | 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
@@ -42,72 +42,72 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - **Detail:** Public resolvers did not return the AD flag for this zone; DNSSEC is not enabled for the apex zone.
 - **Recommendation:** Consider enabling DNSSEC for integrity protection of DNS records.
 
-### 2. [INFO] Mail servers exist (MX) but no SPF record (`MAIL1`)
-
-- **CWE:** CWE-200
-- **Detail:** MX records are published but no SPF TXT record; sender-domain spoofing is harder to validate.
-- **Recommendation:** Publish an SPF record enumerating authorized senders.
-
-### 3. [INFO] Technology fingerprint (`TECH1`)
+### 2. [INFO] Technology fingerprint (`TECH1`)
 
 - **CWE:** CWE-200
 - **Detail:** Detected: Server: nginx
 - **Recommendation:** Keep the disclosed stack current and patch promptly; consider trimming verbose headers.
 
-### 4. [LOW] Missing CSP header (`H2`)
+### 3. [LOW] Missing CSP header (`H2`)
 
 - **CWE:** CWE-1021
 - **Detail:** No Content-Security-Policy header. XSS mitigation relies solely on output encoding.
 - **Context:** https response, /
 - **Recommendation:** Add a Content-Security-Policy header (start with default-src and report-only).
 
-### 5. [LOW] Missing X-Content-Type-Options (`H3`)
+### 4. [LOW] Missing X-Content-Type-Options (`H3`)
 
 - **CWE:** CWE-1194
 - **Detail:** No nosniff directive; browsers may MIME-sniff responses.
 - **Context:** https response, /
 - **Recommendation:** Set X-Content-Type-Options: nosniff.
 
-### 6. [LOW] No clickjacking protection (`H4`)
+### 5. [LOW] No clickjacking protection (`H4`)
 
 - **CWE:** CWE-1023
 - **Detail:** No X-Frame-Options or CSP frame-ancestors; page can be embedded in a frame.
 - **Context:** https response, /
 - **Recommendation:** Set X-Frame-Options: DENY/SAMEORIGIN or CSP frame-ancestors.
 
-### 7. [INFO] Missing Referrer-Policy (`H5`)
+### 6. [INFO] Missing Referrer-Policy (`H5`)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy header; full URL may leak to third-party referrers.
 - **Context:** https response, /
 - **Recommendation:** Set Referrer-Policy (e.g., strict-origin-when-cross-origin).
 
-### 8. [INFO] Missing Permissions-Policy (`H7`)
+### 7. [INFO] Missing Permissions-Policy (`H7`)
 
 - **CWE:** CWE-200
 - **Detail:** No Permissions-Policy header gating browser powerful features (camera, geolocation, ...).
 - **Context:** https response, /
 - **Recommendation:** Add a Permissions-Policy restricting unused features.
 
-### 9. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
+### 8. [INFO] No cross-origin isolation headers (COOP/COEP) (`H8`)
 
 - **CWE:** CWE-200
 - **Detail:** COOP/COEP not set; the page is not isolated from cross-origin documents.
 - **Context:** https response, /
 - **Recommendation:** Consider COOP/COEP if the site uses sharedArrayBuffer or wants isolation.
 
-### 10. [INFO] Server technology disclosure (`H6`)
+### 9. [INFO] Server technology disclosure (`H6`)
 
 - **CWE:** CWE-200
 - **Detail:** Header reveals: nginx
 - **Context:** https response, /
 - **Recommendation:** Consider hiding or shortening the Server header.
 
-### 11. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
+### 10. [INFO] No MTA-STS record (_mta-sts) - opportunistic TLS not enforced (`MAIL11`)
 
 - **CWE:** CWE-223
 - **Detail:** Domain sends mail (MX present) but publishes no MTA-STS policy (RFC 8461).
 - **Recommendation:** Consider MTA-STS to require TLS to known MTAs.
+
+### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
+
+- **CWE:** CWE-200
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=M1WsVfJ0xUplsAdeDZ76BkHn9QL-IOWDyq9zziApgAI; openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi; facebook-domain-verification=up2ljn0zco95f4f16hjxe6we815q19
+- **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
@@ -124,7 +124,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 185.26.182.103 carries PTR opera.com. for opera.com.
+- **Detail:** 185.26.182.104 carries PTR opera.com. for opera.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 15. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
@@ -152,33 +152,49 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "opera.com",
   "dns": {
     "a": [
-      "185.26.182.103",
-      "185.26.182.104"
+      "185.26.182.104",
+      "185.26.182.103"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "ALT4.ASPMX.L.GOOGLE.com (pref 10)",
-      "ALT3.ASPMX.L.GOOGLE.com (pref 10)",
-      "ALT2.ASPMX.L.GOOGLE.com (pref 5)",
       "ASPMX.L.GOOGLE.com (pref 1)",
-      "ALT1.ASPMX.L.GOOGLE.com (pref 5)"
+      "ALT1.ASPMX.L.GOOGLE.com (pref 5)",
+      "ALT2.ASPMX.L.GOOGLE.com (pref 5)",
+      "ALT4.ASPMX.L.GOOGLE.com (pref 10)",
+      "ALT3.ASPMX.L.GOOGLE.com (pref 10)"
     ],
     "ns": [
+      "nic1.opera.com.",
       "nic4.opera.com.",
-      "nic6.opera.com.",
-      "nic3.opera.com.",
       "nic2.opera.com.",
-      "nic1.opera.com."
+      "nic6.opera.com.",
+      "nic3.opera.com."
     ],
     "caa": [
-      "0 iodef \"mailto:hostmaster@opera.com\"",
-      "0 issue \"digicert.com\"",
       "0 issue \"globalsign.com\"",
       "0 issue \"sectigo.com\"",
+      "0 iodef \"mailto:hostmaster@opera.com\"",
+      "0 issue \"digicert.com\"",
       "0 issue \"trust-provider.com\""
     ],
-    "spf": [],
+    "spf": [
+      "baaff065e3b7dbc102b34ce11a472f5c",
+      "google-site-verification=M1WsVfJ0xUplsAdeDZ76BkHn9QL-IOWDyq9zziApgAI",
+      "openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi",
+      "facebook-domain-verification=up2ljn0zco95f4f16hjxe6we815q19",
+      "google-site-verification=mi7mVeHWYoxrnV4M85YytexDvFMwa23tvOOcg0f0w-E",
+      "google-site-verification=zsu8s2znTOAuZ0dkksfMdQE3HmkoNNyuijNib1xkiQo",
+      "07b121f99e9843a192c18b3cf340b8fb",
+      "BQ33d38Z4c0YY0OBRQuXcXsgWcVd9_w",
+      "teamtailor=baaff065e3b7dbc102b34ce11a472f5c",
+      "v=spf1 ip4:185.26.182.76 ip4:195.189.142.89 ip6:2001:4c28:4000:722:185:26:182:76 ip6:2001:4c28:4000:779:195:189:142:89 mx include:_spf.google.com ~all",
+      "_nt0mk4rbdlrkccjcxafujsak0umpiu7",
+      "keybase-site-verification=uH1gfE9c0VONYIy9Hq-WuhCOx6JclPV3_M3j9fAPnXU",
+      "adobe-idp-site-verification=61e18c604ee93df7fb52b11bab48531b3112c62f0db7249f99463fa327f9c69d",
+      "apple-domain-verification=SWfwiYtREsASOqwv",
+      "FIO7ppPA1vjosCuWmpg32zcajEQgpx5RgsHG78x2T5oojZ2C6ujnN"
+    ],
     "dmarc": [
       "v=DMARC1; p=reject; aspf=s; adkim=s; ri=86400; rua=mailto:c22187dc@in.mailhardener.com"
     ],
@@ -197,7 +213,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "*.opera.com",
       "opera.com"
     ],
-    "days_left": 133,
+    "days_left": 132,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -207,7 +223,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "185.26.182.103",
+    "ip": "185.26.182.104",
     "open": []
   },
   "https": {
@@ -259,6 +275,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "subdomains": {
     "status": "ct-pending"
   },
+  "apex_txt": [
+    "google-site-verification=M1WsVfJ0xUplsAdeDZ76BkHn9QL-IOWDyq9zziApgAI",
+    "openai-domain-verification=dv-kjAJTFRCoOY6YboxYHmIN5wi",
+    "facebook-domain-verification=up2ljn0zco95f4f16hjxe6we815q19",
+    "google-site-verification=mi7mVeHWYoxrnV4M85YytexDvFMwa23tvOOcg0f0w-E",
+    "google-site-verification=zsu8s2znTOAuZ0dkksfMdQE3HmkoNNyuijNib1xkiQo"
+  ],
   "tls2": {
     "alpn": "",
     "tls_ver": "TLSv1.3",
@@ -329,8 +352,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "status": 200
     }
   },
-  "elapsed_s": 44.2,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 38.7,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -342,4 +370,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

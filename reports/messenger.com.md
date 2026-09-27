@@ -7,8 +7,8 @@
 | Target | https://messenger.com/ |
 | Bug bounty program | Facebook |
 | Listed scope domain | messenger.com |
-| Test date | 2026-09-26 23:33 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:25 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -44,7 +44,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
 ### 2. [LOW] TLS certificate expires within 30 days (`TLS4`)
 
 - **CWE:** CWE-298
-- **Detail:** Certificate expires in 8 days (notAfter Oct  4 23:59:59 2026 GMT).
+- **Detail:** Certificate expires in 7 days (notAfter Oct  4 23:59:59 2026 GMT).
 - **Recommendation:** Plan renewal / enable automated renewal (e.g., ACME).
 
 ### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
@@ -124,7 +124,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (277vss745gntky.messenger.com and w37865pdiziqii.messenger.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (mxmjw3ny0oqthu.messenger.com and h5qjpefnh9bn4s.messenger.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
@@ -154,9 +154,9 @@ Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
     "cname": null,
     "mx": [
       "mxa-00082601.gslb.pphosted.com (pref 10)",
-      "mx0b-00082601.pphosted.com (pref 20)",
       "mxb-00082601.gslb.pphosted.com (pref 10)",
-      "mx0a-00082601.pphosted.com (pref 20)"
+      "mx0a-00082601.pphosted.com (pref 20)",
+      "mx0b-00082601.pphosted.com (pref 20)"
     ],
     "ns": [
       "b.ns.facebook.com.",
@@ -168,12 +168,12 @@ Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
       "0 issue \"digicert.com; account=271b0beda0771d006aa3a6c11b05187d456d6c239b46cb5241196095b09c92af\""
     ],
     "spf": [
-      "6fd64222-f6ef-4766-87e8-34729703809a",
       "google-site-verification=f68cxjENokmrbNLEilsjxlPqbiM3lTmXKGLJFg0OHr4",
-      "google-site-verification=z9mNNADBbsCO2UKMxiu5UFnUz5SvavUmC2Jx-4Lw9RI",
       "v=spf1 redirect=_spf.fb.com",
+      "fLEQ2Q8vdk4sDU0r7FqRc8XJoe7FYEj3ihT0KxCABfwuAbMel2204jpnNBjV+c1rfY71OeFf/cTMCKZpzJBPPw==",
+      "google-site-verification=z9mNNADBbsCO2UKMxiu5UFnUz5SvavUmC2Jx-4Lw9RI",
       "MS=ms57472615",
-      "fLEQ2Q8vdk4sDU0r7FqRc8XJoe7FYEj3ihT0KxCABfwuAbMel2204jpnNBjV+c1rfY71OeFf/cTMCKZpzJBPPw=="
+      "6fd64222-f6ef-4766-87e8-34729703809a"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:a@dmarc.facebookmail.com; pct=100"
@@ -202,7 +202,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
       "facebook.com",
       "messenger.com"
     ],
-    "days_left": 8,
+    "days_left": 7,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -320,8 +320,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
       "status": 200
     }
   },
-  "elapsed_s": 9.1,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_CHACHA20_POLY1305_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 11.2,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -333,4 +338,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 8, Info: 8)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://hkrsa.asia/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | hkrsa.asia |
-| Test date | 2026-09-26 23:29 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:21 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **35** (High: 0, Medium: 2, Low: 5, Info: 28)
+Total findings: **39** (High: 0, Medium: 2, Low: 5, Info: 32)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -51,6 +51,10 @@ Total findings: **35** (High: 0, Medium: 2, Low: 5, Info: 28)
 | 33 | info | SRV1 | Server header discloses a product version | CWE-200 |
 | 34 | info | HTML3 | Third-party <iframe> embedded in root document | CWE-643 |
 | 35 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 36 | info | HTML4 | Meta generator tag discloses site technology | CWE-200 |
+| 37 | info | HTML7 | Insecure http:// references inside an HTTPS document | CWE-319 |
+| 38 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 39 | info | HTML10 | Plaintext email addresses in the document | CWE-200 |
 
 ## Detailed findings
 
@@ -246,7 +250,7 @@ Total findings: **35** (High: 0, Medium: 2, Low: 5, Info: 28)
 ### 31. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xklgihbgjsfsq8.html -> 404; error page/headers match: Apache, PHP, WordPress.
+- **Detail:** GET /xktfmrs7k9g9be.html -> 404; error page/headers match: Apache, PHP, WordPress.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 32. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -273,6 +277,30 @@ Total findings: **35** (High: 0, Medium: 2, Low: 5, Info: 28)
 - **Detail:** /sitemap.xml on hkrsa.asia lists 2 <loc> URL(s) across 3 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
+### 36. [INFO] Meta generator tag discloses site technology (`HTML4`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of hkrsa.asia declares generator: WordPress 6.6.5, Elementor 4.1.3; features: additional_custom_breakpoints; settings: css_print_method-external, google_font-enabled, font_display-auto; generator tags fingerprint the site builder/CMS for targeted attacks.
+- **Recommendation:** Remove the generator meta tag or keep it consistent with the deployed version.
+
+### 37. [INFO] Insecure http:// references inside an HTTPS document (`HTML7`)
+
+- **CWE:** CWE-319
+- **Detail:** Root document of hkrsa.asia references 5 distinct http:// URL(s) (e.g. http://bit.ly/hkrsa_android2, http://bit.ly/hkrsa_ios, http://wa.me/85294434277); using them drops to unencrypted transport.
+- **Recommendation:** Use https:// references or relative URLs.
+
+### 38. [INFO] Document references many third-party domains (`HTML11`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of hkrsa.asia references 14 distinct third-party registrable domains (e.g. schema.org, gravatar.com, googleapis.com, mshop-app.com, wa.me); each is a supply-chain/trust dependency of the page.
+- **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
+
+### 39. [INFO] Plaintext email addresses in the document (`HTML10`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of hkrsa.asia contains 1 plaintext email address(es) (e.g. hkrsa.asia@gmail.com); these are harvestable by bots.
+- **Recommendation:** Use a contact form or mailto obfuscation for non-critical addresses.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -288,8 +316,8 @@ Total findings: **35** (High: 0, Medium: 2, Low: 5, Info: 28)
       "mail.hkrsa.asia (pref 10)"
     ],
     "ns": [
-      "ns222.pointdnshere.net.",
-      "ns221.pointdnshere.net."
+      "ns221.pointdnshere.net.",
+      "ns222.pointdnshere.net."
     ],
     "caa": [],
     "spf": [
@@ -452,8 +480,13 @@ Total findings: **35** (High: 0, Medium: 2, Low: 5, Info: 28)
       "status": 200
     }
   },
-  "elapsed_s": 70.9,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "ECDHE-ECDSA-AES128-GCM-SHA256",
+    "cipher_ver": "TLSv1.2",
+    "root_status": 200
+  },
+  "elapsed_s": 74.0,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -465,4 +498,5 @@ Total findings: **35** (High: 0, Medium: 2, Low: 5, Info: 28)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

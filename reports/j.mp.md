@@ -7,8 +7,8 @@
 | Target | https://j.mp/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | j.mp |
-| Test date | 2026-09-26 23:31 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:23 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -52,7 +52,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 3. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** Alt-Svc: h3=":443"; ma=2592000
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
 - **Recommendation:** Verify the advertised protocol endpoints are configured.
 
 ### 4. [LOW] Missing HSTS header (`H1`)
@@ -107,7 +107,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 11. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (nvpos95u7yxjl1.j.mp and wn8oixagcpnltm.j.mp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (janm49vf133gnp.j.mp and lgqyab5fhh4yc0.j.mp) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 12. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -125,13 +125,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 ### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 67.199.248.17 carries PTR j.mp. for j.mp.
+- **Detail:** 67.199.248.16 carries PTR j.mp. for j.mp.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 15. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xka47ah5amkvz4.html -> 404; error page/headers match: Nginx.
+- **Detail:** GET /xk1en9415tt5jm.html -> 404; error page/headers match: Nginx.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 16. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
@@ -159,26 +159,26 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
   "domain": "j.mp",
   "dns": {
     "a": [
-      "67.199.248.17",
-      "67.199.248.16"
+      "67.199.248.16",
+      "67.199.248.17"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [],
     "ns": [
       "ns-cloud-a2.googledomains.com.",
-      "ns-403.awsdns-50.com.",
-      "ns-1927.awsdns-48.co.uk.",
-      "ns-1056.awsdns-04.org.",
-      "ns-545.awsdns-04.net.",
       "ns-cloud-a1.googledomains.com.",
+      "ns-1927.awsdns-48.co.uk.",
+      "ns-545.awsdns-04.net.",
+      "ns-1056.awsdns-04.org.",
       "ns-cloud-a3.googledomains.com.",
+      "ns-403.awsdns-50.com.",
       "ns-cloud-a4.googledomains.com."
     ],
     "caa": [
       "0 issue \"amazon.com\"",
-      "0 iodef \"mailto:abuse@bit.ly\"",
-      "0 issuewild \";\""
+      "0 issuewild \";\"",
+      "0 iodef \"mailto:abuse@bit.ly\""
     ],
     "spf": [
       "_xz3da5bqfvxb6jlznt7hnmvt6m0kuce",
@@ -201,7 +201,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     "san": [
       "j.mp"
     ],
-    "days_left": 137,
+    "days_left": 136,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -211,7 +211,7 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
     }
   },
   "ports": {
-    "ip": "67.199.248.17",
+    "ip": "67.199.248.16",
     "open": []
   },
   "https": {
@@ -317,8 +317,13 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
       "status": 200
     }
   },
-  "elapsed_s": 16.5,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 404
+  },
+  "elapsed_s": 16.8,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -330,4 +335,5 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,8 +7,8 @@
 | Target | https://apple.com/ |
 | Bug bounty program | Apple |
 | Listed scope domain | apple.com |
-| Test date | 2026-09-26 23:19 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -112,7 +112,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: apple-domain-verification=X5Jt76bn3Dnmgzjj; facebook-domain-verification=n6cqjfucq6plswmtfbwnbbeu1qiq3v; Dynatrace-site-verification=7d881a7c-c13f-4146-9d27-2731459e2509__iqls0105tagglc
+- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=6f3bfb849796a518061f8e8c4356f687a138502d86db7427916; google-site-verification=zBSq1mG5ssu2If-C17UAz_MzSZDcx03MVxmeDwMNc5w; Dynatrace-site-verification=7d881a7c-c13f-4146-9d27-2731459e2509__iqls0105tagglc
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -130,7 +130,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 ### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 17.253.144.10 carries PTR squeakytoytrainingcamp.com., iworktrialbuy.apple.com., apple.com.cn., apple.com.bo., seminars.apple.com., apple.com.tt., iphone.apple.com., apple.com.co., vipd-healthcheck.a01.3banana.com., applejava.apple.com., apple.fr., apple.com.gy., apple.com.mx., apple.com.hn., apple.com.au., apple.com.pe., apple.com.lk., podcast.apple.com., apple.com.sg., aperturetrialbuy.apple.com., www.brkgls.com., apple.com.uy., guide.apple.com., apple.com.do., brkgls.com., applecomputer.co.kr., apple.co.uk., apple.com.py., advertising.apple.com., apple.de., firewire.apple.com., apple.es., safaricampaign.apple., apple.com., apple.com.ai., apple.com.pa., livepage.apple.com., apple.nl., world-any.aaplimg.com., icloud.com., shake.apple.com., apple.com.my., apple.ca., applescript.apple.com., apple.it., appstore.com., itunespartner.apple.com., asia.apple.com. for apple.com.
+- **Detail:** 17.253.144.10 carries PTR apple.com.mx., squeakytoytrainingcamp.com., apple.com.ai., apple.de., apple.fr., podcast.apple.com., itunespartner.apple.com., iworktrialbuy.apple.com., apple.com.sg., applecomputer.co.kr., safaricampaign.apple., aperturetrialbuy.apple.com., seminars.apple.com., apple.com.lk., apple.ca., apple.nl., apple.es., guide.apple.com., shake.apple.com., firewire.apple.com., apple.com.my., icloud.com., world-any.aaplimg.com., appstore.com., apple.it., apple.com.uy., brkgls.com., apple.com.do., apple.com.cn., apple.com.pe., apple.com., livepage.apple.com., iphone.apple.com., apple.com.hn., apple.com.co., applescript.apple.com., apple.com.gy., applejava.apple.com., apple.com.au., advertising.apple.com., apple.com.py., apple.co.uk., asia.apple.com., apple.com.pa., apple.com.tt., vipd-healthcheck.a01.3banana.com., www.brkgls.com., apple.com.bo. for apple.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 16. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
@@ -153,48 +153,48 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     ],
     "cname": null,
     "mx": [
-      "mx-in-hfd.apple.com (pref 20)",
-      "mx-in.g.apple.com (pref 10)",
-      "mx-in-sg.apple.com (pref 20)",
       "mx-in-ma.apple.com (pref 20)",
+      "mx-in-sg.apple.com (pref 20)",
       "mx-in-vib.apple.com (pref 20)",
-      "mx-in-rn.apple.com (pref 20)"
+      "mx-in-rn.apple.com (pref 20)",
+      "mx-in-hfd.apple.com (pref 20)",
+      "mx-in.g.apple.com (pref 10)"
     ],
     "ns": [
-      "a.ns.apple.com.",
-      "d.ns.apple.com.",
       "b.ns.apple.com.",
-      "c.ns.apple.com."
+      "d.ns.apple.com.",
+      "c.ns.apple.com.",
+      "a.ns.apple.com."
     ],
     "caa": [
-      "0 issue \"pki.apple.com\"",
       "0 issuewild \"pki.apple.com\"",
+      "0 issue \"pki.apple.com\"",
       "0 iodef \"mailto:contact_pki@apple.com\""
     ],
     "spf": [
-      "apple-domain-verification=X5Jt76bn3Dnmgzjj",
-      "facebook-domain-verification=n6cqjfucq6plswmtfbwnbbeu1qiq3v",
-      "_khcec23xgc5b2lb981hup1csjb4cdnz",
-      "Dynatrace-site-verification=7d881a7c-c13f-4146-9d27-2731459e2509__iqls0105tagglcsaul0m16ibrf",
+      "json:eyJ3aHkiOiJUaGlzIGlzIHRvIHRydW5jYXRlIFVEUCByZXNwb25zZXMgZm9yIFRYVCBxdWVyaWVzIHRvIGFwcGxlLmNvbSIsInBhZGRpbmciOiJxdWFoMGVpamFhNGVlajh0aWVkYWlnaG9jZWljaGFlOGVUb3ppZTVmdTVhaFRoMldlaU00aWsyaHVxdThpZXBoaWVxdW9oc2hlaXBhZWdoOUthZWw3b2NoaWVuZ2llem9lc2g1In0K",
+      "cisco-ci-domain-verification=6f3bfb849796a518061f8e8c4356f687a138502d86db742791685059176547dd",
       "google-site-verification=zBSq1mG5ssu2If-C17UAz_MzSZDcx03MVxmeDwMNc5w",
+      "Dynatrace-site-verification=7d881a7c-c13f-4146-9d27-2731459e2509__iqls0105tagglcsaul0m16ibrf",
       "_eht2v8yfz1agpq7o4zdkkz3k0k86fyr",
+      "v=spf1 include:_spf.apple.com include:_spf-txn.apple.com ~all",
+      "facebook-domain-verification=n6cqjfucq6plswmtfbwnbbeu1qiq3v",
+      "apple-domain-verification=X5Jt76bn3Dnmgzjj",
       "json:eyJ3aHkiOiJUaGlzIGlzIHRvIHRydW5jYXRlIFVEUCByZXNwb25zZXMgZm9yIFRYVCBxdWVyaWVzIHRvIGFwcGxlLmNvbSIsInBhZGRpbmciOiJpZW4wYWVHaGF0aG9oNmhhaHZpZWphaTNlYXkwYWh2YWhjaGFocXVhZWxlZTBZdWw0cGhpZXRoMHNvNXZpZXllZWNvaDRpZThzaGVlcGllVDNwYWVjaGVpVjZqb2h3aWVwaG82In0K",
-      "lucidlink-verification=SCDW9V44GJHAVXKFS6ZY6EZ2YR",
+      "cerner-client-id=ce3abf18-ee87-43b9-9927-9eb24b4bac4a",
+      "atlassian-domain-verification=mLabq99iaT8kquJechF6l31FAYoNUe3WB7tLpLFUiUYVJCse9SKq83hOJzFkwqrh",
+      "_khcec23xgc5b2lb981hup1csjb4cdnz",
       "miro-verification=2494d255c4c50b1e521650a0659cbf3fa08b0072",
       "google-site-verification=L5kkMdiFI8npvb6KlHui84fJaCw5G64DWhaDRIAT4_c",
+      "webexdomainverification.8C462=b728ec3f-dfc9-42f9-92cb-9ba8853cbee8",
+      "cerner-client-id=22dd1d8a-5e8b-4e1e-80ef-39bcdfd42798",
       "yahoo-verification-key=Ay+djyw0qWQgXKWGA/jstjYryTMrKb+PBXI5l8u5/jw=",
       "77a4a6de-da14-449c-83c4-85366e0f55f9",
-      "cisco-ci-domain-verification=6f3bfb849796a518061f8e8c4356f687a138502d86db742791685059176547dd",
-      "atlassian-domain-verification=qZD4TfnCAoAjCFQgafhoKQpOs9tviekNK4wYE4a5eK3XoRP06hXAvEp8SLU0v7fI",
-      "cerner-client-id=ce3abf18-ee87-43b9-9927-9eb24b4bac4a",
       "google-site-verification=8M6XjQCzydT62jk8HY3VXPAG-nKDllTRV-JpA3-Ktyw",
-      "webexdomainverification.8C462=b728ec3f-dfc9-42f9-92cb-9ba8853cbee8",
-      "v=spf1 include:_spf.apple.com include:_spf-txn.apple.com ~all",
-      "json:eyJ3aHkiOiJUaGlzIGlzIHRvIHRydW5jYXRlIFVEUCByZXNwb25zZXMgZm9yIFRYVCBxdWVyaWVzIHRvIGFwcGxlLmNvbSIsInBhZGRpbmciOiJxdWFoMGVpamFhNGVlajh0aWVkYWlnaG9jZWljaGFlOGVUb3ppZTVmdTVhaFRoMldlaU00aWsyaHVxdThpZXBoaWVxdW9oc2hlaXBhZWdoOUthZWw3b2NoaWVuZ2llem9lc2g1In0K",
-      "cerner-client-id=22dd1d8a-5e8b-4e1e-80ef-39bcdfd42798",
-      "atlassian-domain-verification=mLabq99iaT8kquJechF6l31FAYoNUe3WB7tLpLFUiUYVJCse9SKq83hOJzFkwqrh",
-      "ValidationTokenValue=77a4a6de-da14-449c-83c4-85366e0f55f9",
-      "adobe-idp-site-verification=6bd5e74c-a3a0-4781-b2e1-e95399b5e11c"
+      "lucidlink-verification=SCDW9V44GJHAVXKFS6ZY6EZ2YR",
+      "atlassian-domain-verification=qZD4TfnCAoAjCFQgafhoKQpOs9tviekNK4wYE4a5eK3XoRP06hXAvEp8SLU0v7fI",
+      "adobe-idp-site-verification=6bd5e74c-a3a0-4781-b2e1-e95399b5e11c",
+      "ValidationTokenValue=77a4a6de-da14-449c-83c4-85366e0f55f9"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=reject; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com;"
@@ -273,11 +273,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "apple-domain-verification=X5Jt76bn3Dnmgzjj",
-    "facebook-domain-verification=n6cqjfucq6plswmtfbwnbbeu1qiq3v",
-    "Dynatrace-site-verification=7d881a7c-c13f-4146-9d27-2731459e2509__iqls0105tagglc",
+    "cisco-ci-domain-verification=6f3bfb849796a518061f8e8c4356f687a138502d86db7427916",
     "google-site-verification=zBSq1mG5ssu2If-C17UAz_MzSZDcx03MVxmeDwMNc5w",
-    "lucidlink-verification=SCDW9V44GJHAVXKFS6ZY6EZ2YR"
+    "Dynatrace-site-verification=7d881a7c-c13f-4146-9d27-2731459e2509__iqls0105tagglc",
+    "facebook-domain-verification=n6cqjfucq6plswmtfbwnbbeu1qiq3v",
+    "apple-domain-verification=X5Jt76bn3Dnmgzjj"
   ],
   "tls2": {
     "alpn": "",
@@ -319,54 +319,54 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
   "x12": {
     "status": 301,
     "ptr": [
-      "squeakytoytrainingcamp.com.",
-      "iworktrialbuy.apple.com.",
-      "apple.com.cn.",
-      "apple.com.bo.",
-      "seminars.apple.com.",
-      "apple.com.tt.",
-      "iphone.apple.com.",
-      "apple.com.co.",
-      "vipd-healthcheck.a01.3banana.com.",
-      "applejava.apple.com.",
-      "apple.fr.",
-      "apple.com.gy.",
       "apple.com.mx.",
-      "apple.com.hn.",
-      "apple.com.au.",
-      "apple.com.pe.",
-      "apple.com.lk.",
-      "podcast.apple.com.",
-      "apple.com.sg.",
-      "aperturetrialbuy.apple.com.",
-      "www.brkgls.com.",
-      "apple.com.uy.",
-      "guide.apple.com.",
-      "apple.com.do.",
-      "brkgls.com.",
-      "applecomputer.co.kr.",
-      "apple.co.uk.",
-      "apple.com.py.",
-      "advertising.apple.com.",
-      "apple.de.",
-      "firewire.apple.com.",
-      "apple.es.",
-      "safaricampaign.apple.",
-      "apple.com.",
+      "squeakytoytrainingcamp.com.",
       "apple.com.ai.",
-      "apple.com.pa.",
-      "livepage.apple.com.",
-      "apple.nl.",
-      "world-any.aaplimg.com.",
-      "icloud.com.",
-      "shake.apple.com.",
-      "apple.com.my.",
-      "apple.ca.",
-      "applescript.apple.com.",
-      "apple.it.",
-      "appstore.com.",
+      "apple.de.",
+      "apple.fr.",
+      "podcast.apple.com.",
       "itunespartner.apple.com.",
-      "asia.apple.com."
+      "iworktrialbuy.apple.com.",
+      "apple.com.sg.",
+      "applecomputer.co.kr.",
+      "safaricampaign.apple.",
+      "aperturetrialbuy.apple.com.",
+      "seminars.apple.com.",
+      "apple.com.lk.",
+      "apple.ca.",
+      "apple.nl.",
+      "apple.es.",
+      "guide.apple.com.",
+      "shake.apple.com.",
+      "firewire.apple.com.",
+      "apple.com.my.",
+      "icloud.com.",
+      "world-any.aaplimg.com.",
+      "appstore.com.",
+      "apple.it.",
+      "apple.com.uy.",
+      "brkgls.com.",
+      "apple.com.do.",
+      "apple.com.cn.",
+      "apple.com.pe.",
+      "apple.com.",
+      "livepage.apple.com.",
+      "iphone.apple.com.",
+      "apple.com.hn.",
+      "apple.com.co.",
+      "applescript.apple.com.",
+      "apple.com.gy.",
+      "applejava.apple.com.",
+      "apple.com.au.",
+      "advertising.apple.com.",
+      "apple.com.py.",
+      "apple.co.uk.",
+      "asia.apple.com.",
+      "apple.com.pa.",
+      "apple.com.tt.",
+      "vipd-healthcheck.a01.3banana.com.",
+      "www.brkgls.com.",
+      "apple.com.bo."
     ]
   },
   "x13": {
@@ -392,8 +392,13 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
       "status": 200
     }
   },
-  "elapsed_s": 4.5,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 5.0,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -405,4 +410,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

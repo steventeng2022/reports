@@ -7,12 +7,12 @@
 | Target | https://css-tricks.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | css-tricks.com |
-| Test date | 2026-09-26 23:22 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:14 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
+Total findings: **27** (High: 0, Medium: 0, Low: 4, Info: 23)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -40,6 +40,9 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 | 22 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 | 23 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
 | 24 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 25 | info | HTML4 | Meta generator tag discloses site technology | CWE-200 |
+| 26 | low | HTML5 | State-changing HTML form without an anti-CSRF token | CWE-352 |
+| 27 | info | HTML11 | Document references many third-party domains | CWE-200 |
 
 ## Detailed findings
 
@@ -165,7 +168,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 ### 20. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk57ccruvqsdfi.html -> 404; error page/headers match: Cloudflare.
+- **Detail:** GET /xk03813es5tg2b.html -> 404; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -192,6 +195,24 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 - **Detail:** /sitemap.xml on css-tricks.com lists 142 <loc> URL(s) across 143 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
+### 25. [INFO] Meta generator tag discloses site technology (`HTML4`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of css-tricks.com declares generator: Site Kit by Google 1.188.0; generator tags fingerprint the site builder/CMS for targeted attacks.
+- **Recommendation:** Remove the generator meta tag or keep it consistent with the deployed version.
+
+### 26. [LOW] State-changing HTML form without an anti-CSRF token (`HTML5`)
+
+- **CWE:** CWE-352
+- **Detail:** Root document of css-tricks.com contains 2 state-changing form(s) (POST/PUT/PATCH/DELETE) with no recognizable anti-CSRF token input.
+- **Recommendation:** Add a per-session anti-CSRF token to state-changing forms.
+
+### 27. [INFO] Document references many third-party domains (`HTML11`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of css-tricks.com references 25 distinct third-party registrable domains (e.g. wp.com, gravatar.com, w3.org, buysellads.com, codepen.io); each is a supply-chain/trust dependency of the page.
+- **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
+
 ## Evidence (raw response observations)
 
 ```json
@@ -210,10 +231,10 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
     "mx": [
       "aspmx3.googlemail.com (pref 30)",
       "aspmx5.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
       "aspmx4.googlemail.com (pref 30)",
+      "aspmx2.googlemail.com (pref 30)",
       "aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 20)",
       "alt2.aspmx.l.google.com (pref 20)"
     ],
     "ns": [
@@ -374,8 +395,13 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
       "status": 200
     }
   },
-  "elapsed_s": 17.1,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 200
+  },
+  "elapsed_s": 20.7,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -387,4 +413,5 @@ Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

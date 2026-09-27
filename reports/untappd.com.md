@@ -7,12 +7,12 @@
 | Target | https://untappd.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | untappd.com |
-| Test date | 2026-09-26 23:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:33 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
+Total findings: **18** (High: 0, Medium: 0, Low: 2, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 | 15 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
 | 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 17 | info | HTML1 | Security policy set via <meta http-equiv> | CWE-1021 |
+| 18 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
 
 ## Detailed findings
 
@@ -108,7 +109,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: rippling-domain-verification=414dd4dc53702337; 1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54; google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY; 1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54; google-site-verification=G_VXSVRR3bpfmWTa1aoZiBQpbMC3OAR11uMRvdGlgU8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -126,7 +127,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 15. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk6qy5tzoe9f0q.html -> 403; error page/headers match: Cloudflare.
+- **Detail:** GET /xkjeeoxv6gpvb5.html -> 403; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -141,6 +142,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - **Detail:** HTML root of untappd.com declares via meta tags: content-security-policy; meta-set policies have limited browser support and are easier to override than response headers.
 - **Recommendation:** Prefer response headers and keep any meta declarations consistent with them.
 
+### 18. [INFO] Inline scripts without nonce/hash under a CSP (`HTML8`)
+
+- **CWE:** CWE-1021
+- **Detail:** Root document of untappd.com sends a CSP but contains 1 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
+- **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -152,43 +159,43 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "104.20.44.111"
     ],
     "aaaa": [
-      "2606:4700:10::6814:2c6f",
-      "2606:4700:10::ac42:a34f"
+      "2606:4700:10::ac42:a34f",
+      "2606:4700:10::6814:2c6f"
     ],
     "cname": null,
     "mx": [
+      "aspmx2.googlemail.com (pref 1)",
       "aspmx3.googlemail.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
       "alt2.aspmx.l.google.com (pref 5)",
-      "aspmx2.googlemail.com (pref 1)"
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "uma.ns.cloudflare.com.",
-      "henry.ns.cloudflare.com."
+      "henry.ns.cloudflare.com.",
+      "uma.ns.cloudflare.com."
     ],
     "caa": [],
     "spf": [
-      "v=spf1 include:mailgun.org include:_spf.google.com include:8657325.spf07.hubspotemail.net ~all",
-      "sending_domain1077992=e57882e11e995d0077009d5d51ac38c75e7fa092881dbc81d4f01ea6f4aba37a",
-      "rippling-domain-verification=414dd4dc53702337",
-      "MS=ms78757206",
-      "1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54",
-      "sending_domain1078002=7f3e88ab1ef815c42d93beacb80905d8e91477f133a45a0063997731dee78b8e",
       "google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY",
-      "anthropic-domain-verification-fnjqmj=U1ukT7Sxor44FIU8UxQ826TP6",
-      "Wbvu8ty9C2PBSYUZ",
-      "pardot1077992=c1d537bb2ce30942a74c659492f30bf3c6e8d7958a88a0fb799a5024fe9346e2",
-      "B99CA8E742",
-      "status-page-domain-verification=vjh1rqfvh6cq",
-      "facebook-domain-verification=huzlzmhksif1ge62wip9zvpb312rwt",
+      "1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54",
       "00D1U000000yGXd=1TBVN0000000B57",
-      "google-site-verification=uht-ZR-lbkbuuO9L45_oKL6jtqgJYaY3vNPODTutZLo",
-      "oe1a0rcj1t86545ob3bk2ng9ml",
       "google-site-verification=G_VXSVRR3bpfmWTa1aoZiBQpbMC3OAR11uMRvdGlgU8",
-      "pardot1078002=4b8f9c144c87c116c1071cad3b0a99a99e0c2e7cec52634a8fbd659ea5ff58b5",
+      "apple-domain-verification=PzeSkiU5Qi5suyUq",
+      "sending_domain1078002=7f3e88ab1ef815c42d93beacb80905d8e91477f133a45a0063997731dee78b8e",
+      "sending_domain1077992=e57882e11e995d0077009d5d51ac38c75e7fa092881dbc81d4f01ea6f4aba37a",
+      "v=spf1 include:mailgun.org include:_spf.google.com include:8657325.spf07.hubspotemail.net ~all",
       "sending_domain1078002=0f34bbdfe8ce8fde994ca2d6751686e81dcabaca24039a259f7683f01bc399b7",
-      "apple-domain-verification=PzeSkiU5Qi5suyUq"
+      "anthropic-domain-verification-fnjqmj=U1ukT7Sxor44FIU8UxQ826TP6",
+      "facebook-domain-verification=huzlzmhksif1ge62wip9zvpb312rwt",
+      "status-page-domain-verification=vjh1rqfvh6cq",
+      "google-site-verification=uht-ZR-lbkbuuO9L45_oKL6jtqgJYaY3vNPODTutZLo",
+      "pardot1077992=c1d537bb2ce30942a74c659492f30bf3c6e8d7958a88a0fb799a5024fe9346e2",
+      "MS=ms78757206",
+      "pardot1078002=4b8f9c144c87c116c1071cad3b0a99a99e0c2e7cec52634a8fbd659ea5ff58b5",
+      "B99CA8E742",
+      "oe1a0rcj1t86545ob3bk2ng9ml",
+      "Wbvu8ty9C2PBSYUZ",
+      "rippling-domain-verification=414dd4dc53702337"
     ],
     "dmarc": [
       "v=DMARC1; p=none; sp=none; rua=mailto:re+5cfc1e8a3ff9@inbound.dmarcdigests.com; pct=100"
@@ -275,11 +282,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "rippling-domain-verification=414dd4dc53702337",
-    "1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54",
     "google-site-verification=_5-to4lYBCcN4DBHN_M4Z6ST5Nle5AGkGXkzWWUZPEY",
-    "anthropic-domain-verification-fnjqmj=U1ukT7Sxor44FIU8UxQ826TP6",
-    "status-page-domain-verification=vjh1rqfvh6cq"
+    "1password-site-verification=JJRHU5XGONHORHDBBN5MLCHZ54",
+    "google-site-verification=G_VXSVRR3bpfmWTa1aoZiBQpbMC3OAR11uMRvdGlgU8",
+    "apple-domain-verification=PzeSkiU5Qi5suyUq",
+    "anthropic-domain-verification-fnjqmj=U1ukT7Sxor44FIU8UxQ826TP6"
   ],
   "tls2": {
     "alpn": "",
@@ -324,8 +331,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "status": 200
     }
   },
-  "elapsed_s": 5.7,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 403
+  },
+  "elapsed_s": 6.0,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -337,4 +349,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

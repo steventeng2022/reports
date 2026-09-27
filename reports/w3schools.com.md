@@ -7,8 +7,8 @@
 | Target | https://w3schools.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | w3schools.com |
-| Test date | 2026-09-26 23:40 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:34 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -129,7 +129,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5; google-site-verification=9Wi0rp8KXQ3oB2KWvpcLIbwMdqFvyZe8QmOH0YnON4g; apple-domain-verification=iGza4rmAk4yMj4vi
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=9Wi0rp8KXQ3oB2KWvpcLIbwMdqFvyZe8QmOH0YnON4g; apple-domain-verification=iGza4rmAk4yMj4vi; linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -181,28 +181,28 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt1.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
-      "feedback-smtp.eu-west-1.amazonses.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
+      "feedback-smtp.eu-west-1.amazonses.com (pref 10)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt1.aspmx.l.google.com (pref 5)",
       "aspmx.l.google.com (pref 1)",
       "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "ns-314.awsdns-39.com.",
-      "ns-1939.awsdns-50.co.uk.",
       "ns-1409.awsdns-48.org.",
-      "ns-769.awsdns-32.net."
+      "ns-769.awsdns-32.net.",
+      "ns-314.awsdns-39.com.",
+      "ns-1939.awsdns-50.co.uk."
     ],
     "caa": [],
     "spf": [
-      "MS=338A1134735F428FF6729DDF746385742F152781",
-      "linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5",
-      "Sendinblue-code:c1cb221c990a3b197b84632af64eb12a",
-      "google-site-verification=9Wi0rp8KXQ3oB2KWvpcLIbwMdqFvyZe8QmOH0YnON4g",
-      "apple-domain-verification=iGza4rmAk4yMj4vi",
       "amazonses:9O9JMU+QwMbQv3k+hYpAmauno4fuJMUcWephofXN0yc=",
-      "v=spf1 include:_spf.google.com include:amazonses.com include:spf.sendinblue.com include:shops.shopify.com include:mail.zendesk.com ip4:148.122.215.227 -all"
+      "v=spf1 include:_spf.google.com include:amazonses.com include:spf.sendinblue.com include:shops.shopify.com include:mail.zendesk.com ip4:148.122.215.227 -all",
+      "MS=338A1134735F428FF6729DDF746385742F152781",
+      "google-site-verification=9Wi0rp8KXQ3oB2KWvpcLIbwMdqFvyZe8QmOH0YnON4g",
+      "Sendinblue-code:c1cb221c990a3b197b84632af64eb12a",
+      "apple-domain-verification=iGza4rmAk4yMj4vi",
+      "linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:postmaster@w3schools.com; pct=100; adkim=r; aspf=s"
@@ -221,7 +221,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "san": [
       "w3schools.com"
     ],
-    "days_left": 155,
+    "days_left": 154,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -284,9 +284,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5",
     "google-site-verification=9Wi0rp8KXQ3oB2KWvpcLIbwMdqFvyZe8QmOH0YnON4g",
-    "apple-domain-verification=iGza4rmAk4yMj4vi"
+    "apple-domain-verification=iGza4rmAk4yMj4vi",
+    "linkedin-site-verification=d7833fa0-3fe5-49fb-ab0e-f34e3749c6f5"
   ],
   "tls2": {
     "alpn": "",
@@ -346,8 +346,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
       "status": 200
     }
   },
-  "elapsed_s": 46.8,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "ECDHE-RSA-AES128-GCM-SHA256",
+    "cipher_ver": "TLSv1.2",
+    "root_status": 301
+  },
+  "elapsed_s": 50.2,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -359,4 +364,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

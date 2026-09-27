@@ -7,8 +7,8 @@
 | Target | https://istockphoto.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | istockphoto.com |
-| Test date | 2026-09-26 23:31 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:23 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -138,13 +138,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.113 carries PTR server-54-192-248-113.tpe53.r.cloudfront.net. for istockphoto.com.
+- **Detail:** 54.192.248.91 carries PTR server-54-192-248-91.tpe53.r.cloudfront.net. for istockphoto.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 17. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkcpg6f1wn0zia.html -> 403; error page/headers match: CloudFront.
+- **Detail:** GET /xkq4w9h7dvx1ev.html -> 403; error page/headers match: CloudFront.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ## Evidence (raw response observations)
@@ -154,10 +154,10 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "domain": "istockphoto.com",
   "dns": {
     "a": [
+      "54.192.248.91",
       "54.192.248.113",
       "54.192.248.56",
-      "54.192.248.52",
-      "54.192.248.91"
+      "54.192.248.52"
     ],
     "aaaa": [],
     "cname": null,
@@ -166,41 +166,41 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "us-smtp-inbound-2.mimecast.com (pref 10)"
     ],
     "ns": [
+      "ns-194.awsdns-24.com.",
       "ns-1269.awsdns-30.org.",
-      "ns-692.awsdns-22.net.",
       "ns-1600.awsdns-08.co.uk.",
-      "ns-194.awsdns-24.com."
+      "ns-692.awsdns-22.net."
     ],
     "caa": [
-      "0 issue \"globalsign.com\"",
+      "0 issue \"letsencrypt.org\"",
       "0 issue \"amazon.com\"",
-      "0 issuewild \"godaddy.com\"",
-      "0 issue \"sectigo.com\"",
       "0 issuewild \"globalsign.com\"",
-      "0 issue \"pki.goog\"",
-      "0 issuewild \"amazon.com\"",
       "0 issuewild \"digicert.com\"",
-      "0 issue \"godaddy.com\"",
+      "0 issue \"sectigo.com\"",
       "0 issue \"digicert.com\"",
-      "0 iodef \"mailto:dnsadmins@gettyimages.com\"",
-      "0 issue \"letsencrypt.org\""
+      "0 issue \"globalsign.com\"",
+      "0 issue \"pki.goog\"",
+      "0 issuewild \"godaddy.com\"",
+      "0 issue \"godaddy.com\"",
+      "0 issuewild \"amazon.com\"",
+      "0 iodef \"mailto:dnsadmins@gettyimages.com\""
     ],
     "spf": [
-      "0OX00lOBevmMwBKqx+i4VEYt3Hh4BSEqvj5eywR4LcmQZA7wJO2GOeAy63AfjOZCwJ13Jk8zSgWKEqa4B3xXsw==",
+      "iblvsbv3q12clku4odkv5q2kns",
       "v=spf1 include:_spf1.gettyimages.com include:_spf2.gettyimages.com include:_spf3.gettyimages.com ~all",
       "google-site-verification=Kxr9iK44cHpakxQbI3si0Gt0rTaKT-P-ldoGPvB8u8c",
+      "imtrdblip7oaja1eqnsm5vv1da",
+      "0OX00lOBevmMwBKqx+i4VEYt3Hh4BSEqvj5eywR4LcmQZA7wJO2GOeAy63AfjOZCwJ13Jk8zSgWKEqa4B3xXsw==",
+      "rZ82I61",
       "mApBQbj",
-      "iblvsbv3q12clku4odkv5q2kns",
-      "CVimwsmxpGLA8Zz848NLFIp4MJqMzgn0K2DiVr0Rv7TrsCMNn9xjh2L71nEXuXKriJGVfu67jJpAzqQxns8TOg==",
+      "6gndatn3ep6iuuuj60pnavq47b",
+      "ozECEJCtCPL1buHkf0i1XhVu9bUhJxFEZX3QRAZp41iUI+YlumJIhPc9Uhxj/m7yJspJ0sy3Is3V1stL5vDijw==",
       "70aheif64ef26ttmml0v1s8u44",
       "gcrarlo4jnuv6jucvsu25us37t",
-      "v=msv1 t=56E21521-0012-4C74-BAF5-371A005951A8",
-      "ozECEJCtCPL1buHkf0i1XhVu9bUhJxFEZX3QRAZp41iUI+YlumJIhPc9Uhxj/m7yJspJ0sy3Is3V1stL5vDijw==",
-      "imtrdblip7oaja1eqnsm5vv1da",
-      "rZ82I61",
       "nqSz5i7",
       "facebook-domain-verification=4cqoes9ia3bfzqzq69xntb7iar6mkr",
-      "6gndatn3ep6iuuuj60pnavq47b"
+      "v=msv1 t=56E21521-0012-4C74-BAF5-371A005951A8",
+      "CVimwsmxpGLA8Zz848NLFIp4MJqMzgn0K2DiVr0Rv7TrsCMNn9xjh2L71nEXuXKriJGVfu67jJpAzqQxns8TOg=="
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:46b8708e09fb858@rep.dmarcanalyzer.com; ruf=mailto:46b8708e09fb858@for.dmarcanalyzer.com; fo=1"
@@ -234,7 +234,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "portugues.istockphoto.com",
       "portuguesbrasileiro.istockphoto.com"
     ],
-    "days_left": 96,
+    "days_left": 95,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -244,7 +244,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
     }
   },
   "ports": {
-    "ip": "54.192.248.113",
+    "ip": "54.192.248.91",
     "open": []
   },
   "https": {
@@ -327,7 +327,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
   "x12": {
     "status": 403,
     "ptr": [
-      "server-54-192-248-113.tpe53.r.cloudfront.net."
+      "server-54-192-248-91.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -348,8 +348,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
       "status": 200
     }
   },
-  "elapsed_s": 4.1,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 403
+  },
+  "elapsed_s": 4.2,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -361,4 +366,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 4, Info: 13)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

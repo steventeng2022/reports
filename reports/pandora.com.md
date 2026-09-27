@@ -7,12 +7,12 @@
 | Target | https://pandora.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | pandora.com |
-| Test date | 2026-09-26 23:35 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:28 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
+Total findings: **24** (High: 0, Medium: 0, Low: 5, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,8 +37,9 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 | 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 20 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
 | 21 | low | H21 | HSTS does not cover subdomains | CWE-319 |
-| 22 | info | CT1 | 45 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
-| 23 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 22 | info | WK2 | OIDC discovery document published | CWE-200 |
+| 23 | info | CT1 | 45 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 24 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -125,7 +126,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: drift-domain-verification=7dcb7704b70c0f98d5f1188a55e7fe4c1a0d0a5c8474f0b5d7feaf; bugcrowd-verification=9224a322abc2e3e36bf6aef0cf1d2977; google-site-verification=ZmhaVAHHT8AaKg7hP9Mmd3mrk8AMaSh90uPg77P-Gyo
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=ZmhaVAHHT8AaKg7hP9Mmd3mrk8AMaSh90uPg77P-Gyo; airtable-verification=92001d7da07339e0b17a973f2faaa71b; liveramp-site-verification=3auN45Pf2H9Obu6SoSX-izAUSRjBnVPQbEnXgyJK8MQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
@@ -149,7 +150,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 17. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk9j7nwu6p4mb7.html -> 404; error page/headers match: Apache.
+- **Detail:** GET /xk4lv5mxu0qkhs.html -> 404; error page/headers match: Apache.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 18. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -176,13 +177,19 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - **Detail:** Strict-Transport-Security on pandora.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of pandora.com.
 - **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
 
-### 22. [INFO] 45 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 22. [INFO] OIDC discovery document published (`WK2`)
+
+- **CWE:** CWE-200
+- **Detail:** /.well-known/openid-configuration on pandora.com is live (issuer: https://www.pandora.com); the OIDC endpoint configuration (authorization/token/JWKS URLs) is publicly disclosed.
+- **Recommendation:** Confirm the published OIDC metadata matches the deployed identity architecture.
+
+### 23. [INFO] 45 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: blog.pandora.com, help.pandora.com, www.help.pandora.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 23. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 24. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: www.help.pandora.com; content may still be served via virtual-host fallback.
@@ -213,40 +220,40 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     ],
     "caa": [],
     "spf": [
-      "_9ax3ucie5r4ihbdbsi4tuuy6jex2x7y",
-      "drift-domain-verification=7dcb7704b70c0f98d5f1188a55e7fe4c1a0d0a5c8474f0b5d7feaf2a17ddaf8b",
-      "bugcrowd-verification=9224a322abc2e3e36bf6aef0cf1d2977",
-      "google-site-verification=ZmhaVAHHT8AaKg7hP9Mmd3mrk8AMaSh90uPg77P-Gyo",
-      "stripe-verification=eef61a09f3c1c4f6890acce9bff70c102c0c389cc77e9970a3b2a17e582f3b27",
       "v=spf1 include:%{ir}.%{v}.%{d}.spf.has.pphosted.com ~all",
-      "jetbrains-domain-verification=1erv1ckkr599h7o8n4nnatntx",
-      "stripe-verification=b7edf88636d477ae4501df1dbebcda1b9f3eb5f895d94a5dcaa35715fd8525a7",
-      "stripe-verification=a2efa4b173f85f9b16a2fe262a5d7fa95a0b18f0ba884723050e917033a5af28",
-      "stripe-verification=7700e585bc13984d32505fc0743dd1742a7b00ab8f89fd43edbb64b7e86eb3df",
-      "stripe-verification=eb9cdfa80af377c6421610f8153fd4151acb46fe9414e78a4ce90c2d0d82f93a",
-      "google-site-verification=7rxKTJwaOBuE3vNSi4Yl0fG04rCK2xr4rYvsy2yMPgs",
-      "webexdomainverification.4C675B8AC948B136E053AB06FC0A3F65=c8670c99-cf44-4da5-a347-0e378903bd08",
-      "zapier-domain-verification-challenge=0c6f32b8-f62f-4918-aa85-11e2476e37ec",
-      "shopify-verification-code=QZZP4RdLtXmhnyVfqGJxOtDrTJwdHv",
-      "stripe-verification=47c5a8c489eea6dc578dfd12d08d3b7accf87c7729c8958144a35f50361cc92a",
-      "openai-domain-verification=dv-MtwM2KzO6fmabwatU3A5suMJ",
-      "make-domain-verification=0d44a7b3-d8f7-4bc0-bf24-53609a1f2fe7",
-      "monday-com-verification=Y7tba9sDRtLGwJrmA-A2bxVKMIOuhp5g9YnzcMJifOo",
-      "apple-domain-verification=GVC0xaZwt2Sv9Ivm",
-      "liveramp-site-verification=3auN45Pf2H9Obu6SoSX-izAUSRjBnVPQbEnXgyJK8MQ",
-      "Pandora",
-      "stripe-verification=9ac87819ed1e8c4c43fb4806e46ee7ac5135b3ac5eb80fc1ceca8ec0bf1fd7c0",
+      "google-site-verification=ZmhaVAHHT8AaKg7hP9Mmd3mrk8AMaSh90uPg77P-Gyo",
       "airtable-verification=92001d7da07339e0b17a973f2faaa71b",
+      "liveramp-site-verification=3auN45Pf2H9Obu6SoSX-izAUSRjBnVPQbEnXgyJK8MQ",
+      "stripe-verification=9ac87819ed1e8c4c43fb4806e46ee7ac5135b3ac5eb80fc1ceca8ec0bf1fd7c0",
       "/4SPMALLPHvERsW46Wt5HeyzV7tWXyqSCVio3D+e46JOIQ1Lx4ayzLacYa2Nani5VZLIsG6QzSbAxqQorgT8Pw==",
-      "MS=ms48003601",
-      "stripe-verification=46db797e734d25037c8a1966048d4d0a26f34600f23375c9ab8f1b327dc5b023",
-      "anthropic-domain-verification-cehw0s=Q6GJ2C5R4orf8oDA6ntjc8jiI",
-      "atlassian-domain-verification=suALAhcWjB6Eq0SuX424kLGZ8kMs8yfsj4LDWz6QHyorTk7BzUFfbXXgI4pyznZy",
-      "stripe-verification=9afcd9b96859582b2edf39640758f0a7ca9bbbc04fc0acd4eda69d964978923b",
-      "facebook-domain-verification=nn42grx580r7pjlyzjzxv3mrnn5lpx",
       "stripe-verification=6151a13c2e26e26166de3da9cbc43b4b418109e806e0fef941a34da28edc06ca",
+      "stripe-verification=eef61a09f3c1c4f6890acce9bff70c102c0c389cc77e9970a3b2a17e582f3b27",
+      "docker-verification=09663cec-b2f4-4ce1-92a8-9bdc828efd88",
       "onetrust-domain-verification=52ed295d1cc747c8b4a923ee0d52bb89",
-      "docker-verification=09663cec-b2f4-4ce1-92a8-9bdc828efd88"
+      "zapier-domain-verification-challenge=0c6f32b8-f62f-4918-aa85-11e2476e37ec",
+      "_9ax3ucie5r4ihbdbsi4tuuy6jex2x7y",
+      "anthropic-domain-verification-cehw0s=Q6GJ2C5R4orf8oDA6ntjc8jiI",
+      "jetbrains-domain-verification=1erv1ckkr599h7o8n4nnatntx",
+      "openai-domain-verification=dv-MtwM2KzO6fmabwatU3A5suMJ",
+      "apple-domain-verification=GVC0xaZwt2Sv9Ivm",
+      "stripe-verification=46db797e734d25037c8a1966048d4d0a26f34600f23375c9ab8f1b327dc5b023",
+      "webexdomainverification.4C675B8AC948B136E053AB06FC0A3F65=c8670c99-cf44-4da5-a347-0e378903bd08",
+      "monday-com-verification=Y7tba9sDRtLGwJrmA-A2bxVKMIOuhp5g9YnzcMJifOo",
+      "make-domain-verification=0d44a7b3-d8f7-4bc0-bf24-53609a1f2fe7",
+      "bugcrowd-verification=9224a322abc2e3e36bf6aef0cf1d2977",
+      "stripe-verification=47c5a8c489eea6dc578dfd12d08d3b7accf87c7729c8958144a35f50361cc92a",
+      "facebook-domain-verification=nn42grx580r7pjlyzjzxv3mrnn5lpx",
+      "MS=ms48003601",
+      "stripe-verification=9afcd9b96859582b2edf39640758f0a7ca9bbbc04fc0acd4eda69d964978923b",
+      "Pandora",
+      "stripe-verification=7700e585bc13984d32505fc0743dd1742a7b00ab8f89fd43edbb64b7e86eb3df",
+      "stripe-verification=b7edf88636d477ae4501df1dbebcda1b9f3eb5f895d94a5dcaa35715fd8525a7",
+      "drift-domain-verification=7dcb7704b70c0f98d5f1188a55e7fe4c1a0d0a5c8474f0b5d7feaf2a17ddaf8b",
+      "google-site-verification=7rxKTJwaOBuE3vNSi4Yl0fG04rCK2xr4rYvsy2yMPgs",
+      "atlassian-domain-verification=suALAhcWjB6Eq0SuX424kLGZ8kMs8yfsj4LDWz6QHyorTk7BzUFfbXXgI4pyznZy",
+      "stripe-verification=eb9cdfa80af377c6421610f8153fd4151acb46fe9414e78a4ce90c2d0d82f93a",
+      "shopify-verification-code=QZZP4RdLtXmhnyVfqGJxOtDrTJwdHv",
+      "stripe-verification=a2efa4b173f85f9b16a2fe262a5d7fa95a0b18f0ba884723050e917033a5af28"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; fo=1; rua=mailto:dmarc_rua@emaildefense.proofpoint.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com;"
@@ -266,7 +273,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "*.pandora.com",
       "pandora.com"
     ],
-    "days_left": 187,
+    "days_left": 186,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -360,11 +367,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     ]
   },
   "apex_txt": [
-    "drift-domain-verification=7dcb7704b70c0f98d5f1188a55e7fe4c1a0d0a5c8474f0b5d7feaf",
-    "bugcrowd-verification=9224a322abc2e3e36bf6aef0cf1d2977",
     "google-site-verification=ZmhaVAHHT8AaKg7hP9Mmd3mrk8AMaSh90uPg77P-Gyo",
-    "stripe-verification=eef61a09f3c1c4f6890acce9bff70c102c0c389cc77e9970a3b2a17e582f",
-    "jetbrains-domain-verification=1erv1ckkr599h7o8n4nnatntx"
+    "airtable-verification=92001d7da07339e0b17a973f2faaa71b",
+    "liveramp-site-verification=3auN45Pf2H9Obu6SoSX-izAUSRjBnVPQbEnXgyJK8MQ",
+    "stripe-verification=9ac87819ed1e8c4c43fb4806e46ee7ac5135b3ac5eb80fc1ceca8ec0bf1f",
+    "stripe-verification=6151a13c2e26e26166de3da9cbc43b4b418109e806e0fef941a34da28edc"
   ],
   "tls2": {
     "alpn": "",
@@ -436,8 +443,14 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "status": 200
     }
   },
-  "elapsed_s": 46.3,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "ECDHE-RSA-AES256-GCM-SHA384",
+    "cipher_ver": "TLSv1.2",
+    "root_status": 301,
+    "oidc": "https://www.pandora.com"
+  },
+  "elapsed_s": 48.8,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -449,4 +462,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

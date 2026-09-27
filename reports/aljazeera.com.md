@@ -7,8 +7,8 @@
 | Target | https://aljazeera.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | aljazeera.com |
-| Test date | 2026-09-26 23:17 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:08 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -129,13 +129,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=mBiRHB-ePRYuu3CKKTEG2bjDucKyvRY2GfDhV4n0wj4; sendinblue-site-verification=4125135; google-site-verification=GYHvTiSZMugLVHza8hKcU73ZXvRA9EzfmCFhq3do7Gs
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=mBiRHB-ePRYuu3CKKTEG2bjDucKyvRY2GfDhV4n0wj4; google-site-verification=M3ur7621hvOQpenlhs-_qF01ecDrayRa1L5fBmtt4gM; sendinblue-site-verification=4125135
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 3.132.102.166 carries PTR ec2-3-132-102-166.us-east-2.compute.amazonaws.com. for aljazeera.com.
+- **Detail:** 16.192.191.107 carries PTR ec2-16-192-191-107.eu-north-1.compute.amazonaws.com. for aljazeera.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -175,9 +175,9 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "domain": "aljazeera.com",
   "dns": {
     "a": [
-      "3.132.102.166",
-      "18.219.7.17",
-      "3.14.92.79"
+      "16.192.191.107",
+      "16.16.240.252",
+      "13.62.62.242"
     ],
     "aaaa": [],
     "cname": null,
@@ -186,22 +186,22 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "maila.aljazeera.net (pref 1)"
     ],
     "ns": [
-      "ns-1814.awsdns-34.co.uk.",
-      "ns-321.awsdns-40.com.",
       "ns-1302.awsdns-34.org.",
-      "ns-744.awsdns-29.net."
+      "ns-321.awsdns-40.com.",
+      "ns-744.awsdns-29.net.",
+      "ns-1814.awsdns-34.co.uk."
     ],
     "caa": [],
     "spf": [
-      "_qhc5ckndj0v0cuu4zloc8vg4nwd0fd0",
-      "v=spf1 mx ptr mx:maila.aljazeera.net mx:mailb.aljazeera.net ip4:213.130.112.86/28 ip4:194.6.255.56/28 ip4:217.26.199.86 ip4:66.155.119.46 ip4:216.25.13.62 ip4:216.25.13.63 ip4:216.25.13.40/29 ip4:217.13.48.9/29 ip4:86.62.248.64/26 ip4:78.100.62.121 -all",
-      "_g5iaej9do6s237elk6kpzb8u2xnkkq5",
       "google-site-verification=mBiRHB-ePRYuu3CKKTEG2bjDucKyvRY2GfDhV4n0wj4",
-      "sendinblue-site-verification=4125135",
-      "google-site-verification=GYHvTiSZMugLVHza8hKcU73ZXvRA9EzfmCFhq3do7Gs",
-      "dtm-domain-verification=wI5BYcsOMyOViN0wvRdEzNPVL4nDlV9eVqDitvCHtOQ",
+      "v=spf1 mx ptr mx:maila.aljazeera.net mx:mailb.aljazeera.net ip4:213.130.112.86/28 ip4:194.6.255.56/28 ip4:217.26.199.86 ip4:66.155.119.46 ip4:216.25.13.62 ip4:216.25.13.63 ip4:216.25.13.40/29 ip4:217.13.48.9/29 ip4:86.62.248.64/26 ip4:78.100.62.121 -all",
       "google-site-verification=M3ur7621hvOQpenlhs-_qF01ecDrayRa1L5fBmtt4gM",
-      "brevo-code:706289be26adb46268fc5315988644e6"
+      "sendinblue-site-verification=4125135",
+      "_g5iaej9do6s237elk6kpzb8u2xnkkq5",
+      "dtm-domain-verification=wI5BYcsOMyOViN0wvRdEzNPVL4nDlV9eVqDitvCHtOQ",
+      "google-site-verification=GYHvTiSZMugLVHza8hKcU73ZXvRA9EzfmCFhq3do7Gs",
+      "brevo-code:706289be26adb46268fc5315988644e6",
+      "_qhc5ckndj0v0cuu4zloc8vg4nwd0fd0"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc-mailauth@aljazeera.net; ruf=mailto:dmarc-mailfor@aljazeera.net; fo=s;"
@@ -221,7 +221,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "*.aljazeera.com",
       "aljazeera.com"
     ],
-    "days_left": 38,
+    "days_left": 37,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -231,7 +231,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     }
   },
   "ports": {
-    "ip": "3.132.102.166",
+    "ip": "16.192.191.107",
     "open": []
   },
   "https": {
@@ -302,10 +302,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   },
   "apex_txt": [
     "google-site-verification=mBiRHB-ePRYuu3CKKTEG2bjDucKyvRY2GfDhV4n0wj4",
+    "google-site-verification=M3ur7621hvOQpenlhs-_qF01ecDrayRa1L5fBmtt4gM",
     "sendinblue-site-verification=4125135",
-    "google-site-verification=GYHvTiSZMugLVHza8hKcU73ZXvRA9EzfmCFhq3do7Gs",
     "dtm-domain-verification=wI5BYcsOMyOViN0wvRdEzNPVL4nDlV9eVqDitvCHtOQ",
-    "google-site-verification=M3ur7621hvOQpenlhs-_qF01ecDrayRa1L5fBmtt4gM"
+    "google-site-verification=GYHvTiSZMugLVHza8hKcU73ZXvRA9EzfmCFhq3do7Gs"
   ],
   "tls2": {
     "alpn": "",
@@ -334,7 +334,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "x12": {
     "status": 301,
     "ptr": [
-      "ec2-3-132-102-166.us-east-2.compute.amazonaws.com."
+      "ec2-16-192-191-107.eu-north-1.compute.amazonaws.com."
     ]
   },
   "x13": {
@@ -356,8 +356,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
       "status": 200
     }
   },
-  "elapsed_s": 45.9,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "ECDHE-RSA-AES128-GCM-SHA256",
+    "cipher_ver": "TLSv1.2",
+    "root_status": 301
+  },
+  "elapsed_s": 44.7,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -369,4 +374,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

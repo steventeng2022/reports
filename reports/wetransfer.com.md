@@ -7,12 +7,12 @@
 | Target | https://wetransfer.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | wetransfer.com |
-| Test date | 2026-09-26 23:41 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:34 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
+Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,6 +33,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 | 15 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 16 | info | HTML3 | Third-party <iframe> embedded in root document | CWE-643 |
 | 17 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 18 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 19 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
 
 ## Detailed findings
 
@@ -77,13 +79,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 7. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (j9bxdhrr4gv2y2.wetransfer.com and 5jubbcmliek0lb.wetransfer.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (2tx3i4dfe59ys5.wetransfer.com and od74jmkh0v7i96.wetransfer.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 8. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=XW_EN8p8Aq6F0vXQo8QJFXTzZH3bHQnLYA4TFyPN63E; airtable-verification=1424b5a97e88024b52c0d21bf8a1cd64; google-site-verification=psmb0t3fy95_06_HZTTKA42vG8jQp8utdBMGYCgbJn8
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=22yq8uEpGxlFe2r7H413v6Wor4yaJDF_XM0wsOxoXjs; facebook-domain-verification=h9w15klgw91n2ot3lw77t035wqw2vb; google-site-verification=QgqEa_4yOMSHcWSMtJrG4M0jeBwKBK07p7E5A73Ht_Q
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 9. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -113,13 +115,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 ### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.21 carries PTR server-54-192-248-21.tpe53.r.cloudfront.net. for wetransfer.com.
+- **Detail:** 54.192.248.99 carries PTR server-54-192-248-99.tpe53.r.cloudfront.net. for wetransfer.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 14. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xkpoypcnamaovm.html -> 404; error page/headers match: CloudFront.
+- **Detail:** GET /xktghx0d3nzqjs.html -> 404; error page/headers match: CloudFront.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 15. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -140,6 +142,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - **Detail:** /sitemap.xml on wetransfer.com lists 5 <loc> URL(s) across 6 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
+### 18. [INFO] Document references many third-party domains (`HTML11`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of wetransfer.com references 5 distinct third-party registrable domains (e.g. wetransfer.net, adsrvr.org, amazon-adsystem.com, pinimg.com, google.com); each is a supply-chain/trust dependency of the page.
+- **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
+
+### 19. [INFO] Inline scripts without nonce/hash under a CSP (`HTML8`)
+
+- **CWE:** CWE-1021
+- **Detail:** Root document of wetransfer.com sends a CSP but contains 3 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
+- **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -147,64 +161,64 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   "domain": "wetransfer.com",
   "dns": {
     "a": [
-      "54.192.248.21",
-      "54.192.248.118",
       "54.192.248.99",
-      "54.192.248.7"
+      "54.192.248.118",
+      "54.192.248.7",
+      "54.192.248.21"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt3.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
+      "alt3.aspmx.l.google.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
       "ns-616.awsdns-13.net.",
-      "ns-1495.awsdns-58.org.",
       "ns-381.awsdns-47.com.",
-      "ns-1743.awsdns-25.co.uk."
+      "ns-1743.awsdns-25.co.uk.",
+      "ns-1495.awsdns-58.org."
     ],
     "caa": [
-      "0 iodef \"mailto:domains@wetransfer.com\"",
       "0 issue \"amazon.com\"",
+      "0 iodef \"mailto:domains@wetransfer.com\"",
       "0 issue \"letsencrypt.org\""
     ],
     "spf": [
-      "google-site-verification=XW_EN8p8Aq6F0vXQo8QJFXTzZH3bHQnLYA4TFyPN63E",
-      "_1l13uk3o31dwxht8gy20uftkq7njy9i",
-      "Notion_verify_4qsvK9AQNWyTTydLGyF3ysuoJuYcgPfo6qzsKeWsJba9ayET3MJsMLQA2AhsM6HGMa7UL",
-      "airtable-verification=1424b5a97e88024b52c0d21bf8a1cd64",
-      "google-site-verification=psmb0t3fy95_06_HZTTKA42vG8jQp8utdBMGYCgbJn8",
-      "ibmid=0b0660a3-b186-469a-8b70-25eac0c5a095",
-      "adobe-idp-site-verification=27c19071d43cf50bb319f12dca1b494fb4ac78700f01158bc53c750a64a62677",
-      "google-site-verification=L4cTbeDJCawV2WcUBdIg0ZohUIzmQsyri0cW9Vfx3ms",
-      "notion-domain-verification=Yg69TXpuZUoTBv5Ri6zQhMtHrF7gDDypUiwiwsKcc8Q",
-      "asv=89178be4f98e857aed14bc7a748446eb",
-      "jamf-site-verification=EPAkOUuclyfbWuPrE4bFJg",
-      "google-site-verification=o1-Z5_XysLkNRL_Fr0XzMxTNDGCHoVJzwmOgG5apYrs",
-      "amazonses:OkYxgsklLbk4Efq6tshR+hWtLlWSmWy6A49YvL6zwqw=",
-      "rippling-domain-verification=217697edd61756fc",
-      "facebook-domain-verification=h9w15klgw91n2ot3lw77t035wqw2vb",
-      "v=spf1 include:spf1.wetransfer.com include:servers.mcsv.net include:_spf.google.com include:mail.zendesk.com include:mailsenders.netsuite.com -all",
-      "google-site-verification=pZwqaQca9efqhei-uJPD1AYhimUB37qXYq-2jvp-mhc",
-      "apple-domain-verification=HVcqj6adUo39535i",
-      "MS=ms33481336",
       "ZOOM_verify_KL0Tx6QHRE-pFo1TUH489w",
-      "google-site-verification=12Dz3BKB7bWfhvTLookytJl2LUfhuheBky3SokggYkc",
-      "stripe-verification=448ebe2b06a2eba394d9e73a16a897dee98918e6e8593961f56e86bb6296c520",
-      "docusign=d8951d4e-554f-42ad-878e-a8cfa144f728",
-      "lemlist-verif=3a27e226",
-      "onetrust-domain-verification=2580b3683efb4e6f91ea1440cc1bee77",
-      "google-site-verification=ZdmG6lG1KKqyINxvbgMYMLtigj2Zjc5qasxPp7ikZ3I",
-      "wrike-verification=MTc5Mjk4MTpjOWI1MzY4ODdmMGU4ZDA1NDI4MWJiM2ZkYmJhMmE0YzMzMmVkOTUyMjg0MWZjNWFhZTY2YjliOWMyMDExY2M4",
-      "google-site-verification=QgqEa_4yOMSHcWSMtJrG4M0jeBwKBK07p7E5A73Ht_Q",
-      "anthropic-domain-verification-v74473=mmo7JLEzQN3oOrEhxNuzyUxja",
-      "slack-domain-verification=wvKukMkbZSVirrbxUeRN90GH6W7HoJVKjCqpdsCc",
       "google-site-verification=22yq8uEpGxlFe2r7H413v6Wor4yaJDF_XM0wsOxoXjs",
-      "atlassian-domain-verification=SvE4jaub7awLiMuXWZa/MJuI10LQaiwUVcYdQa2xKuCB6Y6dKD9Z9olL9iVfyJed"
+      "amazonses:OkYxgsklLbk4Efq6tshR+hWtLlWSmWy6A49YvL6zwqw=",
+      "docusign=d8951d4e-554f-42ad-878e-a8cfa144f728",
+      "facebook-domain-verification=h9w15klgw91n2ot3lw77t035wqw2vb",
+      "google-site-verification=QgqEa_4yOMSHcWSMtJrG4M0jeBwKBK07p7E5A73Ht_Q",
+      "google-site-verification=psmb0t3fy95_06_HZTTKA42vG8jQp8utdBMGYCgbJn8",
+      "lemlist-verif=3a27e226",
+      "rippling-domain-verification=217697edd61756fc",
+      "MS=ms33481336",
+      "anthropic-domain-verification-v74473=mmo7JLEzQN3oOrEhxNuzyUxja",
+      "google-site-verification=12Dz3BKB7bWfhvTLookytJl2LUfhuheBky3SokggYkc",
+      "Notion_verify_4qsvK9AQNWyTTydLGyF3ysuoJuYcgPfo6qzsKeWsJba9ayET3MJsMLQA2AhsM6HGMa7UL",
+      "wrike-verification=MTc5Mjk4MTpjOWI1MzY4ODdmMGU4ZDA1NDI4MWJiM2ZkYmJhMmE0YzMzMmVkOTUyMjg0MWZjNWFhZTY2YjliOWMyMDExY2M4",
+      "notion-domain-verification=Yg69TXpuZUoTBv5Ri6zQhMtHrF7gDDypUiwiwsKcc8Q",
+      "google-site-verification=o1-Z5_XysLkNRL_Fr0XzMxTNDGCHoVJzwmOgG5apYrs",
+      "asv=89178be4f98e857aed14bc7a748446eb",
+      "adobe-idp-site-verification=27c19071d43cf50bb319f12dca1b494fb4ac78700f01158bc53c750a64a62677",
+      "slack-domain-verification=wvKukMkbZSVirrbxUeRN90GH6W7HoJVKjCqpdsCc",
+      "v=spf1 include:spf1.wetransfer.com include:servers.mcsv.net include:_spf.google.com include:mail.zendesk.com include:mailsenders.netsuite.com -all",
+      "jamf-site-verification=EPAkOUuclyfbWuPrE4bFJg",
+      "google-site-verification=L4cTbeDJCawV2WcUBdIg0ZohUIzmQsyri0cW9Vfx3ms",
+      "google-site-verification=pZwqaQca9efqhei-uJPD1AYhimUB37qXYq-2jvp-mhc",
+      "google-site-verification=ZdmG6lG1KKqyINxvbgMYMLtigj2Zjc5qasxPp7ikZ3I",
+      "ibmid=0b0660a3-b186-469a-8b70-25eac0c5a095",
+      "apple-domain-verification=HVcqj6adUo39535i",
+      "stripe-verification=448ebe2b06a2eba394d9e73a16a897dee98918e6e8593961f56e86bb6296c520",
+      "google-site-verification=XW_EN8p8Aq6F0vXQo8QJFXTzZH3bHQnLYA4TFyPN63E",
+      "atlassian-domain-verification=SvE4jaub7awLiMuXWZa/MJuI10LQaiwUVcYdQa2xKuCB6Y6dKD9Z9olL9iVfyJed",
+      "_1l13uk3o31dwxht8gy20uftkq7njy9i",
+      "airtable-verification=1424b5a97e88024b52c0d21bf8a1cd64",
+      "onetrust-domain-verification=2580b3683efb4e6f91ea1440cc1bee77"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:reports@dmarc.bendingspoons.com; pct=100;"
@@ -224,7 +238,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "wetransfer.com",
       "*.wetransfer.com"
     ],
-    "days_left": 133,
+    "days_left": 132,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -234,7 +248,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
     }
   },
   "ports": {
-    "ip": "54.192.248.21",
+    "ip": "54.192.248.99",
     "open": []
   },
   "https": {
@@ -285,11 +299,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "google-site-verification=XW_EN8p8Aq6F0vXQo8QJFXTzZH3bHQnLYA4TFyPN63E",
-    "airtable-verification=1424b5a97e88024b52c0d21bf8a1cd64",
+    "google-site-verification=22yq8uEpGxlFe2r7H413v6Wor4yaJDF_XM0wsOxoXjs",
+    "facebook-domain-verification=h9w15klgw91n2ot3lw77t035wqw2vb",
+    "google-site-verification=QgqEa_4yOMSHcWSMtJrG4M0jeBwKBK07p7E5A73Ht_Q",
     "google-site-verification=psmb0t3fy95_06_HZTTKA42vG8jQp8utdBMGYCgbJn8",
-    "adobe-idp-site-verification=27c19071d43cf50bb319f12dca1b494fb4ac78700f01158bc53c",
-    "google-site-verification=L4cTbeDJCawV2WcUBdIg0ZohUIzmQsyri0cW9Vfx3ms"
+    "rippling-domain-verification=217697edd61756fc"
   ],
   "tls2": {
     "alpn": "",
@@ -338,7 +352,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
   "x12": {
     "status": 200,
     "ptr": [
-      "server-54-192-248-21.tpe53.r.cloudfront.net."
+      "server-54-192-248-99.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -368,8 +382,13 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
       "status": 200
     }
   },
-  "elapsed_s": 17.2,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 200
+  },
+  "elapsed_s": 15.6,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -381,4 +400,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 2, Info: 15)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

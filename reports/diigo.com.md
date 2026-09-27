@@ -7,12 +7,12 @@
 | Target | https://diigo.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | diigo.com |
-| Test date | 2026-09-26 23:24 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:15 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
+Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,8 +33,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 15 | low | MAIL12 | MTA-STS TXT published but policy file unreachable | CWE-285 |
 | 16 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
 | 17 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
-| 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 
 ## Detailed findings
 
@@ -53,13 +52,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.67.68.111:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.5.189:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 172.67.68.111:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.26.5.189:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -149,13 +148,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - **Detail:** Certificate of diigo.com has no Authority Information Access OCSP entry.
 - **Recommendation:** Enable OCSP (and stapling) so revocation can be checked.
 
-### 18. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
-
-- **CWE:** CWE-200
-- **Detail:** robots.txt lists 30 disallow path(s), e.g. User-agent:, /redirect, /invitation, /sign-in, /sign-out
-- **Recommendation:** Review disallowed paths; robots is not access control.
-
-### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for diigo.com, so any public CA can issue a certificate for the zone.
@@ -168,24 +161,24 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "domain": "diigo.com",
   "dns": {
     "a": [
-      "172.67.68.111",
       "104.26.5.189",
-      "104.26.4.189"
+      "104.26.4.189",
+      "172.67.68.111"
     ],
     "aaaa": [
-      "2606:4700:20::ac43:446f",
       "2606:4700:20::681a:5bd",
+      "2606:4700:20::ac43:446f",
       "2606:4700:20::681a:4bd"
     ],
     "cname": null,
     "mx": [
-      "ALT1.ASPMX.L.GOOGLE.com (pref 10)",
-      "ASPMX5.GOOGLEMAIL.com (pref 20)",
-      "ASPMX.L.GOOGLE.com (pref 0)",
-      "ASPMX3.GOOGLEMAIL.com (pref 20)",
-      "ASPMX2.GOOGLEMAIL.com (pref 20)",
       "ASPMX4.GOOGLEMAIL.com (pref 20)",
-      "ALT2.ASPMX.L.GOOGLE.com (pref 10)"
+      "ASPMX.L.GOOGLE.com (pref 0)",
+      "ASPMX5.GOOGLEMAIL.com (pref 20)",
+      "ASPMX2.GOOGLEMAIL.com (pref 20)",
+      "ALT2.ASPMX.L.GOOGLE.com (pref 10)",
+      "ASPMX3.GOOGLEMAIL.com (pref 20)",
+      "ALT1.ASPMX.L.GOOGLE.com (pref 10)"
     ],
     "ns": [
       "karsyn.ns.cloudflare.com.",
@@ -193,11 +186,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     ],
     "caa": [],
     "spf": [
-      "_lbqtqwfel2p2s1hzazwciypx34dtpov",
-      "v=spf1 mx a:mail4.diigo.com a:mail3.diigo.com a:mail5.diigo.com a:mail6.diigo.com mx:gmail.com ip4:54.191.20.111 ip4:54.191.82.220 ip4:54.201.55.105 ip4:216.237.119.210 ip4:72.26.232.209 ip4:72.26.232.205 ~all",
-      "google-site-verification=jEyJnTdt9H3zybR7Jh0b3WI9GxKTmKU8m7ulcqrb7mQ",
       "_n8uwun3az6dfkrpcu82ztjpsz0nm99k",
-      "xh4pys2kccpbb5f79r501gs19h6ctfy0"
+      "google-site-verification=jEyJnTdt9H3zybR7Jh0b3WI9GxKTmKU8m7ulcqrb7mQ",
+      "xh4pys2kccpbb5f79r501gs19h6ctfy0",
+      "_lbqtqwfel2p2s1hzazwciypx34dtpov",
+      "v=spf1 mx a:mail4.diigo.com a:mail3.diigo.com a:mail5.diigo.com a:mail6.diigo.com mx:gmail.com ip4:54.191.20.111 ip4:54.191.82.220 ip4:54.201.55.105 ip4:216.237.119.210 ip4:72.26.232.209 ip4:72.26.232.205 ~all"
     ],
     "dmarc": [
       "_zco4dkjfh4safpywcjac0pj19pcnwkb"
@@ -227,7 +220,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     }
   },
   "ports": {
-    "ip": "172.67.68.111",
+    "ip": "104.26.5.189",
     "open": [
       8080,
       8443
@@ -267,7 +260,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "/url?url=https://evil-auditor.example/x -> 301"
   ],
   "paths": {
-    "/robots.txt": 301,
+    "/robots.txt": 404,
     "/sitemap.xml": 301,
     "/.well-known/security.txt": 301,
     "/security.txt": 301,
@@ -309,25 +302,6 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "not_after": "20261102094901"
     }
   },
-  "http2": {
-    "robots_disallow": [
-      "User-agent:",
-      "/redirect",
-      "/invitation",
-      "/sign-in",
-      "/sign-out",
-      "/search",
-      "/blog_this",
-      "/import_all",
-      "/roll",
-      "/post",
-      "/customize_search",
-      "/people/like",
-      "/people/search",
-      "/buzz/justin",
-      "/user_mana2"
-    ]
-  },
   "x12": {
     "status": 301
   },
@@ -349,8 +323,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "status": 200
     }
   },
-  "elapsed_s": 26.9,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 28.4,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -362,4 +341,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,8 +7,8 @@
 | Target | https://gofundme.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | gofundme.com |
-| Test date | 2026-09-26 23:28 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:20 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -131,13 +131,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 ### 14. [LOW] Wildcard DNS detected (`DNS3`)
 
 - **CWE:** CWE-345
-- **Detail:** Two random labels (8kmjtffs2z7rn3.gofundme.com and biwly3pwtqpons.gofundme.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
+- **Detail:** Two random labels (2qvn1sel4tlhgo.gofundme.com and cs0lrsojzcj0bm.gofundme.com) both resolve to the same addresses; any random subdomain resolves, weakening dangling-subdomain detection and enlarging virtual-host surface.
 - **Recommendation:** Remove the wildcard record or use distinct records for live subdomains.
 
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: maestro-cloud-domain-verification-8sf8ap=UAP61AxkIXLrtLqM3DPIjAOP3; pinterest-site-verification=b367ddd575e4643b2ac5fefbb3bf84c6; adobe-idp-site-verification=b23a174f3ecb4906444742af94b4c61d1948b6ba9665d33d2127
+- **Detail:** Apex TXT records with verification/token content: twilio-domain-verification=0fbe678874c1832be4b21e661c491ee6; google-site-verification=yTucH5oN_CeaxxpMntyk_jYQMtGyAv8W6rPZjHdXwIA; canva-site-verification=IqTb0UBeilINf10w5raSTQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -155,7 +155,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 ### 18. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.33 carries PTR server-54-192-248-33.tpe53.r.cloudfront.net. for gofundme.com.
+- **Detail:** 54.192.248.43 carries PTR server-54-192-248-43.tpe53.r.cloudfront.net. for gofundme.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -183,76 +183,76 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
   "domain": "gofundme.com",
   "dns": {
     "a": [
-      "54.192.248.33",
+      "54.192.248.43",
       "54.192.248.78",
       "54.192.248.37",
-      "54.192.248.43"
+      "54.192.248.33"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
+      "alt1.aspmx.l.google.com (pref 20)",
+      "aspmx2.googlemail.com (pref 30)",
+      "alt2.aspmx.l.google.com (pref 20)",
       "aspmx5.googlemail.com (pref 30)",
       "aspmx3.googlemail.com (pref 30)",
-      "alt2.aspmx.l.google.com (pref 20)",
-      "aspmx4.googlemail.com (pref 30)",
-      "aspmx2.googlemail.com (pref 30)",
-      "alt1.aspmx.l.google.com (pref 20)",
-      "aspmx.l.google.com (pref 10)"
+      "aspmx.l.google.com (pref 10)",
+      "aspmx4.googlemail.com (pref 30)"
     ],
     "ns": [
-      "ns-1148.awsdns-15.org.",
-      "ns-1860.awsdns-40.co.uk.",
+      "ns-279.awsdns-34.com.",
       "ns-1018.awsdns-63.net.",
-      "ns-279.awsdns-34.com."
+      "ns-1860.awsdns-40.co.uk.",
+      "ns-1148.awsdns-15.org."
     ],
     "caa": [],
     "spf": [
-      "maestro-cloud-domain-verification-8sf8ap=UAP61AxkIXLrtLqM3DPIjAOP3",
-      "D24pYKS_dVZOjQrnXT0sZd8wICnikg",
-      "pinterest-site-verification=b367ddd575e4643b2ac5fefbb3bf84c6",
-      "knqas9grs1e90id70n6qtblc6s",
-      "adobe-idp-site-verification=b23a174f3ecb4906444742af94b4c61d1948b6ba9665d33d2127abbac4e4bb6a",
+      "twilio-domain-verification=0fbe678874c1832be4b21e661c491ee6",
+      "google-site-verification=yTucH5oN_CeaxxpMntyk_jYQMtGyAv8W6rPZjHdXwIA",
+      "canva-site-verification=IqTb0UBeilINf10w5raSTQ",
+      "gamma-domain-verification-g2tf71=XUfSVhJFiN82HacNFl6iLBfvZ",
+      "google-site-verification=Lj3x8aEMLy8y3btjGcK48UpZsOJobv1zIFdK6lDzLMY",
+      "_globalsign-domain-verification=MK_ZKmss4D_DdzGOsssHxxBOK6hJc6LGycFvNOESdZ",
+      "google-site-verification=cZ9Hawb_wfuisC8fkQbwE1v8bjFJ0cf2bepzKRFDsXQ",
+      "globalsign-domain-verification=wvdz6fqNpGYoUxoyCbEUOYrkz-Z8Nh2zXAoS8lsLRh",
+      "loom-site-verification=2d2eebdbc4004cba854c231b81ddbc37",
       "MS=ms75016599",
       "_wpengine-sso-challenge=3Bj5M7GKohpXqt6K7ufz30hQAMH",
       "docker-verification=f1a95df7-225d-4b44-a5d5-852c4e55539f",
-      "hubspot-domain-verification=OWZlYTIzYmQtNjhlMi00MmU4LWI0NWEtYjE4NGM2MDFiZjdl",
-      "atlassian-domain-verification=pDoSyXtzAVxSEb/lQ90Pfrgh87LFeL3vh9cAmjYGXaONtLKtJzDxfD2ARw8sqn/i",
-      "canva-site-verification=IqTb0UBeilINf10w5raSTQ",
-      "google-site-verification=-97-MskUtq0BKfJ4HGBHfGDbU2XBfza9wf9pUk_3aWs",
-      "zapier-domain-verification-challenge=822070a7-9aa6-45fc-a3fa-d67b2dbc6c23",
-      "_globalsign-domain-verification=MK_ZKmss4D_DdzGOsssHxxBOK6hJc6LGycFvNOESdZ",
-      "linear-domain-verification=fdr7mty4ieug",
-      "google-site-verification=yTucH5oN_CeaxxpMntyk_jYQMtGyAv8W6rPZjHdXwIA",
-      "mgverify=fdcb133238019c86b951dbb58430f60163ad2967fa91a367a65ea9a4edcf538e",
+      "google-site-verification=lWd6YulLrAH6-0uZ5AX-P5-VcxTnfjF2aQ9Ey7lK96o",
+      "maestro-cloud-domain-verification-8sf8ap=UAP61AxkIXLrtLqM3DPIjAOP3",
+      "stripe-verification=7e70d91b569f8a0590a7b1b4c2933dade452811dee08d86cfce9ea1db35bff14",
+      "pinterest-site-verification=b367ddd575e4643b2ac5fefbb3bf84c6",
       "google-site-verification=J5wipyL1r3azHeawGlORXWlBscqyoYTcQpvlSeldLdQ",
-      "google-site-verification=qYAWkOCPaLxMmYxSW2YahQ4GG4la3a9hNWFhDJcd2r4",
-      "google-site-verification=uvhS3R59UN5exwoSVEi9oFgrQtcrDlWYQMcWRVe5S68",
-      "globalsign-domain-verification=wvdz6fqNpGYoUxoyCbEUOYrkz-Z8Nh2zXAoS8lsLRh",
-      "twilio-domain-verification=0fbe678874c1832be4b21e661c491ee6",
-      "openai-domain-verification=dv-QetyqJL9vMGOTwGXZe04zDzf",
-      "rippling-domain-verification=40df0889be186979",
+      "mgverify=fdcb133238019c86b951dbb58430f60163ad2967fa91a367a65ea9a4edcf538e",
       "docusign=852fdcf3-d757-4993-acd7-50a6a836365f",
-      "google-site-verification=3LLkSZCqjHLPPrJiZMqE6AUja9L69F0ogae8o7JU6x4",
+      "linear-domain-verification=fdr7mty4ieug",
+      "google-site-verification=1VNhR6mITAZOOgVYtcdutrYdASgKtAnRITXKBQH6N3o",
+      "google-site-verification=O7naSlyLdrJJfCqA4ktOYCn9vrudsbppXY8j0EvSbC0",
+      "adobe-idp-site-verification=b23a174f3ecb4906444742af94b4c61d1948b6ba9665d33d2127abbac4e4bb6a",
+      "D24pYKS_dVZOjQrnXT0sZd8wICnikg",
+      "rippling-domain-verification=40df0889be186979",
       "onetrust-domain-verification=ae6ed1d46523448a905b9d8781b1f2d9",
-      "gamma-domain-verification-g2tf71=XUfSVhJFiN82HacNFl6iLBfvZ",
-      "onetrust-domain-verification=6311c78fff614a938475a7085108477b",
+      "openai-domain-verification=dv-QetyqJL9vMGOTwGXZe04zDzf",
+      "facebook-domain-verification=stk03ifpht9yaex2dibsxivrr9yor2",
+      "google-site-verification=-97-MskUtq0BKfJ4HGBHfGDbU2XBfza9wf9pUk_3aWs",
+      "apple-domain-verification=VWhGR6I4xDAzdl50",
       "ZOOM_verify_uRWfBI2AbJeSqiNLFUItq5",
       "anthropic-domain-verification-t4e4qe=Q1VWFhuqdtNXUmkvbvPe0aNCH",
-      "facebook-domain-verification=stk03ifpht9yaex2dibsxivrr9yor2",
-      "loom-site-verification=2d2eebdbc4004cba854c231b81ddbc37",
-      "stripe-verification=7e70d91b569f8a0590a7b1b4c2933dade452811dee08d86cfce9ea1db35bff14",
+      "google-site-verification=9J3ulCSuevKr0hSdxoSmyccnjKgO1Qk_h55qjGJWMdk",
       "google-site-verification=NtmRkQwVZHP-qs02vSRFkLA3Wn8xmi93HEEJsIpQaWU",
-      "google-site-verification=PVGZ_SowsyCYImkZyR7BWQAf0xBoWeUIuQ-9zwwio2s",
-      "google-site-verification=cZ9Hawb_wfuisC8fkQbwE1v8bjFJ0cf2bepzKRFDsXQ",
-      "google-site-verification=O7naSlyLdrJJfCqA4ktOYCn9vrudsbppXY8j0EvSbC0",
-      "48BCBFD65C",
-      "google-site-verification=MyZCdkOIehJ00yJgtChbK4geHjxlUnuSGXwBI4n73xs",
-      "apple-domain-verification=VWhGR6I4xDAzdl50",
-      "google-site-verification=Lj3x8aEMLy8y3btjGcK48UpZsOJobv1zIFdK6lDzLMY",
+      "google-site-verification=qYAWkOCPaLxMmYxSW2YahQ4GG4la3a9hNWFhDJcd2r4",
       "v=spf1 include:gofundme.com._nspf.vali.email  include:%{i}._ip.%{h}._ehlo.%{d}._spf.vali.email include:mail.zendesk.com include:servers.mcsv.net include:emailus.freshservice.com include:docebosaas.com include:sparkpostmail.com ~all",
-      "google-site-verification=lWd6YulLrAH6-0uZ5AX-P5-VcxTnfjF2aQ9Ey7lK96o",
-      "google-site-verification=1VNhR6mITAZOOgVYtcdutrYdASgKtAnRITXKBQH6N3o",
-      "google-site-verification=9J3ulCSuevKr0hSdxoSmyccnjKgO1Qk_h55qjGJWMdk"
+      "zapier-domain-verification-challenge=822070a7-9aa6-45fc-a3fa-d67b2dbc6c23",
+      "onetrust-domain-verification=6311c78fff614a938475a7085108477b",
+      "48BCBFD65C",
+      "google-site-verification=PVGZ_SowsyCYImkZyR7BWQAf0xBoWeUIuQ-9zwwio2s",
+      "atlassian-domain-verification=pDoSyXtzAVxSEb/lQ90Pfrgh87LFeL3vh9cAmjYGXaONtLKtJzDxfD2ARw8sqn/i",
+      "google-site-verification=MyZCdkOIehJ00yJgtChbK4geHjxlUnuSGXwBI4n73xs",
+      "hubspot-domain-verification=OWZlYTIzYmQtNjhlMi00MmU4LWI0NWEtYjE4NGM2MDFiZjdl",
+      "knqas9grs1e90id70n6qtblc6s",
+      "google-site-verification=3LLkSZCqjHLPPrJiZMqE6AUja9L69F0ogae8o7JU6x4",
+      "google-site-verification=uvhS3R59UN5exwoSVEi9oFgrQtcrDlWYQMcWRVe5S68"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:dmarc_agg@vali.email,mailto:sre+valiagg@gofundme.com"
@@ -272,7 +272,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
       "*.gofundme.com",
       "gofundme.com"
     ],
-    "days_left": 135,
+    "days_left": 134,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -282,7 +282,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
     }
   },
   "ports": {
-    "ip": "54.192.248.33",
+    "ip": "54.192.248.43",
     "open": []
   },
   "https": {
@@ -380,11 +380,11 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
   },
   "wildcard_dns": true,
   "apex_txt": [
-    "maestro-cloud-domain-verification-8sf8ap=UAP61AxkIXLrtLqM3DPIjAOP3",
-    "pinterest-site-verification=b367ddd575e4643b2ac5fefbb3bf84c6",
-    "adobe-idp-site-verification=b23a174f3ecb4906444742af94b4c61d1948b6ba9665d33d2127",
-    "docker-verification=f1a95df7-225d-4b44-a5d5-852c4e55539f",
-    "hubspot-domain-verification=OWZlYTIzYmQtNjhlMi00MmU4LWI0NWEtYjE4NGM2MDFiZjdl"
+    "twilio-domain-verification=0fbe678874c1832be4b21e661c491ee6",
+    "google-site-verification=yTucH5oN_CeaxxpMntyk_jYQMtGyAv8W6rPZjHdXwIA",
+    "canva-site-verification=IqTb0UBeilINf10w5raSTQ",
+    "gamma-domain-verification-g2tf71=XUfSVhJFiN82HacNFl6iLBfvZ",
+    "google-site-verification=Lj3x8aEMLy8y3btjGcK48UpZsOJobv1zIFdK6lDzLMY"
   ],
   "tls2": {
     "alpn": "",
@@ -433,7 +433,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
   "x12": {
     "status": 301,
     "ptr": [
-      "server-54-192-248-33.tpe53.r.cloudfront.net."
+      "server-54-192-248-43.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -460,8 +460,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
       "status": 200
     }
   },
-  "elapsed_s": 20.1,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 301
+  },
+  "elapsed_s": 21.0,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -473,4 +478,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 6, Info: 15)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

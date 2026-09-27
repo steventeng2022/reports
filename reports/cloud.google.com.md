@@ -7,12 +7,12 @@
 | Target | https://cloud.google.com/ |
 | Bug bounty program | Google |
 | Listed scope domain | cloud.google.com |
-| Test date | 2026-09-26 23:21 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 00:13 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
+Total findings: **16** (High: 0, Medium: 0, Low: 2, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,7 +29,9 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 | 11 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 12 | low | H21 | HSTS does not cover subdomains | CWE-319 |
 | 13 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
-| 14 | info | CT1 | 15 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 14 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 15 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
+| 16 | info | CT1 | 15 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -68,7 +70,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 ### 6. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0; google-site-verification=jaH5RlwfdutdrKEaZY5nEbcReUEp9rlTOJIuMqh-SV4; google-site-verification=6nz-JOcA8VP-mmx29RInf7-g6CTloBX9wpmWHlVSMsw
+- **Detail:** Apex TXT records with verification/token content: linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863; facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0; linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 7. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -98,7 +100,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 ### 11. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 142.250.198.78 carries PTR lctsaa-ab-in-f14.1e100.net. for cloud.google.com.
+- **Detail:** 142.250.204.46 carries PTR hkg07s38-in-f14.1e100.net., lctsaa-ac-in-f14.1e100.net. for cloud.google.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 12. [LOW] HSTS does not cover subdomains (`H21`)
@@ -113,7 +115,19 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 - **Detail:** /.well-known/security.txt on cloud.google.com is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
 - **Recommendation:** Confirm the published contact is current and monitored (RFC 9116).
 
-### 14. [INFO] 15 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 14. [INFO] Document references many third-party domains (`HTML11`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of cloud.google.com references 19 distinct third-party registrable domains (e.g. x.com, google.com\, gstatic.com, facebook.com, youtube.com); each is a supply-chain/trust dependency of the page.
+- **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
+
+### 15. [INFO] Inline scripts without nonce/hash under a CSP (`HTML8`)
+
+- **CWE:** CWE-1021
+- **Detail:** Root document of cloud.google.com sends a CSP but contains 8 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
+- **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
+
+### 16. [INFO] 15 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: console.au.cloud.google.com, console.ca.cloud.google.com, console.ch.cloud.google.com, console.eu.cloud.google.com, console.il.cloud.google.com, console.in.cloud.google.com, console.it.cloud.google.com, console.jp.cloud.google.com, console.sa.cloud.google.com, console.uk.cloud.google.com
@@ -126,22 +140,22 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
   "domain": "cloud.google.com",
   "dns": {
     "a": [
-      "142.250.198.78"
+      "142.250.204.46"
     ],
     "aaaa": [
-      "2404:6800:4012:8::200e"
+      "2404:6800:4012:9::200e"
     ],
     "cname": null,
     "mx": [],
     "ns": [],
     "caa": [],
     "spf": [
-      "facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0",
-      "google-site-verification=jaH5RlwfdutdrKEaZY5nEbcReUEp9rlTOJIuMqh-SV4",
-      "google-site-verification=6nz-JOcA8VP-mmx29RInf7-g6CTloBX9wpmWHlVSMsw",
-      "linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a",
       "linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863",
-      "google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU"
+      "facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0",
+      "linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a",
+      "google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU",
+      "google-site-verification=jaH5RlwfdutdrKEaZY5nEbcReUEp9rlTOJIuMqh-SV4",
+      "google-site-verification=6nz-JOcA8VP-mmx29RInf7-g6CTloBX9wpmWHlVSMsw"
     ],
     "dmarc": [],
     "dnssec_authenticated": false
@@ -232,7 +246,7 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
     }
   },
   "ports": {
-    "ip": "142.250.198.78",
+    "ip": "142.250.204.46",
     "open": []
   },
   "https": {
@@ -325,11 +339,11 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
     ]
   },
   "apex_txt": [
+    "linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863",
     "facebook-domain-verification=arpzb36y6gfzl22n4jl30bg5fsrgh0",
-    "google-site-verification=jaH5RlwfdutdrKEaZY5nEbcReUEp9rlTOJIuMqh-SV4",
-    "google-site-verification=6nz-JOcA8VP-mmx29RInf7-g6CTloBX9wpmWHlVSMsw",
     "linkedin-site-verification=d232e0a9-aa43-41a4-8fa4-243021df793a",
-    "linkedin-site-verification=665646e8-9b99-454f-86a2-803db5044863"
+    "google-site-verification=FNbpLNxt8J8XYQAudCNFnig_1bP-LAUSeAePJXlfjzU",
+    "google-site-verification=jaH5RlwfdutdrKEaZY5nEbcReUEp9rlTOJIuMqh-SV4"
   ],
   "tls2": {
     "alpn": "",
@@ -360,7 +374,8 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
   "x12": {
     "status": 200,
     "ptr": [
-      "lctsaa-ab-in-f14.1e100.net."
+      "hkg07s38-in-f14.1e100.net.",
+      "lctsaa-ac-in-f14.1e100.net."
     ]
   },
   "x13": {
@@ -382,8 +397,13 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
       "status": 200
     }
   },
-  "elapsed_s": 9.5,
-  "rechecked": "2026-09-26 23:16 UTC"
+  "x15": {
+    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher_ver": "TLSv1.3",
+    "root_status": 200
+  },
+  "elapsed_s": 9.6,
+  "rechecked": "2026-09-27 00:08 UTC"
 }
 ```
 
@@ -395,4 +415,5 @@ Total findings: **14** (High: 0, Medium: 0, Low: 2, Info: 12)
 - OCSP status came from one signed OCSP request (HTTP GET) to each certificate's own AIA responder; HSTS preload membership was checked against the current Chromium static preload list (net/http/transport_security_state_static.json, fetched 2026-09-27).
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
+- re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
