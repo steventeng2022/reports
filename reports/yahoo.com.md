@@ -7,12 +7,12 @@
 | Target | https://yahoo.com/ |
 | Bug bounty program | Yahoo! |
 | Listed scope domain | yahoo.com |
-| Test date | 2026-09-27 00:35 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:37 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
+Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -26,13 +26,12 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 | 8 | low | MAIL6 | SPF record has no explicit all mechanism (implicit +all) | CWE-285 |
 | 9 | low | MAIL12 | MTA-STS TXT published but policy file missing/invalid | CWE-285 |
 | 10 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 11 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
-| 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 15 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
-| 16 | low | H21 | HSTS does not cover subdomains | CWE-319 |
-| 17 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
+| 11 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 13 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 14 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 15 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 16 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 
 ## Detailed findings
 
@@ -97,46 +96,40 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 ### 10. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk; google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY; facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=Z3-Vh6zqUMgybVH4wQl1GxKSKN7JE13kyCyeZ3TZZ-I; google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE; google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 11. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
-
-- **CWE:** CWE-603
-- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
-- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
-
-### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 11. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but yahoo.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 12. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 23 disallow path(s), e.g. /info/p.gif, /p/, /r/, /bin/, /caas/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 14. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 13. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 98.137.11.164 carries PTR media-router-fp73.prod.media.vip.gq1.yahoo.com. for yahoo.com.
+- **Detail:** 74.6.231.20 carries PTR media-router-fp73.prod.media.vip.ne1.yahoo.com. for yahoo.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 15. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+### 14. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
 
 - **CWE:** CWE-298
 - **Detail:** The yahoo.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
-### 16. [LOW] HSTS does not cover subdomains (`H21`)
+### 15. [LOW] HSTS does not cover subdomains (`H21`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security on yahoo.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of yahoo.com.
 - **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
 
-### 17. [INFO] security.txt published with a contact address (`SEC1`)
+### 16. [INFO] security.txt published with a contact address (`SEC1`)
 
 - **CWE:** CWE-1038
 - **Detail:** /.well-known/security.txt on yahoo.com is live and contains a contact (email/URL); the security contact endpoint is publicly disclosed.
@@ -149,33 +142,33 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "domain": "yahoo.com",
   "dns": {
     "a": [
-      "98.137.11.164",
+      "74.6.231.20",
       "74.6.231.21",
-      "74.6.143.25",
-      "98.137.11.163",
+      "98.137.11.164",
       "74.6.143.26",
-      "74.6.231.20"
+      "98.137.11.163",
+      "74.6.143.25"
     ],
     "aaaa": [
-      "2001:4998:124:1507::f001",
       "2001:4998:24:120d::1:1",
+      "2001:4998:44:3507::8000",
       "2001:4998:124:1507::f000",
       "2001:4998:24:120d::1:0",
       "2001:4998:44:3507::8001",
-      "2001:4998:44:3507::8000"
+      "2001:4998:124:1507::f001"
     ],
     "cname": null,
     "mx": [
-      "mta5.am0.yahoodns.net (pref 1)",
+      "mta6.am0.yahoodns.net (pref 1)",
       "mta7.am0.yahoodns.net (pref 1)",
-      "mta6.am0.yahoodns.net (pref 1)"
+      "mta5.am0.yahoodns.net (pref 1)"
     ],
     "ns": [
-      "ns1.yahoo.com.",
-      "ns3.yahoo.com.",
+      "ns5.yahoo.com.",
       "ns2.yahoo.com.",
       "ns4.yahoo.com.",
-      "ns5.yahoo.com."
+      "ns1.yahoo.com.",
+      "ns3.yahoo.com."
     ],
     "caa": [
       "0 issue \"digicert.com\"",
@@ -184,18 +177,18 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "0 issue \"sectigo.com\""
     ],
     "spf": [
-      "Zoom=13284637",
-      "v=spf1 redirect=_spf.mail.yahoo.com",
       "edb3bff2c0d64622a9b2250438277a59",
-      "google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk",
-      "google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY",
-      "facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p",
-      "_globalsign-domain-verification=3rQPnwMFlx5UmUzSMV-JeDoNEMeG8BYFKvKDsHEzr9",
       "google-site-verification=Z3-Vh6zqUMgybVH4wQl1GxKSKN7JE13kyCyeZ3TZZ-I",
-      "google-site-verification=GU8WAl0zPqaxdcZqDjuN7pqdfPCpR9Amz9rwxMG91qw",
       "google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE",
       "google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ",
-      "google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI"
+      "google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk",
+      "v=spf1 redirect=_spf.mail.yahoo.com",
+      "Zoom=13284637",
+      "google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY",
+      "google-site-verification=2b8irRvU5a2h4Mb-H_fdqNrqWjS00qmPfPcWqm8BhxI",
+      "facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p",
+      "google-site-verification=GU8WAl0zPqaxdcZqDjuN7pqdfPCpR9Amz9rwxMG91qw",
+      "_globalsign-domain-verification=3rQPnwMFlx5UmUzSMV-JeDoNEMeG8BYFKvKDsHEzr9"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:d@rua.agari.com; ruf=mailto:d@ruf.agari.com;"
@@ -239,7 +232,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     }
   },
   "ports": {
-    "ip": "98.137.11.164",
+    "ip": "74.6.231.20",
     "open": []
   },
   "https": {
@@ -281,8 +274,8 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "/security.txt": 301,
     "/.git/HEAD": 301,
     "/.git/config": 301,
-    "/.env": 404,
-    "/.htaccess": 404,
+    "/.env": 301,
+    "/.htaccess": 301,
     "/wp-login.php": 301,
     "/phpmyadmin/index.php": 301,
     "/server-status": 301,
@@ -292,11 +285,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "status": "ct-pending"
   },
   "apex_txt": [
+    "google-site-verification=Z3-Vh6zqUMgybVH4wQl1GxKSKN7JE13kyCyeZ3TZZ-I",
+    "google-site-verification=GLp01gkFNopm_JItbLxml4iuVbTgJa3rKu0-eq1RvsE",
+    "google-site-verification=xoBvU6aKxP0gYgNL0iXqF0EccAg6nFrO7XxsHnc3iNQ",
     "google-site-verification=w4N2bNopAWw1xYrdXKORILxx-WW3_LIiyX6dIMIidgk",
-    "google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY",
-    "facebook-domain-verification=gysqrcd69g0ej34f4jfn0huivkym1p",
-    "_globalsign-domain-verification=3rQPnwMFlx5UmUzSMV-JeDoNEMeG8BYFKvKDsHEzr9",
-    "google-site-verification=Z3-Vh6zqUMgybVH4wQl1GxKSKN7JE13kyCyeZ3TZZ-I"
+    "google-site-verification=2b0Glh8l2icXIAgAcjOcFx16Jt26yWDgEyrk5hPD-ZY"
   ],
   "tls2": {
     "alpn": "",
@@ -321,7 +314,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
       "not_before": "20260728000000",
       "not_after": "20261021235959"
     },
-    "ocsp": "http-200"
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -345,7 +338,7 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
   "x12": {
     "status": 301,
     "ptr": [
-      "media-router-fp73.prod.media.vip.gq1.yahoo.com."
+      "media-router-fp73.prod.media.vip.ne1.yahoo.com."
     ]
   },
   "x13": {
@@ -374,8 +367,11 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 43.4,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301
+  },
+  "elapsed_s": 42.2,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -388,4 +384,5 @@ Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

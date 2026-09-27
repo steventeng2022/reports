@@ -7,12 +7,12 @@
 | Target | https://buzzfeednews.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | buzzfeednews.com |
-| Test date | 2026-09-27 00:12 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:12 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
+Total findings: **21** (High: 0, Medium: 0, Low: 5, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,7 +35,8 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 | 17 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 18 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 20 | info | CT1 | 5 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 20 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 21 | info | CT1 | 5 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 
 ## Detailed findings
 
@@ -143,7 +144,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 ### 16. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: _globalsign-domain-verification=rxc48ocR2PhwobuGALz3D9ljNu6LWDgGmlBkqwbt5g; knowbe4-site-verification=874a4c20e9e2aa7b3811f96fed08f4ad; google-site-verification=kiZVY__GkjzXSHENpRzCiQqEsTl1tKKN__t-cesn4Tk
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=kiZVY__GkjzXSHENpRzCiQqEsTl1tKKN__t-cesn4Tk; globalsign-domain-verification=-Q7umwx2mj164XwLa0PsoUaWe2HBhta50GjggsT98f; knowbe4-site-verification=874a4c20e9e2aa7b3811f96fed08f4ad
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 17. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -164,7 +165,13 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - **Detail:** No CAA record found for buzzfeednews.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 20. [INFO] 5 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 20. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on buzzfeednews.com identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 21. [INFO] 5 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: support.buzzfeednews.com
@@ -177,34 +184,34 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
   "domain": "buzzfeednews.com",
   "dns": {
     "a": [
-      "151.101.2.114",
       "151.101.130.114",
+      "151.101.2.114",
       "151.101.66.114",
       "151.101.194.114"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx2.googlemail.com (pref 10)",
+      "aspmx.l.google.com (pref 1)",
       "aspmx3.googlemail.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
-      "aspmx2.googlemail.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 5)"
     ],
     "ns": [
-      "ns-595.awsdns-10.net.",
+      "ns-1029.awsdns-00.org.",
       "ns-118.awsdns-14.com.",
-      "ns-1695.awsdns-19.co.uk.",
-      "ns-1029.awsdns-00.org."
+      "ns-595.awsdns-10.net.",
+      "ns-1695.awsdns-19.co.uk."
     ],
     "caa": [],
     "spf": [
-      "_globalsign-domain-verification=rxc48ocR2PhwobuGALz3D9ljNu6LWDgGmlBkqwbt5g",
-      "knowbe4-site-verification=874a4c20e9e2aa7b3811f96fed08f4ad",
       "google-site-verification=kiZVY__GkjzXSHENpRzCiQqEsTl1tKKN__t-cesn4Tk",
       "globalsign-domain-verification=-Q7umwx2mj164XwLa0PsoUaWe2HBhta50GjggsT98f",
-      "v=spf1 include:_spf.google.com include:shops.shopify.com include:mail.zendesk.com include:boldapps.net -all",
-      "facebook-domain-verification=nzw0i4aqkjxa2km4qy9uwiuk040nl0"
+      "knowbe4-site-verification=874a4c20e9e2aa7b3811f96fed08f4ad",
+      "_globalsign-domain-verification=rxc48ocR2PhwobuGALz3D9ljNu6LWDgGmlBkqwbt5g",
+      "facebook-domain-verification=nzw0i4aqkjxa2km4qy9uwiuk040nl0",
+      "v=spf1 include:_spf.google.com include:shops.shopify.com include:mail.zendesk.com include:boldapps.net -all"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine;pct=100; rua=mailto:buzzfeed+dmarc@buzzfeed.com,mailto:z81afvrt@ag.dmarcian.com; ruf=mailto:buzzfeed+dmarc@buzzfeed.com,mailto:z81afvrt@fr.dmarcian.com"
@@ -248,7 +255,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     }
   },
   "ports": {
-    "ip": "151.101.2.114",
+    "ip": "151.101.130.114",
     "open": []
   },
   "https": {
@@ -316,10 +323,10 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     ]
   },
   "apex_txt": [
-    "_globalsign-domain-verification=rxc48ocR2PhwobuGALz3D9ljNu6LWDgGmlBkqwbt5g",
-    "knowbe4-site-verification=874a4c20e9e2aa7b3811f96fed08f4ad",
     "google-site-verification=kiZVY__GkjzXSHENpRzCiQqEsTl1tKKN__t-cesn4Tk",
     "globalsign-domain-verification=-Q7umwx2mj164XwLa0PsoUaWe2HBhta50GjggsT98f",
+    "knowbe4-site-verification=874a4c20e9e2aa7b3811f96fed08f4ad",
+    "_globalsign-domain-verification=rxc48ocR2PhwobuGALz3D9ljNu6LWDgGmlBkqwbt5g",
     "facebook-domain-verification=nzw0i4aqkjxa2km4qy9uwiuk040nl0"
   ],
   "tls2": {
@@ -392,8 +399,14 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 20.3,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "cdn": [
+      "Fastly"
+    ]
+  },
+  "elapsed_s": 20.5,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -406,4 +419,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

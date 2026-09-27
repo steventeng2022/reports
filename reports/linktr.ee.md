@@ -7,12 +7,12 @@
 | Target | https://linktr.ee/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | linktr.ee |
-| Test date | 2026-09-27 00:24 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:26 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
+Total findings: **19** (High: 0, Medium: 0, Low: 1, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,7 +31,10 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 | 13 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 14 | info | HTML11 | Document references many third-party domains | CWE-200 |
 | 15 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
-| 16 | info | CT1 | 53 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 16 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
+| 17 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 18 | info | HTML12 | preconnect/dns-prefetch declares third-party destinations | CWE-200 |
+| 19 | info | CT1 | 53 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -84,7 +87,7 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 ### 8. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: attio-domain-verification=UHX2B6D5TX6CX53CXGBAHGW3; google-site-verification=BqwBT-jSv9iENaqGfI_gbooYEjs3uUHh-lXpVf8tkJk; stripe-verification=0AB4346953316F0622DA92E369CDFA951C54E959A15CC1CFB96E49D02E20
+- **Detail:** Apex TXT records with verification/token content: openai-domain-verification=dv-PfCKEtIOkYIRSjuyixJqqZcf; stripe-verification=58C8428D5C7E162ADE166B3F34072EC21AA64FE97D46970CC352FAB198CC; anthropic-domain-verification-1tycht=zJnYXvMUrBuyoLB4eKC6V1Wav
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 9. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -129,7 +132,25 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 - **Detail:** Root document of linktr.ee sends a CSP but contains 10 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
 - **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
 
-### 16. [INFO] 53 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 16. [INFO] TLS 1.2 ceiling: 1.3 not negotiated with a modern client (`TLS27`)
+
+- **CWE:** CWE-327
+- **Detail:** The quiet handshake to linktr.ee negotiated TLSv1.2 even though the client offered TLS 1.3; the edge caps at 1.2 (legacy/compatibility configuration).
+- **Recommendation:** Enable TLS 1.3 at the edge.
+
+### 17. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on linktr.ee identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 18. [INFO] preconnect/dns-prefetch declares third-party destinations (`HTML12`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of linktr.ee declares preconnect/dns-prefetch/modulepreload for 1 third-party registrable domain(s) (e.g. datagrail.io); declared (not yet loaded) destinations widen the expected network topology of the page.
+- **Recommendation:** Review declared third-party destinations as part of the supply-chain inventory.
+
+### 19. [INFO] 53 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: assets.production.linktr.ee, assets.qa.linktr.ee
@@ -144,66 +165,66 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
     "a": [
       "151.101.194.133",
       "151.101.2.133",
-      "151.101.130.133",
-      "151.101.66.133"
+      "151.101.66.133",
+      "151.101.130.133"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
       "alt3.aspmx.l.google.com (pref 10)",
-      "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)",
       "alt4.aspmx.l.google.com (pref 10)",
-      "alt2.aspmx.l.google.com (pref 5)"
+      "alt1.aspmx.l.google.com (pref 5)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)"
     ],
     "ns": [
-      "ns-634.awsdns-15.net.",
-      "ns-169.awsdns-21.com.",
+      "ns-1782.awsdns-30.co.uk.",
       "ns-1534.awsdns-63.org.",
-      "ns-1782.awsdns-30.co.uk."
+      "ns-169.awsdns-21.com.",
+      "ns-634.awsdns-15.net."
     ],
     "caa": [],
     "spf": [
-      "attio-domain-verification=UHX2B6D5TX6CX53CXGBAHGW3",
-      "google-site-verification=BqwBT-jSv9iENaqGfI_gbooYEjs3uUHh-lXpVf8tkJk",
-      "stripe-verification=0AB4346953316F0622DA92E369CDFA951C54E959A15CC1CFB96E49D02E203691",
-      "_5gpstlp0j1ze117x41vpd77qfn3qn6q",
-      "google-site-verification=tOpEoiVk37-4HaCFCMb86Q2F9zpl4gh0cF9PvQjJ5aw",
-      "dropbox-domain-verification=831j6zm4fvfj",
-      "google-site-verification=ictM7BaxKAXWoNxeAH2qUWzbIWwUZT0krATNluy2hwg",
-      "google-site-verification=JnB4sONl0K7d3wGyRs9an0C0VJFVhhmGSjf5diV790k",
-      "stripe-verification=61B436C0036D8172284A969CE10CED7FFF67D38B204B51F49A0A2C3D3C65805B",
-      "facebook-domain-verification=8ssyxgwhdjg409vl1qwv8tqy6745zy",
-      "google-site-verification=oJ0isC1gRFlJdV5L_p5ObuVX0JCcyzPQ2N4FcdFSY-c",
-      "t252Y1nfZvxjX0093cC7cncQHg",
       "ZOOM_verify_FEdjcGCXQD7LtbPD7NDAPO",
-      "uber-domain-verification=88d7ba7b-2a23-42ae-ba4f-e96706f6b728",
-      "hubspot-domain-verification=MTQzMjVkY2EtZDc5YS00ZmMwLTgzNmMtODJhZWFhNjQ1MTFi",
-      "wiz-domain-verification=993ae6f241de2f53ea30277e8fb8042709252ec68b523cf26181b4cbef0a0a0c",
-      "loom-site-verification=1c1e2086449545d190b57b810de3c741",
-      "stripe-verification=15f31e50c5710252111569ad76dfd30414dfe84321fddd6fb2f7cf42ced4e306",
-      "h1-domain-verification=HDHQ9deSLqK9KYahSa9UU559PvrgNBi3T1zdN9Lj8CVoYCV8",
-      "tiktok-developers-site-verification=5TpDHtevdeyto1s53FrggeA4rqLMU34r",
-      "google-site-verification=5_2gPClKT1kQHILAWOrq9g-MDZQpYTvUvAMV5lADcHU",
-      "google-site-verification=J_OCvoB105vcwDCwwO0xZlxvWZLz6-UzS4UssSeiy-U",
-      "onetrust-domain-verification=e0ec11d4d77546b791a0f946a32a6c1e",
-      "Validity-Domain-Verification=6HrSbK1DTz+C/kYrvt2yxBW93F4=",
-      "stripe-verification=85AF8598246098631ED129FA3218F6C4DA2CFEC57DD8A9F080110B8CA399D2DD",
-      "MS=ms25160908",
-      "amazon-business-verification=16012857de4a76553695df824bae16348649f39cf989c2354b5bc7cd379b15e9",
-      "v=spf1 include:sendgrid.net include:hs.linktr.ee include:_spf.google.com -all",
       "openai-domain-verification=dv-PfCKEtIOkYIRSjuyixJqqZcf",
       "stripe-verification=58C8428D5C7E162ADE166B3F34072EC21AA64FE97D46970CC352FAB198CC1F9E",
-      "notion_verify_LZm1CNzi_RmH#UCV.uR1MvXKsWEG8nebvc}bw+TYMj)mzgrf33H1tUkj*g@r37^#nuKBqT",
-      "stripe-verification=731DF94DEAEA1EAAA807EAE7D72D7338E193CD76AE97150ECF41896807B1B033",
-      "tiktok-developers-site-verification=HhSSn99SRimgJNJJkcm0Rt0tjhOiMLW5",
-      "google-site-verification=M0XDPVdF5XBrnb-68KdBWmKi35ovRf_PqZM6zRj6xfo",
-      "slack-domain-verification=62Jx5SGkgzgdLmF6mYPo1oWMHoLI1PGqzxt71dYk",
-      "google-site-verification=c_BBAAGdYj2L7cOpPgNF76jiXnFUVS_Xz5gfcBOmGL4",
       "anthropic-domain-verification-1tycht=zJnYXvMUrBuyoLB4eKC6V1Wav",
-      "zoom-domain-verification=ZOOM_verify_3d500f8c401c445e9cc337e189236ef5",
+      "google-site-verification=M0XDPVdF5XBrnb-68KdBWmKi35ovRf_PqZM6zRj6xfo",
+      "Validity-Domain-Verification=6HrSbK1DTz+C/kYrvt2yxBW93F4=",
+      "google-site-verification=5_2gPClKT1kQHILAWOrq9g-MDZQpYTvUvAMV5lADcHU",
+      "MS=ms25160908",
+      "h1-domain-verification=HDHQ9deSLqK9KYahSa9UU559PvrgNBi3T1zdN9Lj8CVoYCV8",
+      "google-site-verification=c_BBAAGdYj2L7cOpPgNF76jiXnFUVS_Xz5gfcBOmGL4",
+      "stripe-verification=85AF8598246098631ED129FA3218F6C4DA2CFEC57DD8A9F080110B8CA399D2DD",
+      "onetrust-domain-verification=e0ec11d4d77546b791a0f946a32a6c1e",
+      "stripe-verification=0AB4346953316F0622DA92E369CDFA951C54E959A15CC1CFB96E49D02E203691",
+      "attio-domain-verification=UHX2B6D5TX6CX53CXGBAHGW3",
+      "tiktok-developers-site-verification=HhSSn99SRimgJNJJkcm0Rt0tjhOiMLW5",
+      "notion_verify_LZm1CNzi_RmH#UCV.uR1MvXKsWEG8nebvc}bw+TYMj)mzgrf33H1tUkj*g@r37^#nuKBqT",
+      "slack-domain-verification=62Jx5SGkgzgdLmF6mYPo1oWMHoLI1PGqzxt71dYk",
       "google-site-verification=-3XY-ldZZm2O8v9blT-mMiBduUxNdPsrrFXneZFHJNU",
-      "stripe-verification=28e5f4ef1feaccb632b7affa6996c5fd43b1e4fafe6b87fe7fa34543a77f090a"
+      "google-site-verification=ictM7BaxKAXWoNxeAH2qUWzbIWwUZT0krATNluy2hwg",
+      "uber-domain-verification=88d7ba7b-2a23-42ae-ba4f-e96706f6b728",
+      "zoom-domain-verification=ZOOM_verify_3d500f8c401c445e9cc337e189236ef5",
+      "loom-site-verification=1c1e2086449545d190b57b810de3c741",
+      "stripe-verification=28e5f4ef1feaccb632b7affa6996c5fd43b1e4fafe6b87fe7fa34543a77f090a",
+      "google-site-verification=BqwBT-jSv9iENaqGfI_gbooYEjs3uUHh-lXpVf8tkJk",
+      "_5gpstlp0j1ze117x41vpd77qfn3qn6q",
+      "google-site-verification=JnB4sONl0K7d3wGyRs9an0C0VJFVhhmGSjf5diV790k",
+      "dropbox-domain-verification=831j6zm4fvfj",
+      "facebook-domain-verification=8ssyxgwhdjg409vl1qwv8tqy6745zy",
+      "stripe-verification=731DF94DEAEA1EAAA807EAE7D72D7338E193CD76AE97150ECF41896807B1B033",
+      "wiz-domain-verification=993ae6f241de2f53ea30277e8fb8042709252ec68b523cf26181b4cbef0a0a0c",
+      "google-site-verification=J_OCvoB105vcwDCwwO0xZlxvWZLz6-UzS4UssSeiy-U",
+      "t252Y1nfZvxjX0093cC7cncQHg",
+      "google-site-verification=oJ0isC1gRFlJdV5L_p5ObuVX0JCcyzPQ2N4FcdFSY-c",
+      "v=spf1 include:sendgrid.net include:hs.linktr.ee include:_spf.google.com -all",
+      "stripe-verification=15f31e50c5710252111569ad76dfd30414dfe84321fddd6fb2f7cf42ced4e306",
+      "google-site-verification=tOpEoiVk37-4HaCFCMb86Q2F9zpl4gh0cF9PvQjJ5aw",
+      "hubspot-domain-verification=MTQzMjVkY2EtZDc5YS00ZmMwLTgzNmMtODJhZWFhNjQ1MTFi",
+      "stripe-verification=61B436C0036D8172284A969CE10CED7FFF67D38B204B51F49A0A2C3D3C65805B",
+      "amazon-business-verification=16012857de4a76553695df824bae16348649f39cf989c2354b5bc7cd379b15e9",
+      "tiktok-developers-site-verification=5TpDHtevdeyto1s53FrggeA4rqLMU34r"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@dmarc.everest.email,mailto:dmarc@linktr.ee;"
@@ -309,11 +330,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
     ]
   },
   "apex_txt": [
-    "attio-domain-verification=UHX2B6D5TX6CX53CXGBAHGW3",
-    "google-site-verification=BqwBT-jSv9iENaqGfI_gbooYEjs3uUHh-lXpVf8tkJk",
-    "stripe-verification=0AB4346953316F0622DA92E369CDFA951C54E959A15CC1CFB96E49D02E20",
-    "google-site-verification=tOpEoiVk37-4HaCFCMb86Q2F9zpl4gh0cF9PvQjJ5aw",
-    "dropbox-domain-verification=831j6zm4fvfj"
+    "openai-domain-verification=dv-PfCKEtIOkYIRSjuyixJqqZcf",
+    "stripe-verification=58C8428D5C7E162ADE166B3F34072EC21AA64FE97D46970CC352FAB198CC",
+    "anthropic-domain-verification-1tycht=zJnYXvMUrBuyoLB4eKC6V1Wav",
+    "google-site-verification=M0XDPVdF5XBrnb-68KdBWmKi35ovRf_PqZM6zRj6xfo",
+    "Validity-Domain-Verification=6HrSbK1DTz+C/kYrvt2yxBW93F4="
   ],
   "tls2": {
     "alpn": "",
@@ -386,8 +407,17 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
     "cipher_ver": "TLSv1.2",
     "root_status": 200
   },
-  "elapsed_s": 21.6,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 200,
+    "cdn": [
+      "Fastly"
+    ],
+    "preconnect": [
+      "datagrail.io"
+    ]
+  },
+  "elapsed_s": 27.0,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -400,4 +430,5 @@ Total findings: **16** (High: 0, Medium: 0, Low: 1, Info: 15)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

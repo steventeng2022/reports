@@ -7,12 +7,12 @@
 | Target | https://abc.com/ |
 | Bug bounty program | The Walt Disney Company |
 | Listed scope domain | abc.com |
-| Test date | 2026-09-27 00:08 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:08 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **25** (High: 0, Medium: 0, Low: 3, Info: 22)
+Total findings: **27** (High: 0, Medium: 0, Low: 3, Info: 24)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -40,7 +40,9 @@ Total findings: **25** (High: 0, Medium: 0, Low: 3, Info: 22)
 | 22 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
 | 23 | info | HTML11 | Document references many third-party domains | CWE-200 |
 | 24 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
-| 25 | info | CT1 | 43 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 25 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 26 | info | HTML12 | preconnect/dns-prefetch declares third-party destinations | CWE-200 |
+| 27 | info | CT1 | 43 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -140,7 +142,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 3, Info: 22)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=4b0af123fd61d9b672e3d23654d753d00150aec9b4c32ff0673; canva-site-verification=mQci1SnoC4Y-iJQpirTu6Q; extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e0; anthropic-domain-verification-dfbjfj=cItiODp4D19q3YKkyJLoZsKXZ; cisco-ci-domain-verification=4b0af123fd61d9b672e3d23654d753d00150aec9b4c32ff0673
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 16. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -164,13 +166,13 @@ Total findings: **25** (High: 0, Medium: 0, Low: 3, Info: 22)
 ### 19. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 3.169.121.22 carries PTR server-3-169-121-22.tpe53.r.cloudfront.net. for abc.com.
+- **Detail:** 3.169.121.125 carries PTR server-3-169-121-125.tpe53.r.cloudfront.net. for abc.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 20. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk2ab03f6e2idg.html -> 404; error page/headers match: CloudFront.
+- **Detail:** GET /xkflk329qo87x8.html -> 404; error page/headers match: CloudFront.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -197,7 +199,19 @@ Total findings: **25** (High: 0, Medium: 0, Low: 3, Info: 22)
 - **Detail:** Root document of abc.com sends a CSP but contains 5 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
 - **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
 
-### 25. [INFO] 43 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 25. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on abc.com identify the edge as CloudFront / Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 26. [INFO] preconnect/dns-prefetch declares third-party destinations (`HTML12`)
+
+- **CWE:** CWE-200
+- **Detail:** Root document of abc.com declares preconnect/dns-prefetch/modulepreload for 1 third-party registrable domain(s) (e.g. watchdisneyfe.com); declared (not yet loaded) destinations widen the expected network topology of the page.
+- **Recommendation:** Review declared third-party destinations as part of the supply-chain inventory.
+
+### 27. [INFO] 43 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: api.abc.com, api.partners.abc.com, cdn.mktg.abc.com, cdn.video.abc.com, dev.cd.abc.com, dev.galaxy.abc.com, fcast.cdn.abc.com, fcast.qa.cdn.abc.com, help.abc.com, ll.media.abc.com
@@ -210,9 +224,9 @@ Total findings: **25** (High: 0, Medium: 0, Low: 3, Info: 22)
   "domain": "abc.com",
   "dns": {
     "a": [
+      "3.169.121.125",
       "3.169.121.22",
       "3.169.121.54",
-      "3.169.121.125",
       "3.169.121.28"
     ],
     "aaaa": [],
@@ -221,33 +235,33 @@ Total findings: **25** (High: 0, Medium: 0, Low: 3, Info: 22)
       "abc-com.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
-      "ns-1368.awsdns-43.org.",
       "ns-736.awsdns-28.net.",
-      "ns-1869.awsdns-41.co.uk.",
-      "ns-318.awsdns-39.com."
+      "ns-318.awsdns-39.com.",
+      "ns-1368.awsdns-43.org.",
+      "ns-1869.awsdns-41.co.uk."
     ],
     "caa": [],
     "spf": [
-      "docusign=12a35007-299f-4d83-bd45-4f1963b4e234",
-      "cisco-ci-domain-verification=4b0af123fd61d9b672e3d23654d753d00150aec9b4c32ff0673f0f1b7801edab",
-      "canva-site-verification=mQci1SnoC4Y-iJQpirTu6Q",
-      "smartsheet-site-validation=o821NYtWlw35E2By_1h2gMDN-nAgTRqB",
-      "extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453",
-      "docusign=53e074c1-b80d-41a1-be73-d444698c3a91",
-      "nintex.5f22e1f0a5ad340038cdb208",
-      "Dynatrace-site-verification=f8c987df-9919-467d-80cf-05c74781a94e__j7ut0lc17ppaoqaqo4hm9dbq23",
-      "google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4",
-      "jumpdesktop=12d076284350363e1df1806a94f0096dc18aed9d3a58a4e35376c09ce886",
-      "intersight=e61370b3eacaf63c12b058d9c7b287aa1a9fdbc17d6958aaf1036e5c54f90502",
-      "anthropic-domain-verification-dfbjfj=cItiODp4D19q3YKkyJLoZsKXZ",
-      "apple-domain-verification=pSxAase3tgjHfXBE",
-      "v=spf1 include:spf.disney.com -all",
-      "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHKTqNTW7gucscGW7",
       "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e02bd5d0dc3916",
-      "42357818",
-      "google-site-verification=RcEUU_s2q7QWyysoeXd4Y0W3IE3QSpeu2lh2OFGRiJA",
+      "v=spf1 include:spf.disney.com -all",
+      "anthropic-domain-verification-dfbjfj=cItiODp4D19q3YKkyJLoZsKXZ",
+      "MS=ms24761496",
+      "intersight=e61370b3eacaf63c12b058d9c7b287aa1a9fdbc17d6958aaf1036e5c54f90502",
+      "cisco-ci-domain-verification=4b0af123fd61d9b672e3d23654d753d00150aec9b4c32ff0673f0f1b7801edab",
+      "Dynatrace-site-verification=f8c987df-9919-467d-80cf-05c74781a94e__j7ut0lc17ppaoqaqo4hm9dbq23",
+      "extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453",
+      "apple-domain-verification=pSxAase3tgjHfXBE",
+      "canva-site-verification=mQci1SnoC4Y-iJQpirTu6Q",
+      "docusign=53e074c1-b80d-41a1-be73-d444698c3a91",
+      "google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4",
       "ECZjYXSxe4CRnyGjS8E1nRw2keq1hV77Z66acQb6JhwQk14sk4ZGwLt61w4aZhtOdmqIJUj1fNCxo6721F0pfg==",
-      "MS=ms24761496"
+      "42357818",
+      "jumpdesktop=12d076284350363e1df1806a94f0096dc18aed9d3a58a4e35376c09ce886",
+      "nintex.5f22e1f0a5ad340038cdb208",
+      "docusign=12a35007-299f-4d83-bd45-4f1963b4e234",
+      "smartsheet-site-validation=o821NYtWlw35E2By_1h2gMDN-nAgTRqB",
+      "google-site-verification=RcEUU_s2q7QWyysoeXd4Y0W3IE3QSpeu2lh2OFGRiJA",
+      "atlassian-domain-verification=5lqJwtfJPMHqC/aGvT/7s2BR53IHCs9P6vFjCQYA5nkQ4mvoHKTqNTW7gucscGW7"
     ],
     "dmarc": [
       "v=DMARC1;p=none;fo=1;rua=mailto:Corp.Dmarc_RUA@disney.com;ruf=mailto:Corp.Dmarc_RUF@disney.com"
@@ -314,7 +328,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 3, Info: 22)
     }
   },
   "ports": {
-    "ip": "3.169.121.22",
+    "ip": "3.169.121.125",
     "open": []
   },
   "https": {
@@ -406,11 +420,11 @@ Total findings: **25** (High: 0, Medium: 0, Low: 3, Info: 22)
     ]
   },
   "apex_txt": [
+    "adobe-idp-site-verification=012b7d24aff9766444b9232173abb52ef026139e50aac77c49e0",
+    "anthropic-domain-verification-dfbjfj=cItiODp4D19q3YKkyJLoZsKXZ",
     "cisco-ci-domain-verification=4b0af123fd61d9b672e3d23654d753d00150aec9b4c32ff0673",
-    "canva-site-verification=mQci1SnoC4Y-iJQpirTu6Q",
-    "extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453",
     "Dynatrace-site-verification=f8c987df-9919-467d-80cf-05c74781a94e__j7ut0lc17ppaoq",
-    "google-site-verification=9KrlZfA2rYO7_JUgB6G6PzmIzp5C0aMcAgiODVFOXL4"
+    "extensis-domain-verification=4dec3be6-1ab2-4cd3-b508-5a61c50ac453"
   ],
   "tls2": {
     "alpn": "",
@@ -458,7 +472,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 3, Info: 22)
   "x12": {
     "status": 200,
     "ptr": [
-      "server-3-169-121-22.tpe53.r.cloudfront.net."
+      "server-3-169-121-125.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -484,8 +498,18 @@ Total findings: **25** (High: 0, Medium: 0, Low: 3, Info: 22)
     "cipher_ver": "TLSv1.3",
     "root_status": 200
   },
-  "elapsed_s": 17.4,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 200,
+    "cdn": [
+      "CloudFront",
+      "Fastly"
+    ],
+    "preconnect": [
+      "watchdisneyfe.com"
+    ]
+  },
+  "elapsed_s": 16.1,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -498,4 +522,5 @@ Total findings: **25** (High: 0, Medium: 0, Low: 3, Info: 22)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

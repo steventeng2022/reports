@@ -7,12 +7,12 @@
 | Target | https://creativecommons.org/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | creativecommons.org |
-| Test date | 2026-09-27 00:14 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:14 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **25** (High: 0, Medium: 0, Low: 4, Info: 21)
+Total findings: **26** (High: 0, Medium: 0, Low: 4, Info: 22)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -41,6 +41,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 4, Info: 21)
 | 23 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
 | 24 | info | HTML11 | Document references many third-party domains | CWE-200 |
 | 25 | info | HTML10 | Plaintext email addresses in the document | CWE-200 |
+| 26 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
 
 ## Detailed findings
 
@@ -59,13 +60,13 @@ Total findings: **25** (High: 0, Medium: 0, Low: 4, Info: 21)
 ### 3. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.5.134:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.6.134:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 104.20.5.134:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 104.20.6.134:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 5. [INFO] Technology fingerprint (`TECH1`)
@@ -177,7 +178,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 4, Info: 21)
 ### 21. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xku577e5kmlwuy.html -> 404; error page/headers match: WordPress, Cloudflare.
+- **Detail:** GET /xkmohhfnqg9kda.html -> 404; error page/headers match: WordPress, Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 22. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -204,6 +205,12 @@ Total findings: **25** (High: 0, Medium: 0, Low: 4, Info: 21)
 - **Detail:** Root document of creativecommons.org contains 1 plaintext email address(es) (e.g. info@creativecommons.org); these are harvestable by bots.
 - **Recommendation:** Use a contact form or mailto obfuscation for non-critical addresses.
 
+### 26. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on creativecommons.org identify the edge as CloudFront; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -211,8 +218,8 @@ Total findings: **25** (High: 0, Medium: 0, Low: 4, Info: 21)
   "domain": "creativecommons.org",
   "dns": {
     "a": [
-      "104.20.5.134",
-      "104.20.6.134"
+      "104.20.6.134",
+      "104.20.5.134"
     ],
     "aaaa": [
       "2606:4700:10::6814:586",
@@ -220,24 +227,24 @@ Total findings: **25** (High: 0, Medium: 0, Low: 4, Info: 21)
     ],
     "cname": null,
     "mx": [
-      "aspmx4.googlemail.com (pref 70)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
       "aspmx5.googlemail.com (pref 80)",
-      "aspmx3.googlemail.com (pref 60)",
       "alt1.aspmx.l.google.com (pref 5)",
+      "aspmx4.googlemail.com (pref 70)",
+      "aspmx3.googlemail.com (pref 60)",
       "aspmx2.googlemail.com (pref 50)",
-      "aspmx.l.google.com (pref 1)"
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "fiona.ns.cloudflare.com.",
-      "isaac.ns.cloudflare.com."
+      "isaac.ns.cloudflare.com.",
+      "fiona.ns.cloudflare.com."
     ],
     "caa": [],
     "spf": [
+      "v=spf1 include:_spf.google.com include:sendgrid.net ~all",
       "MS=ms27657674",
-      "blitz=mu-fbea1d1e-91b715ef-04876bbd-270e0140",
-      "v=spf1 include:_spf.google.com include:sendgrid.net ~all"
+      "blitz=mu-fbea1d1e-91b715ef-04876bbd-270e0140"
     ],
     "dmarc": [
       "v=DMARC1; p=none; rua=mailto:dmarc-reports@creativecommons.org"
@@ -267,7 +274,7 @@ Total findings: **25** (High: 0, Medium: 0, Low: 4, Info: 21)
     }
   },
   "ports": {
-    "ip": "104.20.5.134",
+    "ip": "104.20.6.134",
     "open": [
       8080,
       8443
@@ -380,8 +387,14 @@ Total findings: **25** (High: 0, Medium: 0, Low: 4, Info: 21)
     "cipher_ver": "TLSv1.3",
     "root_status": 200
   },
-  "elapsed_s": 7.7,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 200,
+    "cdn": [
+      "CloudFront"
+    ]
+  },
+  "elapsed_s": 22.2,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -394,4 +407,5 @@ Total findings: **25** (High: 0, Medium: 0, Low: 4, Info: 21)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

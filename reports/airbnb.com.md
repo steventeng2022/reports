@@ -7,12 +7,12 @@
 | Target | https://airbnb.com/ |
 | Bug bounty program | Airbnb |
 | Listed scope domain | airbnb.com |
-| Test date | 2026-09-27 00:08 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:08 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **20** (High: 0, Medium: 0, Low: 4, Info: 16)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,7 +34,8 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 17 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
 | 18 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
-| 19 | info | CT1 | 249 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 19 | info | TLS27 | TLS 1.2 ceiling: 1.3 not negotiated with a modern client | CWE-327 |
+| 20 | info | CT1 | 249 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -127,7 +128,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: webexdomainverification.=162d362c-c218-48f0-8b53-0017116e6f29; status-page-domain-verification=tb81t2ndk8pb; facebook-domain-verification=t3zulila9jjnrfbyt6vjamhqdxz47f
+- **Detail:** Apex TXT records with verification/token content: reejig-platform-domain-verification-0dc5cd=a9i760YDrujxnHMEEoXwZP5bD; miro-verification=c5c6890aa37542fb59662ade09a0778c6e028b2f; adobe-idp-site-verification=e68ae64c-3a65-4439-b368-0042e72c4cc8
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
@@ -139,7 +140,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 166.117.189.176 carries PTR a333dda39e3b496ea.awsglobalaccelerator.com. for airbnb.com.
+- **Detail:** 166.117.27.62 carries PTR a333dda39e3b496ea.awsglobalaccelerator.com. for airbnb.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 17. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -154,7 +155,13 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** The airbnb.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
-### 19. [INFO] 249 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 19. [INFO] TLS 1.2 ceiling: 1.3 not negotiated with a modern client (`TLS27`)
+
+- **CWE:** CWE-327
+- **Detail:** The quiet handshake to airbnb.com negotiated TLSv1.2 even though the client offered TLS 1.3; the edge caps at 1.2 (legacy/compatibility configuration).
+- **Recommendation:** Enable TLS 1.3 at the edge.
+
+### 20. [INFO] 249 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: admin.airbnb.com, admin.dev.staging.airbnb.com, api.airbnb.com, api.akamai-ci.airbnb.com, api.akamai-dev.airbnb.com, api.dev.staging.airbnb.com, api.preprod.airbnb.com, careers.airbnb.com, careers.next.airbnb.com, dev.staging.airbnb.com
@@ -167,75 +174,75 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "domain": "airbnb.com",
   "dns": {
     "a": [
-      "166.117.189.176",
-      "166.117.27.62"
+      "166.117.27.62",
+      "166.117.189.176"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "alt3.aspmx.l.google.com (pref 10)",
-      "alt4.aspmx.l.google.com (pref 10)",
       "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "aspmx.l.google.com (pref 1)"
+      "alt3.aspmx.l.google.com (pref 10)",
+      "alt4.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
-      "dns1.p08.nsone.net.",
-      "ns-1932.awsdns-49.co.uk.",
       "dns4.p08.nsone.net.",
-      "ns-558.awsdns-05.net.",
-      "dns2.p08.nsone.net.",
       "ns-474.awsdns-59.com.",
+      "ns-1453.awsdns-53.org.",
       "dns3.p08.nsone.net.",
-      "ns-1453.awsdns-53.org."
+      "ns-558.awsdns-05.net.",
+      "ns-1932.awsdns-49.co.uk.",
+      "dns1.p08.nsone.net.",
+      "dns2.p08.nsone.net."
     ],
     "caa": [
-      "0 issue \"letsencrypt.org\"",
       "0 issue \"digicert.com\"",
-      "0 iodef \"mailto:caa-alerts@airbnb.com\"",
-      "0 issue \"pki.goog\""
+      "0 issue \"letsencrypt.org\"",
+      "0 issue \"pki.goog\"",
+      "0 iodef \"mailto:caa-alerts@airbnb.com\""
     ],
     "spf": [
-      "webexdomainverification.=162d362c-c218-48f0-8b53-0017116e6f29",
-      "datadome-domain-verify=W7kEoUrcETDB4afh6Dg5XcjzGWIxidID",
-      "status-page-domain-verification=tb81t2ndk8pb",
-      "facebook-domain-verification=t3zulila9jjnrfbyt6vjamhqdxz47f",
       "elevenlabs=igH15TA-6-8aXgxhsL6--iDut7kibGkXsl3Qrvth8gY",
-      "openai-domain-verification=dv-g8FeEwzIIZCUjUpPuF8szG3a",
-      "adobe-idp-site-verification=e68ae64c-3a65-4439-b368-0042e72c4cc8",
-      "masv=MDSVaBxDxTKiIngeAbltVvdnlTkAhnci",
-      "rzp-site-verification=31fa3e1cd566e8d7347ed9bb16424c59",
-      "anthropic-domain-verification-2s2h87=NaRxcN9zTtIb3insUyX7U264A",
-      "miro-verification=c5c6890aa37542fb59662ade09a0778c6e028b2f",
-      "neat-pulse-domain-verification-Kkvm4PN=ab046095-265e-45ae-8816-c61097444bfd",
-      "webexdomainverification.725890277b499457e053ab06fc0a5ef4=b060825b-4db4-4ce3-a61e-debc56370fc0",
-      "dtm-domain-verification=pKWJVhJM8WfWtDBjyfKZjwxGurB9fiCf1TpvWO_Kvmw",
-      "segment-site-verification=ZkxkEuKJrGI9MrWGC0qw795Xkj9ZlcBq",
-      "docusign=d56dee1c-0384-4ffa-8801-e6bea308af97",
-      "cisco-ci-domain-verification=eef9c0a839b89aed57cdd00866d163bb0660fec297c0c1e4b275baec96cfa10",
-      "v=spf1 include:spf1.airbnb.com ip6:2c0f:fb50:4864::/56 ip6:2a00:1450:4864::/56 ip6:2800:3f0:4864::/56 ip6:2607:f8b0:4864::/56 ip6:2404:6800:4864::/56 ip6:2001:4860:4864::/56 ip4:98.77.0.0/16 ip4:87.253.232.0/21 ip4:76.223.176.0/20 ip4:76.223.128.0/19 -all",
-      "google-site-verification=EFtD_37EY5f55YpAvM8rJ-e6Mwi1I3HF9Xuym2-ZlY8",
-      "gradle-verification=VV7U686RA4HKV4QKVJ4L85Q6V6CJ6",
-      "google-site-verification=A8e2zY9GYwx8D7x0aOz09Vl4gHfPmv86y_TbW1TUDqs",
-      "stripe-verification=271cb9609512aa1a36ff5693b0a5cd9f04d19e089e8abae29dde633abc19749d",
-      "google-site-verification=HEoQR0xvby-BYv7pNt06jkvTF44l6rvMnREUZSTyfYQ",
-      "atlassian-domain-verification=mvMbea0qZ4IoMr8/xjkRYgjiHikXBbF04PZnZYv1Nj9UgppCnagnNaSo4T8QnCnP",
-      "apple-domain-verification=KVJVb0VKHY0IkzDH",
-      "status-page-domain-verification=vxdvtv6jn2y9",
-      "paloaltonetworks-site-verification=4df1258d8366090409f33305a49c27e5e867aa6dfd8d8d936c60bdee3396ee04",
-      "docusign=1c606b88-26ef-48f9-8913-a4251a947532",
-      "lucidlink-verification=B2MS39YZ6H92VYF0X75CJHKRC4",
-      "wework-site-verification=pnT3RXj0097aqZvB",
       "reejig-platform-domain-verification-0dc5cd=a9i760YDrujxnHMEEoXwZP5bD",
-      "MS=ms85621737",
-      "yahoo-verification-key=YbxdxsyS96Uy5zQpwbZnLfjBY3tMlG2qWTSLHvVrsZ8=",
-      "ecostruxure-it-verification=5dd49b15-5fc0-4967-914f-3cc7b2fd6cdf",
-      "DirectFedAuthUrl=https://airbnb.okta.com/app/airbnb_pwcprodnewhiddensaml_1/exk223q4dm1BiHGe81d8/sso/saml",
-      "canva-site-verification=LTDCDSi1WalQaoEcq8B1WA",
+      "miro-verification=c5c6890aa37542fb59662ade09a0778c6e028b2f",
+      "adobe-idp-site-verification=e68ae64c-3a65-4439-b368-0042e72c4cc8",
+      "docusign=d56dee1c-0384-4ffa-8801-e6bea308af97",
+      "google-site-verification=HEoQR0xvby-BYv7pNt06jkvTF44l6rvMnREUZSTyfYQ",
+      "v=spf1 include:spf1.airbnb.com ip6:2c0f:fb50:4864::/56 ip6:2a00:1450:4864::/56 ip6:2800:3f0:4864::/56 ip6:2607:f8b0:4864::/56 ip6:2404:6800:4864::/56 ip6:2001:4860:4864::/56 ip4:98.77.0.0/16 ip4:87.253.232.0/21 ip4:76.223.176.0/20 ip4:76.223.128.0/19 -all",
+      "atlassian-domain-verification=mvMbea0qZ4IoMr8/xjkRYgjiHikXBbF04PZnZYv1Nj9UgppCnagnNaSo4T8QnCnP",
+      "webexdomainverification.725890277b499457e053ab06fc0a5ef4=b060825b-4db4-4ce3-a61e-debc56370fc0",
+      "segment-site-verification=ZkxkEuKJrGI9MrWGC0qw795Xkj9ZlcBq",
+      "apple-domain-verification=KVJVb0VKHY0IkzDH",
+      "anthropic-domain-verification-2s2h87=NaRxcN9zTtIb3insUyX7U264A",
+      "cisco-ci-domain-verification=eef9c0a839b89aed57cdd00866d163bb0660fec297c0c1e4b275baec96cfa10",
+      "lucidlink-verification=B2MS39YZ6H92VYF0X75CJHKRC4",
       "1password-site-verification=2UO5LR7CZBAKBDNJPUTRIFTUJM",
+      "openai-domain-verification=dv-g8FeEwzIIZCUjUpPuF8szG3a",
+      "google-site-verification=A8e2zY9GYwx8D7x0aOz09Vl4gHfPmv86y_TbW1TUDqs",
+      "DirectFedAuthUrl=https://airbnb.okta.com/app/airbnb_pwcprodnewhiddensaml_1/exk223q4dm1BiHGe81d8/sso/saml",
+      "facebook-domain-verification=t3zulila9jjnrfbyt6vjamhqdxz47f",
+      "dtm-domain-verification=pKWJVhJM8WfWtDBjyfKZjwxGurB9fiCf1TpvWO_Kvmw",
+      "status-page-domain-verification=tb81t2ndk8pb",
+      "yahoo-verification-key=YbxdxsyS96Uy5zQpwbZnLfjBY3tMlG2qWTSLHvVrsZ8=",
+      "rzp-site-verification=31fa3e1cd566e8d7347ed9bb16424c59",
+      "docusign=1c606b88-26ef-48f9-8913-a4251a947532",
+      "webexdomainverification.=162d362c-c218-48f0-8b53-0017116e6f29",
+      "status-page-domain-verification=vxdvtv6jn2y9",
       "google-site-verification=Dz--VdnW2R_4K45T0eM8i0vNpFlip_o10WidHL5a3cg",
+      "MS=ms85621737",
+      "bettercomp-verify=2b6685a8a6a942417057188531c867db5c85bc8aa25f038a77784e6f0f8bc84f",
+      "stripe-verification=271cb9609512aa1a36ff5693b0a5cd9f04d19e089e8abae29dde633abc19749d",
+      "datadome-domain-verify=W7kEoUrcETDB4afh6Dg5XcjzGWIxidID",
+      "gradle-verification=VV7U686RA4HKV4QKVJ4L85Q6V6CJ6",
       "google-site-verification=_e6Ayd8GN0S5dR116WkaM5ds5tx3ekRD5DC9-51pGrg",
-      "bettercomp-verify=2b6685a8a6a942417057188531c867db5c85bc8aa25f038a77784e6f0f8bc84f"
+      "wework-site-verification=pnT3RXj0097aqZvB",
+      "canva-site-verification=LTDCDSi1WalQaoEcq8B1WA",
+      "google-site-verification=EFtD_37EY5f55YpAvM8rJ-e6Mwi1I3HF9Xuym2-ZlY8",
+      "neat-pulse-domain-verification-Kkvm4PN=ab046095-265e-45ae-8816-c61097444bfd",
+      "ecostruxure-it-verification=5dd49b15-5fc0-4967-914f-3cc7b2fd6cdf",
+      "paloaltonetworks-site-verification=4df1258d8366090409f33305a49c27e5e867aa6dfd8d8d936c60bdee3396ee04",
+      "masv=MDSVaBxDxTKiIngeAbltVvdnlTkAhnci"
     ],
     "dmarc": [
       "v=DMARC1;p=reject;sp=reject;pct=100;ruf=mailto:dmarc.forensic@airbnb.com;rua=mailto:dmarc.aggregate@airbnb.com;aspf=r;adkim=r;fo=1;ri=3600"
@@ -341,7 +348,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     }
   },
   "ports": {
-    "ip": "166.117.189.176",
+    "ip": "166.117.27.62",
     "open": []
   },
   "https": {
@@ -434,11 +441,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     ]
   },
   "apex_txt": [
-    "webexdomainverification.=162d362c-c218-48f0-8b53-0017116e6f29",
-    "status-page-domain-verification=tb81t2ndk8pb",
-    "facebook-domain-verification=t3zulila9jjnrfbyt6vjamhqdxz47f",
-    "openai-domain-verification=dv-g8FeEwzIIZCUjUpPuF8szG3a",
-    "adobe-idp-site-verification=e68ae64c-3a65-4439-b368-0042e72c4cc8"
+    "reejig-platform-domain-verification-0dc5cd=a9i760YDrujxnHMEEoXwZP5bD",
+    "miro-verification=c5c6890aa37542fb59662ade09a0778c6e028b2f",
+    "adobe-idp-site-verification=e68ae64c-3a65-4439-b368-0042e72c4cc8",
+    "google-site-verification=HEoQR0xvby-BYv7pNt06jkvTF44l6rvMnREUZSTyfYQ",
+    "atlassian-domain-verification=mvMbea0qZ4IoMr8/xjkRYgjiHikXBbF04PZnZYv1Nj9UgppCna"
   ],
   "tls2": {
     "alpn": "",
@@ -519,8 +526,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "cipher_ver": "TLSv1.2",
     "root_status": 301
   },
-  "elapsed_s": 37.8,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301
+  },
+  "elapsed_s": 40.3,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -533,4 +543,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

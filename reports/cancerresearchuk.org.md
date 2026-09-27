@@ -7,8 +7,8 @@
 | Target | https://cancerresearchuk.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | cancerresearchuk.org |
-| Test date | 2026-09-27 00:12 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:12 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -132,7 +132,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=PHwtSX75UKqvpzyPHmk4bGBzczkPu71eNXBD-GyiKbw; apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU; facebook-domain-verification=4hzy2r2nmzkhsj084cd7fki46jeaa3
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=c1Vsqct8unmvZEnNTtoZZ_dDsq-qejygwotuVnfoupY; apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU; facebook-domain-verification=61rl1f9boyjhytks0jdex0hncnayfr
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -197,8 +197,8 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   "dns": {
     "a": [
       "18.132.167.245",
-      "18.171.47.200",
-      "18.133.42.18"
+      "18.133.42.18",
+      "18.171.47.200"
     ],
     "aaaa": [],
     "cname": null,
@@ -206,81 +206,81 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
       "cancerresearchuk-org.mail.protection.outlook.com (pref 5)"
     ],
     "ns": [
-      "ns-33.awsdns-04.com.",
-      "ns-885.awsdns-46.net.",
       "ns-1410.awsdns-48.org.",
-      "ns-1773.awsdns-29.co.uk."
+      "ns-1773.awsdns-29.co.uk.",
+      "ns-885.awsdns-46.net.",
+      "ns-33.awsdns-04.com."
     ],
     "caa": [],
     "spf": [
-      "bd66lyr72y3lq95qw2314t8vcy16lwps",
-      "6q77047g56cblw7j2h9j1bgxdfth47fl",
-      "google-site-verification=PHwtSX75UKqvpzyPHmk4bGBzczkPu71eNXBD-GyiKbw",
-      "v1n0kqhknmzc5fsg2zf7tsn4780hmj1m",
-      "f9w7nn10vpy421nnf3pqmfsgth5pq3hq",
-      "hpc5sj1r9xplb20nd3q43m1bzdhpb85j",
-      "45qbtsvh8vd17n794pf4cpj7z8zwk0tj",
-      "26m8th96q9myjm4zz46h7r7cvbwbwjh4",
-      "bv1by0fvhbpznqy9xqmzr6z10lghjjgg",
-      "1ly9mvl98241ksqyw929gldgyy46f27c",
       "g07kykmlvhp2d8vfzjxm1shy9n35w7nv",
-      "_e8bqk4zyvefuarzhyy6hu9bizyu1ny7",
-      "_6vt5j2zihy4gglxz8kvsmr9pq7h2a4c",
-      "6sqc01vxxxwzn49y5jd2p6wxdq5f7z3q",
-      "7g4q3fqrptyjf17dzs4js241j4v67c6t",
-      "apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU",
-      "_lvx2syhktdeoxcx6mo6b51u3h1usqwx",
-      "x54b24q04j1j22dz1mvbjqzv9r9pk876",
-      "facebook-domain-verification=4hzy2r2nmzkhsj084cd7fki46jeaa3",
-      "_ly5k70e1l8gd1shizgsvpgha4v9m2ut",
-      "wpv0g4gkpbw0kqrlm6jlrb2bxw3zd0v0",
-      "y468410l6rk4ybc5dnyrqnr1ycsmr58j",
       "khdfh0nr2q0wr7563tcm7b5pfq068q5y",
-      "vxqr9nqtmryh46zfq0jqwjx316764nsk",
-      "_qydnb71cn3lqycnc1mtenmuxez97jlp",
-      "_wlakz6emublsj5fvgjt8dl2i84ycrmq",
-      "0v1c9bt4vwkdmptx84wzz413s3xsc990",
-      "40z41kzn43jd310vq6v9k622x3v9fxkx",
-      "_i6zwxvcptwz9qmphgqpvbhyog72fmuo",
-      "zzhv3bsz0x6y1hglhy4wxp3pvz2rw432",
-      "m1rh31jnyk8f4zy25vlb01nmv62x0l9p",
-      "_exbcbqu4yx5x3py9lyawkwfuxanm7sj",
-      "d4tgqmcxcgtg2plddnyjvcqtpdyypf12",
-      "vnm8g3svr0c67s4xmgld8q209cc68364S",
-      "s50n3srkhkz08lqgjwt4zj6zrjsxnbn4",
-      "6b7bv6ky1d5gbp66fgqkqhcdj7n4z04l",
+      "zdcmc5v22rdy0s5tc80j5xwl1ygcbf6g",
+      "26m8th96q9myjm4zz46h7r7cvbwbwjh4",
+      "_e8bqk4zyvefuarzhyy6hu9bizyu1ny7",
       "google-site-verification=c1Vsqct8unmvZEnNTtoZZ_dDsq-qejygwotuVnfoupY",
+      "7msqnpj5xr4y5syw9g44m95dfl44hjgx",
+      "_exbcbqu4yx5x3py9lyawkwfuxanm7sj",
       "g1fh5zpwprcz6cn2rq5gblvsb7lwx2t7",
-      "_w8opp2p377zo21qi6gh2zwgfe2bmmpa",
-      "3rl4ld7tjl4sbpy967j2cr7y48vbxcxn",
-      "dr0t5jj72k4t61lk8ffs081fj6rghv6n",
-      "s4bfybvmkvmrjl1lnmbtl3khph6h0vvb",
-      "1tn2p2x86m2jvp6wjvh9n8kf197vtmmd",
-      "7d705306nddqnj1fppb3btq58hrlrjtx",
-      "bnslp7wjbc8v3n5wkdr8hxl5l8fxr2hl",
-      "x1whvwl6r9qqx6y8z1dnvk64lkbbzfqx",
-      "v=spf1 include:em9792.cancerresearchuk.org include:spf.protection.outlook.com include:amazonses.com -all",
+      "_lvx2syhktdeoxcx6mo6b51u3h1usqwx",
+      "40z41kzn43jd310vq6v9k622x3v9fxkx",
       "cglw6w22gnjt39h39kgr4wf62r05rt02",
+      "0v1c9bt4vwkdmptx84wzz413s3xsc990",
+      "mzm32j62qpf6tkkydk6p0ph763nnjhsp",
+      "hgyx98b9cc79ztr03qm7h7qlsgl7wlyr",
+      "apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU",
+      "_i6zwxvcptwz9qmphgqpvbhyog72fmuo",
+      "ww43j1bp5rmj9lgjwr0x73qbpl0mj8yf",
+      "y9ncngdcvrvk16m4gljshc7gvhhxh8lc",
+      "_6vt5j2zihy4gglxz8kvsmr9pq7h2a4c",
+      "bv1by0fvhbpznqy9xqmzr6z10lghjjgg",
+      "_w8opp2p377zo21qi6gh2zwgfe2bmmpa",
+      "facebook-domain-verification=61rl1f9boyjhytks0jdex0hncnayfr",
       "np13rn98h5lpgjbndhr5gn31363b8xy0",
       "apple-domain-verification=ZIfJE9Gth65P2EaS",
-      "nnp90zxqqzmkn93bwvhdl46dwvfp0v3y",
-      "wf7338jyn6pqbdzrjwlwtb841r6dh0hd",
-      "zdcmc5v22rdy0s5tc80j5xwl1ygcbf6g",
-      "mzm32j62qpf6tkkydk6p0ph763nnjhsp",
-      "24zprsdb1b3ync7ywmsypc3vvn70cb95",
-      "m1gfkdpv7rscd8mr64mw9wcxtsrxh0ds",
-      "fn1b7vvmlhfpmf35rchfpz383tm1bndy",
-      "7msqnpj5xr4y5syw9g44m95dfl44hjgx",
-      "rm_verify=b5ea71cdcf",
-      "facebook-domain-verification=61rl1f9boyjhytks0jdex0hncnayfr",
-      "vc6k1223ptdlchvpy3s18lq144xv1slj",
-      "MS=ms18612172",
-      "_gu3tif2ur9nnozx0ckdgutzqdo8p38j",
-      "ww43j1bp5rmj9lgjwr0x73qbpl0mj8yf",
       "5cfht3mshcf3trp03bh7jrkqcv6ddg69",
-      "hgyx98b9cc79ztr03qm7h7qlsgl7wlyr",
+      "facebook-domain-verification=4hzy2r2nmzkhsj084cd7fki46jeaa3",
+      "vxqr9nqtmryh46zfq0jqwjx316764nsk",
+      "_ly5k70e1l8gd1shizgsvpgha4v9m2ut",
+      "zzhv3bsz0x6y1hglhy4wxp3pvz2rw432",
+      "v1n0kqhknmzc5fsg2zf7tsn4780hmj1m",
+      "24zprsdb1b3ync7ywmsypc3vvn70cb95",
+      "s4bfybvmkvmrjl1lnmbtl3khph6h0vvb",
+      "m1gfkdpv7rscd8mr64mw9wcxtsrxh0ds",
+      "s50n3srkhkz08lqgjwt4zj6zrjsxnbn4",
+      "x54b24q04j1j22dz1mvbjqzv9r9pk876",
+      "f9w7nn10vpy421nnf3pqmfsgth5pq3hq",
+      "_gu3tif2ur9nnozx0ckdgutzqdo8p38j",
+      "dr0t5jj72k4t61lk8ffs081fj6rghv6n",
+      "MS=ms18612172",
+      "rm_verify=b5ea71cdcf",
+      "m1rh31jnyk8f4zy25vlb01nmv62x0l9p",
       "ss0bz7586fsg4xxdmsyjqt8jcgyg8zrx",
-      "y9ncngdcvrvk16m4gljshc7gvhhxh8lc"
+      "vnm8g3svr0c67s4xmgld8q209cc68364S",
+      "45qbtsvh8vd17n794pf4cpj7z8zwk0tj",
+      "7d705306nddqnj1fppb3btq58hrlrjtx",
+      "wf7338jyn6pqbdzrjwlwtb841r6dh0hd",
+      "d4tgqmcxcgtg2plddnyjvcqtpdyypf12",
+      "bnslp7wjbc8v3n5wkdr8hxl5l8fxr2hl",
+      "bd66lyr72y3lq95qw2314t8vcy16lwps",
+      "vc6k1223ptdlchvpy3s18lq144xv1slj",
+      "1ly9mvl98241ksqyw929gldgyy46f27c",
+      "y468410l6rk4ybc5dnyrqnr1ycsmr58j",
+      "google-site-verification=PHwtSX75UKqvpzyPHmk4bGBzczkPu71eNXBD-GyiKbw",
+      "hpc5sj1r9xplb20nd3q43m1bzdhpb85j",
+      "fn1b7vvmlhfpmf35rchfpz383tm1bndy",
+      "3rl4ld7tjl4sbpy967j2cr7y48vbxcxn",
+      "7g4q3fqrptyjf17dzs4js241j4v67c6t",
+      "v=spf1 include:em9792.cancerresearchuk.org include:spf.protection.outlook.com include:amazonses.com -all",
+      "nnp90zxqqzmkn93bwvhdl46dwvfp0v3y",
+      "6q77047g56cblw7j2h9j1bgxdfth47fl",
+      "_wlakz6emublsj5fvgjt8dl2i84ycrmq",
+      "wpv0g4gkpbw0kqrlm6jlrb2bxw3zd0v0",
+      "6sqc01vxxxwzn49y5jd2p6wxdq5f7z3q",
+      "1tn2p2x86m2jvp6wjvh9n8kf197vtmmd",
+      "x1whvwl6r9qqx6y8z1dnvk64lkbbzfqx",
+      "_qydnb71cn3lqycnc1mtenmuxez97jlp",
+      "6b7bv6ky1d5gbp66fgqkqhcdj7n4z04l"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:65fc433b5864b@ag.dmarcly.com; fo=1"
@@ -408,11 +408,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     ]
   },
   "apex_txt": [
-    "google-site-verification=PHwtSX75UKqvpzyPHmk4bGBzczkPu71eNXBD-GyiKbw",
-    "apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU",
-    "facebook-domain-verification=4hzy2r2nmzkhsj084cd7fki46jeaa3",
     "google-site-verification=c1Vsqct8unmvZEnNTtoZZ_dDsq-qejygwotuVnfoupY",
-    "apple-domain-verification=ZIfJE9Gth65P2EaS"
+    "apple-domain-verification=IGJmYB4ReQOvnh8C421oNRDVuu5D-eZofJf6Y97qPBU",
+    "facebook-domain-verification=61rl1f9boyjhytks0jdex0hncnayfr",
+    "apple-domain-verification=ZIfJE9Gth65P2EaS",
+    "facebook-domain-verification=4hzy2r2nmzkhsj084cd7fki46jeaa3"
   ],
   "tls2": {
     "alpn": "",
@@ -491,8 +491,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 37.0,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301
+  },
+  "elapsed_s": 39.9,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -505,4 +508,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

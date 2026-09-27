@@ -7,12 +7,12 @@
 | Target | https://lemonde.fr/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | lemonde.fr |
-| Test date | 2026-09-27 00:24 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:26 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
+Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -33,8 +33,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 15 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 17 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 18 | info | CT1 | 147 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
-| 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 18 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 19 | info | CT1 | 147 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
+| 20 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
 ## Detailed findings
 
@@ -128,7 +129,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A; google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k; openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k; _globalsign-domain-verification=yRdIt507tQIZyVRXF6VBvVbEIWhqpzJaxh8r1qdSUr; openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -149,13 +150,19 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - **Detail:** No CAA record found for lemonde.fr, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 18. [INFO] 147 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
+### 18. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on lemonde.fr identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 19. [INFO] 147 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: blog.chefsimon.lemonde.fr, checkout.lemonde.fr, dev.carnet.lemonde.fr, dev.cities.lemonde.fr, dev.debats-afrique.lemonde.fr, dev.festival.lemonde.fr, dev.webserver.carnet.lemonde.fr, docs.forecast.lemonde.fr, media.lemonde.fr, webmail.lemonde.fr
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
 
-### 19. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
+### 20. [LOW] Dangling subdomain(s) from certificate transparency no longer resolve (`CT2`)
 
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: blog.chefsimon.lemonde.fr; content may still be served via virtual-host fallback.
@@ -173,33 +180,33 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "aaaa": [],
     "cname": null,
     "mx": [
-      "aspmx.l.google.com (pref 1)",
-      "alt2.aspmx.l.google.com (pref 5)",
-      "alt3.aspmx.l.google.com (pref 10)",
+      "alt4.aspmx.l.google.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt4.aspmx.l.google.com (pref 10)"
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx.l.google.com (pref 1)",
+      "alt3.aspmx.l.google.com (pref 10)"
     ],
     "ns": [
       "ns-cloud-b4.googledomains.com.",
-      "ns-cloud-b2.googledomains.com.",
       "ns-cloud-b1.googledomains.com.",
+      "ns-cloud-b2.googledomains.com.",
       "ns-cloud-b3.googledomains.com."
     ],
     "caa": [],
     "spf": [
-      "00DWx000008KcED=1TBSb0000000Ak9",
-      "fastly-domain-delegation-x2kl6p87n3g5b6FDG-79324-2018-04-10",
-      "v=spf1 include:spf1.lemonde.fr include:spf2.lemonde.fr include:_spf.salesforce.com ip4:79.99.32.203 ip4:79.99.32.185 ip4:79.99.32.186 ip4:217.74.103.211 ip4:195.154.80.82 ip4:163.172.55.8 ip4:35.181.34.138 ip4:35.181.85.71 ip4:52.143.135.92 -all",
-      "00DAP00000MRjsP=1TBAP0000000CHJ",
-      "jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A",
-      "d7o5vwenp6",
-      "sendinblue-code:bfdbbdc264502c94bb90794d2a902e50",
       "google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k",
-      "mandrill_verify.2xFVS2iRdBArj1vR6iXqDw",
-      "recyclagerecylum=1fd014598415abe7ca04160fccf87442",
-      "openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h",
       "_globalsign-domain-verification=yRdIt507tQIZyVRXF6VBvVbEIWhqpzJaxh8r1qdSUr",
-      "00DAU00000LLlRQ=1TBAU0000000GJJ"
+      "openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h",
+      "jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A",
+      "recyclagerecylum=1fd014598415abe7ca04160fccf87442",
+      "00DWx000008KcED=1TBSb0000000Ak9",
+      "mandrill_verify.2xFVS2iRdBArj1vR6iXqDw",
+      "fastly-domain-delegation-x2kl6p87n3g5b6FDG-79324-2018-04-10",
+      "00DAU00000LLlRQ=1TBAU0000000GJJ",
+      "00DAP00000MRjsP=1TBAP0000000CHJ",
+      "sendinblue-code:bfdbbdc264502c94bb90794d2a902e50",
+      "v=spf1 include:spf1.lemonde.fr include:spf2.lemonde.fr include:_spf.salesforce.com ip4:79.99.32.203 ip4:79.99.32.185 ip4:79.99.32.186 ip4:217.74.103.211 ip4:195.154.80.82 ip4:163.172.55.8 ip4:35.181.34.138 ip4:35.181.85.71 ip4:52.143.135.92 -all",
+      "d7o5vwenp6"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; sp=quarantine; adkim=r; aspf=r; pct=100; rua=mailto:dmarc.report@lemonde.fr"
@@ -321,10 +328,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     ]
   },
   "apex_txt": [
-    "jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A",
     "google-site-verification=712IVumgXvK3v6WCyCJVLS6O96hThcw39o84JSN9m_k",
+    "_globalsign-domain-verification=yRdIt507tQIZyVRXF6VBvVbEIWhqpzJaxh8r1qdSUr",
     "openai-domain-verification=dv-nQ1ldfkkoDfrWmjKfXdqLG2h",
-    "_globalsign-domain-verification=yRdIt507tQIZyVRXF6VBvVbEIWhqpzJaxh8r1qdSUr"
+    "jamf-site-verification=zUEgWKIxDl9-X3pb0bIY7A"
   ],
   "tls2": {
     "alpn": "",
@@ -394,8 +401,14 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 38.2,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "cdn": [
+      "Fastly"
+    ]
+  },
+  "elapsed_s": 41.8,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -408,4 +421,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

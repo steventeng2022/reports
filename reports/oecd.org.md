@@ -7,8 +7,8 @@
 | Target | https://oecd.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | oecd.org |
-| Test date | 2026-09-27 00:27 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:28 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -27,12 +27,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 | 9 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 10 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 11 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 12 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
-| 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 15 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 17 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 12 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 13 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 14 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
+| 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 16 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 17 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
 | 18 | info | CT1 | 124 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 | 19 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
 
@@ -108,44 +108,44 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e; hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47; adobe-idp-site-verification=fe3732a56cceead6122113a39f9385a693c3367314cdad48789e
+- **Detail:** Apex TXT records with verification/token content: adobe-idp-site-verification=fe3732a56cceead6122113a39f9385a693c3367314cdad48789e; openai-domain-verification=dv-TmLkx83mPP4k3cYF7dEcKasX; hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 12. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
-
-- **CWE:** CWE-603
-- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
-- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
-
-### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 12. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but oecd.org is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 13. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 2 disallow path(s), e.g. /content/dam/oecd/, /adobe/dynamicmedia/deliver/
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 15. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
+### 14. [INFO] HTML document served with cacheable freshness headers (`CCH1`)
 
 - **CWE:** CWE-922
 - **Detail:** Response for https://oecd.org/ carries Cache-Control: max-age=300; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 15. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for oecd.org, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 17. [LOW] HSTS does not cover subdomains (`H21`)
+### 16. [LOW] HSTS does not cover subdomains (`H21`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security on oecd.org has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of oecd.org.
 - **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
+
+### 17. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on oecd.org identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
 
 ### 18. [INFO] 124 hostnames found via Certificate Transparency (crt.sh) (`CT1`)
 
@@ -166,10 +166,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
   "domain": "oecd.org",
   "dns": {
     "a": [
-      "151.101.195.10",
       "151.101.3.10",
-      "151.101.67.10",
-      "151.101.131.10"
+      "151.101.195.10",
+      "151.101.131.10",
+      "151.101.67.10"
     ],
     "aaaa": [],
     "cname": null,
@@ -177,29 +177,29 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "oecd-org.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns3-03.azure-dns.org.",
       "ns4-03.azure-dns.info.",
-      "ns2-03.azure-dns.net.",
-      "ns1-03.azure-dns.com."
+      "ns1-03.azure-dns.com.",
+      "ns3-03.azure-dns.org.",
+      "ns2-03.azure-dns.net."
     ],
     "caa": [],
     "spf": [
-      "cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e475c20aa08f68",
-      "hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47683048313635694334",
       "docusign=26a8c1aa-ac33-45f2-9a60-8d2cd96d4b3d",
-      "d122tnk0lmcb7fw4lzdcvqmw9jdf4qqb",
-      "_c4vs31pucag8knkqzie5i90hhnstnug",
       "adobe-idp-site-verification=fe3732a56cceead6122113a39f9385a693c3367314cdad48789e5cfbf77d5977",
-      "MS=ms12713444",
-      "3f6aa5c46d2a4da482b5cb56af96dec1",
-      "v=spf1 ip4:78.41.128.0/22 include:spf.protection.outlook.com -all",
-      "v/l2fKfgQ+sfAM7ZccgEU41dgW0s412pftzTh7XJzyim4AUo1Wi2WVai364FALz09lut6gJWcS8YLtAjbkatrA==",
-      "2b065714-2fc1-4d13-b11f-08fbc02c7626",
-      "google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k",
-      "docusign=4a7be657-e630-44fc-87ba-b68287ac2a3d",
+      "_c4vs31pucag8knkqzie5i90hhnstnug",
       "openai-domain-verification=dv-TmLkx83mPP4k3cYF7dEcKasX",
+      "hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47683048313635694334",
+      "2b065714-2fc1-4d13-b11f-08fbc02c7626",
+      "v=spf1 ip4:78.41.128.0/22 include:spf.protection.outlook.com -all",
       "google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68",
-      "apple-domain-verification=Z7TTmRtTMuoxrVa2"
+      "MS=ms12713444",
+      "apple-domain-verification=Z7TTmRtTMuoxrVa2",
+      "3f6aa5c46d2a4da482b5cb56af96dec1",
+      "docusign=4a7be657-e630-44fc-87ba-b68287ac2a3d",
+      "v/l2fKfgQ+sfAM7ZccgEU41dgW0s412pftzTh7XJzyim4AUo1Wi2WVai364FALz09lut6gJWcS8YLtAjbkatrA==",
+      "d122tnk0lmcb7fw4lzdcvqmw9jdf4qqb",
+      "google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k",
+      "cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e475c20aa08f68"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; pct=100; rua=mailto:mailincidentreport@oecd.org; ruf=mailto:mailincidentreport@oecd.org; fo=1;"
@@ -229,7 +229,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     }
   },
   "ports": {
-    "ip": "151.101.195.10",
+    "ip": "151.101.3.10",
     "open": []
   },
   "https": {
@@ -238,9 +238,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "title": ""
   },
   "mixed_content": [],
-  "cookies": [
-    {}
-  ],
+  "cookies": [],
   "cors": [
     {
       "origin": "https://evil-auditor.example",
@@ -314,11 +312,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     ]
   },
   "apex_txt": [
-    "cisco-ci-domain-verification=295dc971d1c6be2b5403477737c89eac7ec07601440a1e0855e",
-    "hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47",
     "adobe-idp-site-verification=fe3732a56cceead6122113a39f9385a693c3367314cdad48789e",
-    "google-site-verification=ywMTwu2FAsfR60NR80rZ3jMdv8Ku-rr1NVnMGvor75k",
-    "openai-domain-verification=dv-TmLkx83mPP4k3cYF7dEcKasX"
+    "openai-domain-verification=dv-TmLkx83mPP4k3cYF7dEcKasX",
+    "hpe-greenlake-domain-verification=4677486a4449536d6173586553475a59354f6761314d47",
+    "google-site-verification=SDEWojQdWXNif-TLtOo9erhxfQLpv29GSU6XhHK1r68",
+    "apple-domain-verification=Z7TTmRtTMuoxrVa2"
   ],
   "tls2": {
     "alpn": "",
@@ -343,7 +341,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
       "not_before": "20251016000000",
       "not_after": "20261116235959"
     },
-    "ocsp": "http-200"
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -379,8 +377,14 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 49.1,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "cdn": [
+      "Fastly"
+    ]
+  },
+  "elapsed_s": 48.7,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -393,4 +397,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 5, Info: 14)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

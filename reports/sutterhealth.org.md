@@ -7,8 +7,8 @@
 | Target | https://sutterhealth.org/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | sutterhealth.org |
-| Test date | 2026-09-27 00:32 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:35 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -130,7 +130,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 ### 15. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6; flexera-domain-verification-dcafjcaqzcrdbucx; jamf-site-verification=YEnMiAdegNX2xNXsyl81MA
+- **Detail:** Apex TXT records with verification/token content: airtable-verification=480dc28b5f136aeeb9c72e1ffecd2d94; twilio-domain-verification=f9445f3342fc1d16bc787547acc675e3; google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ## Evidence (raw response observations)
@@ -148,44 +148,44 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "sutterhealth-org.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns4-05.azure-dns.info.",
-      "ns1-05.azure-dns.com.",
       "ns3-05.azure-dns.org.",
-      "ns2-05.azure-dns.net."
+      "ns2-05.azure-dns.net.",
+      "ns1-05.azure-dns.com.",
+      "ns4-05.azure-dns.info."
     ],
     "caa": [
+      "0 issue \"amazonaws.com\"",
       "0 issue \"digicert.com\"",
       "0 issue \"letsencrypt.org\"",
-      "0 issue \"amazonaws.com\"",
       "0 issue \"sectigo.com\""
     ],
     "spf": [
-      "vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6",
-      "MS=ms47734453",
-      "flexera-domain-verification-dcafjcaqzcrdbucx",
-      "427263CA40526231DA0DD17A9899B7423D812E7AA717665DBE16B613DB02B34C",
-      "jamf-site-verification=YEnMiAdegNX2xNXsyl81MA",
-      "njH6RDHlABsQmJvITIaqix1L+/Y3ZLr1u/H0Lj/PqqvvNPv8oMwuwaxiZFRNkYdtifBqMGV7Rf7i9r9i/P7uzA==",
-      "openai-domain-verification=dv-sgDNw1gS2lSTsyf6bdj2f3fh",
-      "pardot266982=11b4fde586ddd3585348b584a83b7b24379df66ceea079251091c947935bb3a2",
-      "smartsheet-site-validation=KG4FnJLPbY4nNo-dVmeX_sNqnmYA11I-",
-      "tqsshcrdlqd6jz66rb59x85p3mp6xt5j",
-      "google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o",
       "_5jyz87it742obj4hxmhnp46i4byr8vw",
-      "intersight=2f9f41d547c44be2b28284231fe1c0d3387c68d963a53d504f18cfec349315cd",
-      "sprout-social-260c110f-d385-4d75-9e75-7d32e5c9e17e",
       "airtable-verification=480dc28b5f136aeeb9c72e1ffecd2d94",
+      "427263CA40526231DA0DD17A9899B7423D812E7AA717665DBE16B613DB02B34C",
       "A2A2AED6DE5DB1951512FE7F27A0FF20849F36FE5A2086EA578A8F8D618514D0",
-      "atlassian-domain-verification=k/4cB6WdjX8dp8sJrsQpUCv13/jkgZuZB472VFPxuN9TbANMRruC8a5QSriOWHHe",
       "_etnz4zr5xfdan0i6arxavk1gj5fzzpo",
-      "amazonses:+ouqWoubNLvOffFrO8GNnPJsJqC3k9zvq4fGmF+/JFc=",
-      "28DD0C4B37308B587E99CBDEE640AB744470C72767F36FB82E374F3E94D67B32",
-      "_shsq80a8ay3rc5vqi8figqyjpg9xo2h",
       "twilio-domain-verification=f9445f3342fc1d16bc787547acc675e3",
+      "google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o",
+      "tqsshcrdlqd6jz66rb59x85p3mp6xt5j",
+      "sprout-social-260c110f-d385-4d75-9e75-7d32e5c9e17e",
       "dtm-domain-verification=A5i70Rs02iuV7ZM7VBHmm1NXbUDdVVLR7G7sz9q5zR8",
-      "v=spf1 ip4:198.217.64.0/24 ip4:198.217.112.0/24 ip4:199.79.205.16/29 ip4:199.79.205.32/29 include:_spf1.sutterhealth.org include:_spf2.sutterhealth.org include:_spf3.sutterhealth.org include:_spf4.sutterhealth.org include:spf.protection.outlook.com -all",
+      "_shsq80a8ay3rc5vqi8figqyjpg9xo2h",
+      "flexera-domain-verification-dcafjcaqzcrdbucx",
+      "jamf-site-verification=YEnMiAdegNX2xNXsyl81MA",
+      "google-site-verification=1ut73vMWSdD7vAGFYE6rwNwgZp6sTlzHM4KE_iMO-Wg",
       "apple-domain-verification=6EmugeAdzqtGatZ7",
-      "google-site-verification=1ut73vMWSdD7vAGFYE6rwNwgZp6sTlzHM4KE_iMO-Wg"
+      "v=spf1 ip4:198.217.64.0/24 ip4:198.217.112.0/24 ip4:199.79.205.16/29 ip4:199.79.205.32/29 include:_spf1.sutterhealth.org include:_spf2.sutterhealth.org include:_spf3.sutterhealth.org include:_spf4.sutterhealth.org include:spf.protection.outlook.com -all",
+      "openai-domain-verification=dv-sgDNw1gS2lSTsyf6bdj2f3fh",
+      "smartsheet-site-validation=KG4FnJLPbY4nNo-dVmeX_sNqnmYA11I-",
+      "MS=ms47734453",
+      "amazonses:+ouqWoubNLvOffFrO8GNnPJsJqC3k9zvq4fGmF+/JFc=",
+      "intersight=2f9f41d547c44be2b28284231fe1c0d3387c68d963a53d504f18cfec349315cd",
+      "njH6RDHlABsQmJvITIaqix1L+/Y3ZLr1u/H0Lj/PqqvvNPv8oMwuwaxiZFRNkYdtifBqMGV7Rf7i9r9i/P7uzA==",
+      "pardot266982=11b4fde586ddd3585348b584a83b7b24379df66ceea079251091c947935bb3a2",
+      "atlassian-domain-verification=k/4cB6WdjX8dp8sJrsQpUCv13/jkgZuZB472VFPxuN9TbANMRruC8a5QSriOWHHe",
+      "vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6",
+      "28DD0C4B37308B587E99CBDEE640AB744470C72767F36FB82E374F3E94D67B32"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; rua=mailto:es8rh9mx@ag.dmarcian.com;"
@@ -268,11 +268,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "vmware-cloud-verification-03a26331-13b3-4a4f-8123-a34d1b5466e6",
-    "flexera-domain-verification-dcafjcaqzcrdbucx",
-    "jamf-site-verification=YEnMiAdegNX2xNXsyl81MA",
-    "openai-domain-verification=dv-sgDNw1gS2lSTsyf6bdj2f3fh",
-    "google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o"
+    "airtable-verification=480dc28b5f136aeeb9c72e1ffecd2d94",
+    "twilio-domain-verification=f9445f3342fc1d16bc787547acc675e3",
+    "google-site-verification=5suSPLWcnGo4WMF8P2HtDOX0AnzrBIfGv2JpJ89kM_o",
+    "dtm-domain-verification=A5i70Rs02iuV7ZM7VBHmm1NXbUDdVVLR7G7sz9q5zR8",
+    "flexera-domain-verification-dcafjcaqzcrdbucx"
   ],
   "tls2": {
     "alpn": "",
@@ -324,8 +324,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     "cipher_ver": "TLSv1.3",
     "root_status": 429
   },
-  "elapsed_s": 6.9,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 429
+  },
+  "elapsed_s": 7.3,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -338,4 +341,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

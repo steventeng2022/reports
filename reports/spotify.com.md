@@ -7,8 +7,8 @@
 | Target | https://spotify.com/ |
 | Bug bounty program | Spotify |
 | Listed scope domain | spotify.com |
-| Test date | 2026-09-27 00:32 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:34 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -29,15 +29,15 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 | 11 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 12 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 13 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 14 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
-| 15 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 18 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
-| 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 20 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
-| 21 | low | H21 | HSTS does not cover subdomains | CWE-319 |
-| 22 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 16 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
+| 17 | info | WK1 | App-association / digital-asset-links surface published | CWE-200 |
+| 18 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 19 | info | TLS19 | OCSP stapling not offered (cert has an OCSP URL) | CWE-298 |
+| 20 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 21 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 22 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
 
 ## Detailed findings
 
@@ -123,62 +123,62 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 ### 13. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=ehIHBRyAOKdOfUyw_ONXT0TMuUsdk1gDGSYfk8YhRgw; tiktok-developers-site-verification=pZNawVY3o5Ma80MRCC6Fref1NiLzuEVU; facebook-domain-verification=qyrvuca7h4s7wevhzbprtt3tdyyhf1
+- **Detail:** Apex TXT records with verification/token content: notion-domain-verification=AqUDuql68X5rQ1qLwho6huUjf4QteXZlyvTIKS1txnq; vmware-cloud-verification-dab4c35d-1819-4431-add3-d3c382ee32bc; openai-domain-verification=dv-VNYvLsJIttFvRz7ymxFgjrPC
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 14. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
-
-- **CWE:** CWE-603
-- **Detail:** OCSP check via http://ocsp.digicert.com -> http-200
-- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
-
-### 15. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but spotify.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 16. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 15 disallow path(s), e.g. /*/about-us/contact/contact-spotify-password/, /*/about-us/contact/contact-spotify-account/, /*/get-spotify/*, /*/xhr/*, /*/external/*
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
+### 16. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
 - **Detail:** 35.186.224.24 carries PTR 24.224.186.35.bc.googleusercontent.com. for spotify.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
-### 18. [INFO] App-association / digital-asset-links surface published (`WK1`)
+### 17. [INFO] App-association / digital-asset-links surface published (`WK1`)
 
 - **CWE:** CWE-200
 - **Detail:** Live JSON at /.well-known/assetlinks.json on spotify.com; a mobile app or web-bridge is tied to this domain and its association configuration is public.
 - **Recommendation:** Review the published association (URL teams, assets) for stale entries; watch for subdomain-takeover misuse.
 
-### 19. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 18. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for spotify.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 20. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
+### 19. [INFO] OCSP stapling not offered (cert has an OCSP URL) (`TLS19`)
 
 - **CWE:** CWE-298
 - **Detail:** The spotify.com certificate lists an AIA OCSP responder (http://ocsp.digicert.com) but no certificate_status extension was observed in a TLS 1.2 handshake; clients must query the CA themselves (or skip revocation checks).
 - **Recommendation:** Enable OCSP stapling (e.g. ssl_stapling) so revocation status is served without client->CA round-trips.
 
-### 21. [LOW] HSTS does not cover subdomains (`H21`)
+### 20. [LOW] HSTS does not cover subdomains (`H21`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security on spotify.com has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of spotify.com.
 - **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
 
-### 22. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+### 21. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
 
 - **CWE:** CWE-200
 - **Detail:** /sitemap.xml on spotify.com lists 10 <loc> URL(s) across 11 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 22. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of spotify.com carries alt-svc h3=":443"; ma=2592000,h3-29=":443"; ma=2592000, h3=":443"; ma=2592000; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
+- **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
 
 ## Evidence (raw response observations)
 
@@ -194,58 +194,58 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
     ],
     "cname": null,
     "mx": [
-      "aspmx5.googlemail.com (pref 10)",
-      "aspmx2.googlemail.com (pref 10)",
       "alt1.aspmx.l.google.com (pref 5)",
-      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx3.googlemail.com (pref 10)",
       "aspmx.l.google.com (pref 1)",
       "aspmx4.googlemail.com (pref 10)",
-      "aspmx3.googlemail.com (pref 10)"
+      "aspmx2.googlemail.com (pref 10)",
+      "alt2.aspmx.l.google.com (pref 5)",
+      "aspmx5.googlemail.com (pref 10)"
     ],
     "ns": [
-      "ns-cloud-a1.googledomains.com.",
-      "ns-cloud-a2.googledomains.com.",
-      "dns1.p07.nsone.net.",
       "ns-cloud-a3.googledomains.com.",
-      "ns-cloud-a4.googledomains.com."
+      "ns-cloud-a2.googledomains.com.",
+      "ns-cloud-a1.googledomains.com.",
+      "ns-cloud-a4.googledomains.com.",
+      "dns1.p07.nsone.net."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=ehIHBRyAOKdOfUyw_ONXT0TMuUsdk1gDGSYfk8YhRgw",
-      "tiktok-developers-site-verification=pZNawVY3o5Ma80MRCC6Fref1NiLzuEVU",
-      "facebook-domain-verification=qyrvuca7h4s7wevhzbprtt3tdyyhf1",
-      "zapier-domain-verification-challenge=db8a0b98-bb6a-4f84-a699-344dc23fef3b",
-      "atlassian-domain-verification=1My5WsxLluUY8uIjgbLs4MY3ySFp32k9aYNW2IR4ihM64k58CxpFnB5R9SEiJAnR",
-      "MS=ms38184034",
-      "jamf-site-verification=1kKxrm0glhWvrA0YiABH_w",
-      "cursor-domain-verification-985xgr=7ROYkkLIfunrK2GtW0spMGDNw",
-      "tiktok-developers-site-verification=98xFqMKsOJ51nNJpUCGPGbo7m17gtf7f",
-      "have-i-been-pwned-verification=33b7ae688099ee8cca63259b769a0ea8",
-      "cloudflare_dashboard_sso=19cd522a4fc20281209f03663d34ee76",
-      "loom-site-verification=3ee9ca8c2df34d08abbb7be5185bc768",
       "notion-domain-verification=AqUDuql68X5rQ1qLwho6huUjf4QteXZlyvTIKS1txnq",
-      "windsurf-verification=LRBAV_kH3G5aleY1GIc1jMUg_8iBpigIm2qYF00bRps=",
-      "yahoo-verification-key=bdudmGyddArwRiVafgItrfYq8nrhd5vzNZ7Ik/G0ILM=",
-      "apple-domain-verification=Dxae2sKJD2O5TKGK",
-      "onetrust-domain-verification=508849d40e2b4b8fba2b7eaf84f1bddc",
-      "anthropic-domain-verification-mqtmtz=BSac9xfxvigNt4Ralt2KPkt1V",
-      "docker-verification=82f3553a-fb50-4d4e-9607-8a8079ee354f",
-      "google-site-verification=0wmxUE7T2OWPhtwjco6oCyqqbYgtosjQdywAr4G4kU0",
-      "v=spf1 ip4:80.76.146.172 ip4:80.76.146.173 include:_spf.google.com include:servers.mcsv.net include:_spf.salesforce.com include:_spf.netigate.se include:21894833.spf06.hubspotemail.net ~all",
-      "openai-domain-verification=dv-VNYvLsJIttFvRz7ymxFgjrPC",
-      "parallels-domain-verification=7bb3a358f26f4e23a5077648266570c873182a57d6d44e47a55ef6cf72cdb470",
-      "wiz-domain-verification=370862886b04dfa626d54d2c4cc955174c6f3164a104a85d725ae5ece72ea3ef",
-      "liveramp-site-verification=IAXPTLlWofr4aaKtwVqirrHvOqUMiXnaMW8WMmuz1v0",
-      "google-site-verification=uD4f4k01lFWX3qwVbqnVaJg8atpKgAgc-_RYcyT3ofU",
-      "tiktok-developers-site-verification=ttGXJxgq1HQKquomgiljzFq53uoLHcUC",
-      "_anz60jg9dhixqlmcv20ntnooz9m0k8x",
       "vmware-cloud-verification-dab4c35d-1819-4431-add3-d3c382ee32bc",
-      "status-page-domain-verification=wq4jns7ydgbb",
-      "google-site-verification=buTP-BbGUoP8lPntqskvSbeS68M4PDoIFkiUtQEA5n8",
-      "google-site-verification=ESiNWockZgSgTPSsrsAdMX9afsj2-_8504nQ0qIHkDA",
+      "openai-domain-verification=dv-VNYvLsJIttFvRz7ymxFgjrPC",
       "atlassian-sending-domain-verification=d90f2e0c-fa57-43b6-910f-065cc4d6a0e3",
+      "MS=ms38184034",
+      "google-site-verification=ESiNWockZgSgTPSsrsAdMX9afsj2-_8504nQ0qIHkDA",
+      "loom-site-verification=3ee9ca8c2df34d08abbb7be5185bc768",
+      "atlassian-domain-verification=1My5WsxLluUY8uIjgbLs4MY3ySFp32k9aYNW2IR4ihM64k58CxpFnB5R9SEiJAnR",
+      "google-site-verification=buTP-BbGUoP8lPntqskvSbeS68M4PDoIFkiUtQEA5n8",
+      "google-site-verification=uD4f4k01lFWX3qwVbqnVaJg8atpKgAgc-_RYcyT3ofU",
+      "windsurf-verification=LRBAV_kH3G5aleY1GIc1jMUg_8iBpigIm2qYF00bRps=",
+      "v=spf1 ip4:80.76.146.172 ip4:80.76.146.173 include:_spf.google.com include:servers.mcsv.net include:_spf.salesforce.com include:_spf.netigate.se include:21894833.spf06.hubspotemail.net ~all",
+      "status-page-domain-verification=wq4jns7ydgbb",
+      "google-site-verification=ehIHBRyAOKdOfUyw_ONXT0TMuUsdk1gDGSYfk8YhRgw",
+      "zapier-domain-verification-challenge=db8a0b98-bb6a-4f84-a699-344dc23fef3b",
+      "jamf-site-verification=1kKxrm0glhWvrA0YiABH_w",
+      "tiktok-developers-site-verification=98xFqMKsOJ51nNJpUCGPGbo7m17gtf7f",
+      "tiktok-developers-site-verification=ttGXJxgq1HQKquomgiljzFq53uoLHcUC",
+      "facebook-domain-verification=wtgn9pdvjdhs21j9gz6knsnpkafvs5",
       "reachdesk-verification=v0DuUrKxORfyqxIOMkJm57GlQtvaAv0watqt7x7ylMN21LAHqR6dEhUpSxOp7DCh",
-      "facebook-domain-verification=wtgn9pdvjdhs21j9gz6knsnpkafvs5"
+      "wiz-domain-verification=370862886b04dfa626d54d2c4cc955174c6f3164a104a85d725ae5ece72ea3ef",
+      "cloudflare_dashboard_sso=19cd522a4fc20281209f03663d34ee76",
+      "have-i-been-pwned-verification=33b7ae688099ee8cca63259b769a0ea8",
+      "cursor-domain-verification-985xgr=7ROYkkLIfunrK2GtW0spMGDNw",
+      "google-site-verification=0wmxUE7T2OWPhtwjco6oCyqqbYgtosjQdywAr4G4kU0",
+      "parallels-domain-verification=7bb3a358f26f4e23a5077648266570c873182a57d6d44e47a55ef6cf72cdb470",
+      "yahoo-verification-key=bdudmGyddArwRiVafgItrfYq8nrhd5vzNZ7Ik/G0ILM=",
+      "facebook-domain-verification=qyrvuca7h4s7wevhzbprtt3tdyyhf1",
+      "apple-domain-verification=Dxae2sKJD2O5TKGK",
+      "tiktok-developers-site-verification=pZNawVY3o5Ma80MRCC6Fref1NiLzuEVU",
+      "docker-verification=82f3553a-fb50-4d4e-9607-8a8079ee354f",
+      "onetrust-domain-verification=508849d40e2b4b8fba2b7eaf84f1bddc",
+      "_anz60jg9dhixqlmcv20ntnooz9m0k8x",
+      "liveramp-site-verification=IAXPTLlWofr4aaKtwVqirrHvOqUMiXnaMW8WMmuz1v0",
+      "anthropic-domain-verification-mqtmtz=BSac9xfxvigNt4Ralt2KPkt1V"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=reject; pct=100; fo=1; rf=afrf; rua=mailto:6jxge2ly@ag.eu.dmarcian.com;"
@@ -328,11 +328,11 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=ehIHBRyAOKdOfUyw_ONXT0TMuUsdk1gDGSYfk8YhRgw",
-    "tiktok-developers-site-verification=pZNawVY3o5Ma80MRCC6Fref1NiLzuEVU",
-    "facebook-domain-verification=qyrvuca7h4s7wevhzbprtt3tdyyhf1",
-    "zapier-domain-verification-challenge=db8a0b98-bb6a-4f84-a699-344dc23fef3b",
-    "atlassian-domain-verification=1My5WsxLluUY8uIjgbLs4MY3ySFp32k9aYNW2IR4ihM64k58Cx"
+    "notion-domain-verification=AqUDuql68X5rQ1qLwho6huUjf4QteXZlyvTIKS1txnq",
+    "vmware-cloud-verification-dab4c35d-1819-4431-add3-d3c382ee32bc",
+    "openai-domain-verification=dv-VNYvLsJIttFvRz7ymxFgjrPC",
+    "atlassian-sending-domain-verification=d90f2e0c-fa57-43b6-910f-065cc4d6a0e3",
+    "google-site-verification=ESiNWockZgSgTPSsrsAdMX9afsj2-_8504nQ0qIHkDA"
   ],
   "tls2": {
     "alpn": "",
@@ -357,7 +357,7 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
       "not_before": "20260709000000",
       "not_after": "20270123235959"
     },
-    "ocsp": "http-200"
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -416,8 +416,12 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 14.0,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "alt_svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000, h3=\":443\"; ma=2592000"
+  },
+  "elapsed_s": 13.5,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -430,4 +434,5 @@ Total findings: **22** (High: 0, Medium: 0, Low: 3, Info: 19)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

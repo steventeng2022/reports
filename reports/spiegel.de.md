@@ -7,8 +7,8 @@
 | Target | https://spiegel.de/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | spiegel.de |
-| Test date | 2026-09-27 00:32 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:34 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -28,12 +28,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 10 | info | MAIL11 | No MTA-STS record (_mta-sts) - opportunistic TLS not enforced | CWE-223 |
 | 11 | info | MAIL13 | No TLS-RPT record (_smtp._tls) | CWE-223 |
 | 12 | info | DNS5 | Third-party verification tokens in apex TXT records | CWE-200 |
-| 13 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
-| 14 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 15 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
-| 16 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
-| 17 | low | H21 | HSTS does not cover subdomains | CWE-319 |
-| 18 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 13 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
+| 14 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
+| 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 16 | low | H21 | HSTS does not cover subdomains | CWE-319 |
+| 17 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
+| 18 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
 | 19 | info | CT1 | 129 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
@@ -47,7 +47,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 2. [INFO] HTTP upgrade advertised (Alt-Svc) (`TECH2`)
 
 - **CWE:** CWE-200
-- **Detail:** Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+- **Detail:** Alt-Svc: h3=":443"; ma=2592000
 - **Recommendation:** Verify the advertised protocol endpoints are configured.
 
 ### 3. [LOW] Missing CSP header (`H2`)
@@ -114,44 +114,44 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: jamf-site-verification=mDxSkZxQSP3_MF8_pHR9BA; anthropic-domain-verification-199cnz=roKzFqEYT6AZRSPy7A7lASgkj; atlassian-domain-verification=rnDZY6SZaJnSOpSEvPr0kzhgihiqUPn3g8W0pFQfopQhaMO4jk
+- **Detail:** Apex TXT records with verification/token content: jamf-site-verification=mDxSkZxQSP3_MF8_pHR9BA; google-site-verification=d2wrdnHq-bRRkqVOBRvGWuxjCYVnXIiaoOp6U79jKag; adobe-idp-site-verification=1ab58e56a7c5cfcf85df9cf0e34dc26505b7982a08fd338b7024
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
-### 13. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
-
-- **CWE:** CWE-603
-- **Detail:** OCSP check via http://status.geotrust.com -> http-200
-- **Recommendation:** Verify the OCSP responder is operational so clients can check revocation.
-
-### 14. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
+### 13. [INFO] HSTS present but domain not in the HSTS preload list (`HSTSP`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security is served but spiegel.de is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 15. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
+### 14. [INFO] robots.txt discloses disallowed paths (asset map) (`ROB1`)
 
 - **CWE:** CWE-200
 - **Detail:** robots.txt lists 109 disallow path(s), e.g. /*CR-Dokumentation.pdf$, /, /, /, /
 - **Recommendation:** Review disallowed paths; robots is not access control.
 
-### 16. [INFO] No CAA record (any CA may issue) (`DNS7`)
+### 15. [INFO] No CAA record (any CA may issue) (`DNS7`)
 
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for spiegel.de, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
-### 17. [LOW] HSTS does not cover subdomains (`H21`)
+### 16. [LOW] HSTS does not cover subdomains (`H21`)
 
 - **CWE:** CWE-319
 - **Detail:** Strict-Transport-Security on spiegel.de has max-age >= 1 year but no includeSubDomains, so HSTS is not applied to subdomains of spiegel.de.
 - **Recommendation:** Add includeSubDomains (each subdomain must then serve HSTS itself).
 
-### 18. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
+### 17. [INFO] sitemap.xml discloses an indexed URL inventory (`SIT1`)
 
 - **CWE:** CWE-200
 - **Detail:** /sitemap.xml on spiegel.de lists 4219 <loc> URL(s) across 4220 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
+
+### 18. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of spiegel.de carries alt-svc h3=":443"; ma=2592000,h3-29=":443"; ma=2592000; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
+- **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
 
 ### 19. [INFO] 129 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
@@ -175,25 +175,25 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     ],
     "ns": [
       "pns103.cloudns.net.",
-      "pns102.cloudns.net.",
       "pns104.cloudns.net.",
-      "pns101.cloudns.net."
+      "pns101.cloudns.net.",
+      "pns102.cloudns.net."
     ],
     "caa": [],
     "spf": [
       "jamf-site-verification=mDxSkZxQSP3_MF8_pHR9BA",
-      "anthropic-domain-verification-199cnz=roKzFqEYT6AZRSPy7A7lASgkj",
-      "v=spf1 ip4:18.196.136.27 ip4:185.45.16.170 ip4:185.45.16.70 include:spf.protection.outlook.com include:amazonses.com include:_spf.salesforce.com -all",
       "mgverify=ae2a244a3a76e9bcdbe6865e4b169acb67d1168d1ab6518bcfcc3eb11e394afc",
-      "01119681",
-      "MS=ms15909706",
-      "00DD0000000mZzl=1TBVl00000000Pp",
-      "atlassian-domain-verification=rnDZY6SZaJnSOpSEvPr0kzhgihiqUPn3g8W0pFQfopQhaMO4jkTWsvLmIj5TeGNB",
-      "adobe-idp-site-verification=1ab58e56a7c5cfcf85df9cf0e34dc26505b7982a08fd338b70244c5611b99242",
       "google-site-verification=d2wrdnHq-bRRkqVOBRvGWuxjCYVnXIiaoOp6U79jKag",
-      "atlassian-domain-verification=qkv0u2nj3emGh9UVqNl/2AOp/BxahFJ7m2Bbv8bUPlGhytfsEAB3Zyd8AvXOEHVW",
+      "MS=ms15909706",
+      "01119681",
+      "v=spf1 ip4:18.196.136.27 ip4:185.45.16.170 ip4:185.45.16.70 include:spf.protection.outlook.com include:amazonses.com include:_spf.salesforce.com -all",
+      "adobe-idp-site-verification=1ab58e56a7c5cfcf85df9cf0e34dc26505b7982a08fd338b70244c5611b99242",
+      "anthropic-domain-verification-199cnz=roKzFqEYT6AZRSPy7A7lASgkj",
+      "atlassian-domain-verification=rnDZY6SZaJnSOpSEvPr0kzhgihiqUPn3g8W0pFQfopQhaMO4jkTWsvLmIj5TeGNB",
+      "00DD0000000mZzl=1TBVl00000000Pp",
       "google-site-verification=MPW2epf3b4liwmBTYP8FJEH80rywYRbvVjEeZmcZX_0",
-      "apple-domain-verification=ABQrqpdvNdt43ZXd"
+      "apple-domain-verification=ABQrqpdvNdt43ZXd",
+      "atlassian-domain-verification=qkv0u2nj3emGh9UVqNl/2AOp/BxahFJ7m2Bbv8bUPlGhytfsEAB3Zyd8AvXOEHVW"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; rua=mailto:report.dmarc@spiegel.de; ruf=mailto:report.dmarc@spiegel.de; sp=reject; fo=1"
@@ -315,10 +315,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   },
   "apex_txt": [
     "jamf-site-verification=mDxSkZxQSP3_MF8_pHR9BA",
-    "anthropic-domain-verification-199cnz=roKzFqEYT6AZRSPy7A7lASgkj",
-    "atlassian-domain-verification=rnDZY6SZaJnSOpSEvPr0kzhgihiqUPn3g8W0pFQfopQhaMO4jk",
+    "google-site-verification=d2wrdnHq-bRRkqVOBRvGWuxjCYVnXIiaoOp6U79jKag",
     "adobe-idp-site-verification=1ab58e56a7c5cfcf85df9cf0e34dc26505b7982a08fd338b7024",
-    "google-site-verification=d2wrdnHq-bRRkqVOBRvGWuxjCYVnXIiaoOp6U79jKag"
+    "anthropic-domain-verification-199cnz=roKzFqEYT6AZRSPy7A7lASgkj",
+    "atlassian-domain-verification=rnDZY6SZaJnSOpSEvPr0kzhgihiqUPn3g8W0pFQfopQhaMO4jk"
   ],
   "tls2": {
     "alpn": "",
@@ -342,7 +342,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "not_before": "20251205000000",
       "not_after": "20261204235959"
     },
-    "ocsp": "http-200"
+    "ocsp": "explicit-status"
   },
   "http2": {
     "robots_disallow": [
@@ -395,8 +395,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 26.8,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "alt_svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+  },
+  "elapsed_s": 28.7,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -409,4 +413,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

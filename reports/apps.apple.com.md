@@ -7,8 +7,8 @@
 | Target | https://apps.apple.com/ |
 | Bug bounty program | Apple |
 | Listed scope domain | apps.apple.com |
-| Test date | 2026-09-27 00:10 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:10 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
@@ -26,15 +26,15 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
 | 8 | info | CK3 | Cookie without SameSite attribute | CWE-1275 |
 | 9 | info | OCSP2 | OCSP endpoint unreachable or returned an error | CWE-603 |
 | 10 | info | HSTSP | HSTS present but domain not in the HSTS preload list | CWE-319 |
-| 11 | info | CK5 | Cookie scoped to parent domain (.apple.com) | CWE-200 |
+| 11 | info | CK5 | Cookie scoped to parent domain (apple.com) | CWE-200 |
 | 12 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 13 | info | SEC2 | security.txt published without a contact address | CWE-1038 |
 | 14 | low | CSP1 | CSP present but still allows unsafe directives | CWE-1021 |
 | 15 | info | CSP2 | CSP reporting endpoint disclosed | CWE-200 |
 | 16 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
-| 17 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
-| 18 | info | ERR1 | Error-page technology fingerprint | CWE-200 |
-| 19 | info | SRV1 | Server header discloses a product version | CWE-200 |
+| 17 | info | SRV1 | Server header discloses a product version | CWE-200 |
+| 18 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 19 | info | WK4 | RFC 8615 change-password endpoint live | CWE-200 |
 | 20 | info | CT1 | 23 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
@@ -105,7 +105,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
 - **Detail:** Strict-Transport-Security is served but apps.apple.com is not listed in the HSTS preload list.
 - **Recommendation:** Submit the domain to the HSTS preload list (requires includeSubDomains + long max-age).
 
-### 11. [INFO] Cookie scoped to parent domain (.apple.com) (`CK5`)
+### 11. [INFO] Cookie scoped to parent domain (apple.com) (`CK5`)
 
 - **CWE:** CWE-200
 - **Detail:** Set-Cookie Domain attribute is broader than the request host apps.apple.com.
@@ -141,23 +141,23 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
 - **Detail:** Response for https://apps.apple.com/ carries Cache-Control: max-age=60; shared/shared-CDN caches may store the document (passive cache-poisoning surface).
 - **Recommendation:** Use no-store for personalized HTML or verify strict cache keys and Vary headers.
 
-### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
-
-- **CWE:** CWE-200
-- **Detail:** 23.209.216.33 carries PTR a23-209-216-33.deploy.static.akamaitechnologies.com. for apps.apple.com.
-- **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
-
-### 18. [INFO] Error-page technology fingerprint (`ERR1`)
-
-- **CWE:** CWE-200
-- **Detail:** GET /xkgiwbphxfw4rl.html -> 404; error page/headers match: Akamai.
-- **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
-
-### 19. [INFO] Server header discloses a product version (`SRV1`)
+### 17. [INFO] Server header discloses a product version (`SRV1`)
 
 - **CWE:** CWE-200
 - **Detail:** Server header on apps.apple.com is 'daiquiri/5' and includes a version number, which narrows targeted vulnerability research.
 - **Recommendation:** Serve a generic Server value without the version.
+
+### 18. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on apps.apple.com identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 19. [INFO] RFC 8615 change-password endpoint live (`WK4`)
+
+- **CWE:** CWE-200
+- **Detail:** /.well-known/change-password on apps.apple.com answers 200; a password-change service endpoint is advertised.
+- **Recommendation:** Confirm the endpoint is an intended user-facing service.
 
 ### 20. [INFO] 23 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
@@ -172,14 +172,17 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
   "domain": "apps.apple.com",
   "dns": {
     "a": [
-      "23.209.216.33"
+      "151.101.67.6",
+      "151.101.195.6",
+      "151.101.131.6",
+      "151.101.3.6"
     ],
     "aaaa": [
-      "2600:1417:76:a83::2a1",
-      "2600:1417:76:a87::2a1",
-      "2600:1417:76:a85::2a1",
       "2600:1417:76:a84::2a1",
-      "2600:1417:76:a82::2a1"
+      "2600:1417:76:a82::2a1",
+      "2600:1417:76:a83::2a1",
+      "2600:1417:76:a81::2a1",
+      "2600:1417:76:a86::2a1"
     ],
     "cname": "apps-cdn.itunes-apple.com.akadns.net.",
     "mx": [],
@@ -193,85 +196,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
     "status": "ok",
     "chain": "trusted",
     "version": "TLSv1.3",
-    "cipher": "TLS_AES_256_GCM_SHA384",
-    "subject": "businessCategory=Private Organization, jurisdictionCountryName=US, jurisdictionStateOrProvinceName=California, serialNumber=C0806592, countryName=US, stateOrProvinceName=California, localityName=Cupertino, organizationName=Apple Inc., commonName=itunes.apple.com",
+    "cipher": "TLS_AES_128_GCM_SHA256",
+    "subject": "businessCategory=Private Organization, jurisdictionCountryName=US, jurisdictionStateOrProvinceName=California, serialNumber=C0806592, countryName=US, stateOrProvinceName=California, localityName=Cupertino, organizationName=Apple Inc., commonName=apps.apple.com",
     "issuer": "countryName=US, organizationName=Apple Inc., commonName=Apple Public EV Server RSA CA 1 - G1",
-    "notBefore": "Jul  2 21:15:31 2026 GMT",
-    "notAfter": "Jan  7 19:46:05 2027 GMT",
+    "notBefore": "Sep  9 14:28:04 2026 GMT",
+    "notAfter": "Mar 16 19:40:50 2027 GMT",
     "san": [
-      "apps.mzstatic.com",
-      "api.music.apple.com",
-      "configuration.apple.com",
-      "radio-services.itunes.apple.com",
-      "api.videos.apple.com",
-      "is3-ssl.mzstatic.com",
-      "api.podcasts.apple.com",
-      "a5.mzstatic.com",
-      "api.edu.apple.com",
-      "accertify.mzstatic.com",
-      "api.itunes.apple.com",
-      "uts-api-siri.itunes.apple.com",
-      "is1-ssl.mzstatic.com",
-      "itc.mzstatic.com",
-      "bookkeeper.itunes.apple.com",
-      "itunes.apple.com",
-      "upp.itunes.apple.com",
-      "books.apple.com",
-      "a2.mzstatic.com",
-      "amp-api-edge.apps.apple.com",
-      "tv.apple.com",
-      "sb.music.apple.com",
-      "siri-search.itunes.apple.com",
-      "amp-api-edge.music.apple.com",
-      "s2.mzstatic.com",
-      "se.itunes.apple.com",
-      "sf-api-token-service.itunes.apple.com",
-      "sp.itunes.apple.com",
-      "is4-ssl.mzstatic.com",
-      "metrics.mzstatic.com",
-      "radio.itunes.apple.com",
-      "b5.mzstatic.com",
-      "init.itunes.apple.com",
-      "b3.mzstatic.com",
-      "radio-activity.itunes.apple.com",
-      "music.apple.com",
-      "b1.mzstatic.com",
       "podcasts.apple.com",
-      "api.apps.apple.com",
-      "amp-api-search-edge.apps.apple.com",
-      "is5-ssl.mzstatic.com",
-      "s1.mzstatic.com",
-      "api-edge.apps.apple.com",
-      "tf-feedback.itunes.apple.com",
-      "assets-mercury.mzstatic.com",
-      "is2-ssl.mzstatic.com",
-      "b2.mzstatic.com",
-      "b4.mzstatic.com",
-      "videos.apple.com",
-      "s.mzstatic.com",
-      "atve.tv.apple.com",
-      "s5.mzstatic.com",
-      "s3.mzstatic.com",
-      "sync.itunes.apple.com",
-      "a3.mzstatic.com",
-      "images-mercury.mzstatic.com",
-      "a4.mzstatic.com",
-      "api.books.apple.com",
-      "radio-quickplay.itunes.apple.com",
-      "edge.itunes.apple.com",
-      "pd.itunes.apple.com",
+      "music.apple.com",
+      "books.apple.com",
       "apps.apple.com",
-      "su.itunes.apple.com",
-      "search.itunes.apple.com",
-      "sb.tv.apple.com",
-      "s4.mzstatic.com",
-      "store.mzstatic.com",
-      "vocabulary.itunes.apple.com",
-      "a1.mzstatic.com",
-      "desktop-music-legacy.itunes.apple.com",
-      "se-edge.itunes.apple.com"
+      "tv.apple.com"
     ],
-    "days_left": 102,
+    "days_left": 170,
     "protocols": {
       "SSLv3": false,
       "TLS1.0": false,
@@ -281,7 +218,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
     }
   },
   "ports": {
-    "ip": "23.209.216.33",
+    "ip": "151.101.67.6",
     "open": []
   },
   "https": {
@@ -380,8 +317,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
   "cname_chain": [
     "apps-cdn.itunes-apple.com.akadns.net",
     "apps-cdn-row.itunes-apple.com.akadns.net",
-    "itunes.apple.com.edgekey.net",
-    "e673.dsce9.akamaiedge.net"
+    "h3.apis.apple.map.fastly.net"
   ],
   "tls2": {
     "alpn": "",
@@ -393,17 +329,17 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
       "key_bits": 2048,
       "curve": "1.2.840.113549.1.1.1",
       "aia_ocsp": "http://ocsp.apple.com/ocsp03-apevsrsa1g101",
-      "serial": 125828185203218845306095832156946095994,
+      "serial": 166310740416638811363971453751280729319,
       "cert_version": 3,
       "bc_ca": null,
       "bc_pathlen": null,
       "crl_urls": [
         "http://crl.apple.com/apevsrsa1g1.crl"
       ],
-      "subject_dn": "311d301b060355040f0c1450726976617465204f7267616e697a6174696f6e31133011060b2b0601040182373c02010313025553311b3019060b2b0601040182373c0201020c0a43616c69666f726e69613111300f060355040513084330383036353932310b30090603550406130255533113301106035504080c0a43616c69666f726e69613112301006035504070c09437570657274696e6f31133011060355040a0c0a4170706c6520496e632e3119301706035504030c106974756e65732e6170706c652e636f6d",
+      "subject_dn": "311d301b060355040f0c1450726976617465204f7267616e697a6174696f6e31133011060b2b0601040182373c02010313025553311b3019060b2b0601040182373c0201020c0a43616c69666f726e69613111300f060355040513084330383036353932310b30090603550406130255533113301106035504080c0a43616c69666f726e69613112301006035504070c09437570657274696e6f31133011060355040a0c0a4170706c6520496e632e3117301506035504030c0e617070732e6170706c652e636f6d",
       "issuer_dn": "310b300906035504061302555331133011060355040a130a4170706c6520496e632e312d302b060355040313244170706c65205075626c696320455620536572766572205253412043412031202d204731",
-      "not_before": "20260702211531",
-      "not_after": "20270107194605"
+      "not_before": "20260909142804",
+      "not_after": "20270316194050"
     },
     "ocsp": "http-403"
   },
@@ -417,10 +353,7 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
     ]
   },
   "x12": {
-    "status": 301,
-    "ptr": [
-      "a23-209-216-33.deploy.static.akamaitechnologies.com."
-    ]
+    "status": 301
   },
   "x13": {
     "root_status": 301,
@@ -444,12 +377,19 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
     }
   },
   "x15": {
-    "cipher": "TLS_AES_256_GCM_SHA384",
+    "cipher": "TLS_AES_128_GCM_SHA256",
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 19.9,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "cdn": [
+      "Fastly"
+    ],
+    "change_password": true
+  },
+  "elapsed_s": 31.7,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -462,4 +402,5 @@ Total findings: **20** (High: 0, Medium: 0, Low: 2, Info: 18)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://sophos.com/ |
 | Bug bounty program | Sophos |
 | Listed scope domain | sophos.com |
-| Test date | 2026-09-27 00:32 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:34 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
+Total findings: **17** (High: 0, Medium: 0, Low: 5, Info: 12)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -31,6 +31,8 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 | 13 | info | OCSP3 | No OCSP responder URL in certificate (no stapling possible) | CWE-603 |
 | 14 | info | PTR1 | Reverse-DNS (PTR) fingerprint of apex IP | CWE-200 |
 | 15 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 16 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 17 | info | H25 | server-timing response header exposed | CWE-200 |
 
 ## Detailed findings
 
@@ -110,7 +112,7 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: drift-domain-verification=49154060112759b8163b0b1d710afdc93baf7a1924c169c4f60769; vmware-cloud-verification-22c2ef74-7090-455a-a617-841a0f1f8d5b; openai-domain-verification=dv-RuJLc7us6Nv0F8LDFDKAc7uw
+- **Detail:** Apex TXT records with verification/token content: censys-domain-verification=aV3Fk9juFo3K4z0zZqvVOtRY-bgyef_YRSODYMZP82xN; miro-verification=27ceec0b31a177e34cf8d5befad732294ab707c1; sophos-domain-verification=3982f63bedcff7ccd4ef51ba54d39b4d14ae1c3a
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -130,6 +132,18 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 - **CWE:** CWE-295
 - **Detail:** No CAA record found for sophos.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
+
+### 16. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of sophos.com carries alt-svc h3=":443"; ma=93600; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
+- **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
+
+### 17. [INFO] server-timing response header exposed (`H25`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of sophos.com sends server-timing (cdn-cache; desc=HIT, edge; dur=1, ak_p; desc="1790472863858_399693716_455201642_); server/edge processing metrics are disclosed to any client.
+- **Recommendation:** Restrict server-timing to authenticated/debug contexts if the internals are sensitive.
 
 ## Evidence (raw response observations)
 
@@ -151,67 +165,67 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
       "mx-02-eu-west-1.prod.hydra.sophos.com (pref 10)"
     ],
     "ns": [
+      "a14-67.akam.net.",
+      "a18-64.akam.net.",
       "a1-100.akam.net.",
       "a11-66.akam.net.",
-      "a18-64.akam.net.",
-      "a14-67.akam.net.",
-      "a9-65.akam.net.",
-      "a10-65.akam.net."
+      "a10-65.akam.net.",
+      "a9-65.akam.net."
     ],
     "caa": [],
     "spf": [
-      "S0bXs6uppeiOgIHjU7++zYBrJdO/lto8F+lutV6shoM=",
-      "b1cab410c2cd4c1ba415ff35d5df0ee0",
-      "drift-domain-verification=49154060112759b8163b0b1d710afdc93baf7a1924c169c4f607693b96e00d1c",
-      "vmware-cloud-verification-22c2ef74-7090-455a-a617-841a0f1f8d5b",
-      "_f1a9kf91a5ksktt14czu26jj992sy70",
-      "openai-domain-verification=dv-RuJLc7us6Nv0F8LDFDKAc7uw",
-      "MS=ms20777252",
-      "docusign=d6465c58-dca5-44f2-a22d-62be8d4e1549",
-      "drift-domain-verification=20e3140bc5cd2b4cdef1fd9f3ed9298e9e0d31747509233b49da413a5bb43ee8",
-      "sophos-domain-verification=3982f63bedcff7ccd4ef51ba54d39b4d14ae1c3a",
       "v=spf1 redirect=sophos.com.spf.sophosdmarc.net",
+      "cloudhealth=30a3e90e-bf54-4e23-8a07-50d20631d7c7",
+      "censys-domain-verification=aV3Fk9juFo3K4z0zZqvVOtRY-bgyef_YRSODYMZP82xN",
+      "miro-verification=27ceec0b31a177e34cf8d5befad732294ab707c1",
+      "_f1a9kf91a5ksktt14czu26jj992sy70",
+      "_eb0avl1j1pmnomqfy7mg16rzj4xeofk",
       "8XnBlZqV5LM6S3WAyE4hFKvJhkx9pb52O9HKScFHlGw=",
-      "pendo-domain-verification=IkagvqgdNFxKHKUChcptstdLpx0",
-      "drift-domain-verification=244bf919d29f6e74ac0c52978f5cf28015cb7cb169f306a95a5ae1e08f3adc49",
-      "google-site-verification=Oc8MKdnVS9zYeJAG_DhDTp4iqXaBhuyBzgYGK6KzHnM",
+      "sophos-domain-verification=3982f63bedcff7ccd4ef51ba54d39b4d14ae1c3a",
+      "z08yq9grj0sygqd4vq7mhgqgbmd7r6xd",
+      "google-site-verification=UbmZT8AVCxe8ajII1pukSvwqRnCbDaTKJuXzpKACEao",
+      "anthropic-domain-verification-6yf00s=Ye5rWegH81UZ1ONGj1gmTft8O",
+      "1password-site-verification=QASQSNF7TZGBTLBYSIMHRRDUJY",
+      "drift-domain-verification=1190d60eec406b5bb9fbd5c0b991664c89480bf53d8586c85f47f6e1e92b4194",
+      "drift-domain-verification=20e3140bc5cd2b4cdef1fd9f3ed9298e9e0d31747509233b49da413a5bb43ee8",
+      "drift-domain-verification=cf8ef47a8b657b331173804c5189d62dfed3eefb03f4144a1b4cbf031a9b9fee",
+      "docusign=d6465c58-dca5-44f2-a22d-62be8d4e1549",
+      "apple-domain-verification=2Fy8bFXuDV8Wohcz",
+      "google-site-verification=A4IvAx3bsimlNuuaij7KW4YsWI65V04qIRDfyGsFSsI",
       "cvja4aPXWZ5uq4VxbmCcPmw12cJhfTX6F0ZWoGfRbBNmCUf1v6xHgleSWnXb65AJV3e6Ii5Qp8YnROIFYF+tAA==",
       "docker-verification=6e3a01d0-a79a-42dc-a6ef-8f5d1a5809e9",
-      "SlL66Pe6+pzghTfp9TqupnOauqPcYMVnc2pdpFE/1Bc=",
-      "openai-domain-verification=dv-ziQBcZtypxlBQk0anqgGA2kV",
+      "vmware-cloud-verification-22c2ef74-7090-455a-a617-841a0f1f8d5b",
       "_globalsign-domain-verification=C05a5k5-Y296XYz_gRGPOfxEkNeRr5aUxtPVZOA0LR",
-      "z08yq9grj0sygqd4vq7mhgqgbmd7r6xd",
-      "6z6zg07kf5yqbgx9k28zgx7pbzyk4tqv",
-      "drift-domain-verification=1190d60eec406b5bb9fbd5c0b991664c89480bf53d8586c85f47f6e1e92b4194",
-      "drift-domain-verification=cf8ef47a8b657b331173804c5189d62dfed3eefb03f4144a1b4cbf031a9b9fee",
-      "drift-domain-verification=ac53b25173908b0a36aeac6b99ddc02b6f606859e2b6b8878c0d8f3503666331",
-      "google-site-verification=A4IvAx3bsimlNuuaij7KW4YsWI65V04qIRDfyGsFSsI",
-      "drift-domain-verification=0146cf28092efe02d9b245bc034a49ee101121324faab085d4dc39bfe8a668e2",
-      "google-site-verification=UbmZT8AVCxe8ajII1pukSvwqRnCbDaTKJuXzpKACEao",
-      "NI+GrCnazEEzN/8Sthq9Gsv1drLkK3CMmK8mgLop7FBCj1MBeZrJJYenxQDp9/soSLBrjL8zmvQmfc4t3Ay0Kw==",
-      "nKB8VtcYTnBVg9VjdPOQFKkeyp6YxWb4YE8p3XZmDUE=",
-      "_eb0avl1j1pmnomqfy7mg16rzj4xeofk",
-      "drift-domain-verification=e20214575377f71bf2d2dfde7f181305a85e78cd4d298a62cc27511e00cfbf2d",
-      "successfactors-site-verification=Yzk4ZmFhMmY4ZjU4NTgxMWE4Yjk0MTliN2Y1MjBiZTkzZjVlN2E4N2VlYWU3NzEyM2FlYjdjM2Q5MGJkN2ZhNA==",
-      "/gbE6SOtgWszrbftvjWRktjABSHim5ssJdPQdJiUFLo=",
-      "censys-domain-verification=aV3Fk9juFo3K4z0zZqvVOtRY-bgyef_YRSODYMZP82xN",
-      "drift-domain-verification=19e95e7c5f04ec70ad60395ef64d1d5f0fd975f23bd3d60cb9b8fa25882318b9",
       "sz0tpkq215zbcjsnrghfx0p3ksctty81",
-      "yqSChZpEwgPNHna2bdAZhr6ASFb82MxruOD00tp0NEc=",
+      "drift-domain-verification=e20214575377f71bf2d2dfde7f181305a85e78cd4d298a62cc27511e00cfbf2d",
+      "drift-domain-verification=19e95e7c5f04ec70ad60395ef64d1d5f0fd975f23bd3d60cb9b8fa25882318b9",
+      "6z6zg07kf5yqbgx9k28zgx7pbzyk4tqv",
+      "drift-domain-verification=ac53b25173908b0a36aeac6b99ddc02b6f606859e2b6b8878c0d8f3503666331",
       "smartsheet-site-validation=zMtI30Z_7BcFJrKZw2iBeQtMCrTV-V76",
-      "1password-site-verification=QASQSNF7TZGBTLBYSIMHRRDUJY",
-      "cursor-domain-verification-hrtcqr=rmEeK8UvFTDWoWCbPe4W48MjS",
-      "atlassian-sending-domain-verification=b1c8568f-2e3b-4c13-bbad-b0875980471a",
-      "drift-domain-verification=33ee4934494487d5fd3103d23e43be36abe49fd4e594c3da6da4df4cd6d75a04",
-      "aline-domain-verification-1j2324=omzScvZJaszchZh413GWALRdg",
-      "anthropic-domain-verification-6yf00s=Ye5rWegH81UZ1ONGj1gmTft8O",
-      "06x71m1wfychwzb068j6rw0vgt96pp8m",
-      "apple-domain-verification=2Fy8bFXuDV8Wohcz",
-      "atlassian-domain-verification=yGw28l7QRDvcaSLmkM/aMTlngetgzc7rNRrMFeA/iwxi6AoGLUVF9lfC9ZJXwcPw",
+      "google-site-verification=Oc8MKdnVS9zYeJAG_DhDTp4iqXaBhuyBzgYGK6KzHnM",
+      "drift-domain-verification=244bf919d29f6e74ac0c52978f5cf28015cb7cb169f306a95a5ae1e08f3adc49",
       "drift-domain-verification=fc2b61befbd0e7d1ea38a099c21522e6c485b69c00e2ffa3cf08971046f19ae3",
-      "miro-verification=27ceec0b31a177e34cf8d5befad732294ab707c1",
-      "cloudhealth=30a3e90e-bf54-4e23-8a07-50d20631d7c7",
-      "_cbc-idp-site-verification-b51e45=363de791496d5b55ec143df32f41673e0017799ceee75317498ca36d9c1253f3"
+      "atlassian-sending-domain-verification=b1c8568f-2e3b-4c13-bbad-b0875980471a",
+      "openai-domain-verification=dv-RuJLc7us6Nv0F8LDFDKAc7uw",
+      "nKB8VtcYTnBVg9VjdPOQFKkeyp6YxWb4YE8p3XZmDUE=",
+      "openai-domain-verification=dv-ziQBcZtypxlBQk0anqgGA2kV",
+      "SlL66Pe6+pzghTfp9TqupnOauqPcYMVnc2pdpFE/1Bc=",
+      "successfactors-site-verification=Yzk4ZmFhMmY4ZjU4NTgxMWE4Yjk0MTliN2Y1MjBiZTkzZjVlN2E4N2VlYWU3NzEyM2FlYjdjM2Q5MGJkN2ZhNA==",
+      "pendo-domain-verification=IkagvqgdNFxKHKUChcptstdLpx0",
+      "S0bXs6uppeiOgIHjU7++zYBrJdO/lto8F+lutV6shoM=",
+      "drift-domain-verification=49154060112759b8163b0b1d710afdc93baf7a1924c169c4f607693b96e00d1c",
+      "NI+GrCnazEEzN/8Sthq9Gsv1drLkK3CMmK8mgLop7FBCj1MBeZrJJYenxQDp9/soSLBrjL8zmvQmfc4t3Ay0Kw==",
+      "b1cab410c2cd4c1ba415ff35d5df0ee0",
+      "aline-domain-verification-1j2324=omzScvZJaszchZh413GWALRdg",
+      "drift-domain-verification=33ee4934494487d5fd3103d23e43be36abe49fd4e594c3da6da4df4cd6d75a04",
+      "atlassian-domain-verification=yGw28l7QRDvcaSLmkM/aMTlngetgzc7rNRrMFeA/iwxi6AoGLUVF9lfC9ZJXwcPw",
+      "MS=ms20777252",
+      "cursor-domain-verification-hrtcqr=rmEeK8UvFTDWoWCbPe4W48MjS",
+      "/gbE6SOtgWszrbftvjWRktjABSHim5ssJdPQdJiUFLo=",
+      "yqSChZpEwgPNHna2bdAZhr6ASFb82MxruOD00tp0NEc=",
+      "_cbc-idp-site-verification-b51e45=363de791496d5b55ec143df32f41673e0017799ceee75317498ca36d9c1253f3",
+      "06x71m1wfychwzb068j6rw0vgt96pp8m",
+      "drift-domain-verification=0146cf28092efe02d9b245bc034a49ee101121324faab085d4dc39bfe8a668e2"
     ],
     "dmarc": [
       "v=DMARC1; p=quarantine; pct=100; fo=0:s; rua=mailto:a.z2zesduo@reports.sophosdmarc.net,mailto:dmarc_rua@sophos.com; ruf=mailto:dmarc_ruf@sophos.com"
@@ -320,11 +334,11 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "drift-domain-verification=49154060112759b8163b0b1d710afdc93baf7a1924c169c4f60769",
-    "vmware-cloud-verification-22c2ef74-7090-455a-a617-841a0f1f8d5b",
-    "openai-domain-verification=dv-RuJLc7us6Nv0F8LDFDKAc7uw",
-    "drift-domain-verification=20e3140bc5cd2b4cdef1fd9f3ed9298e9e0d31747509233b49da41",
-    "sophos-domain-verification=3982f63bedcff7ccd4ef51ba54d39b4d14ae1c3a"
+    "censys-domain-verification=aV3Fk9juFo3K4z0zZqvVOtRY-bgyef_YRSODYMZP82xN",
+    "miro-verification=27ceec0b31a177e34cf8d5befad732294ab707c1",
+    "sophos-domain-verification=3982f63bedcff7ccd4ef51ba54d39b4d14ae1c3a",
+    "google-site-verification=UbmZT8AVCxe8ajII1pukSvwqRnCbDaTKJuXzpKACEao",
+    "anthropic-domain-verification-6yf00s=Ye5rWegH81UZ1ONGj1gmTft8O"
   ],
   "tls2": {
     "alpn": "",
@@ -382,8 +396,13 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 6.7,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "alt_svc": "h3=\":443\"; ma=93600",
+    "server_timing": "cdn-cache; desc=HIT, edge; dur=1, ak_p; desc=\"1790472863858_399693716_455201642_57_1389_3_9_-\";dur=1"
+  },
+  "elapsed_s": 6.9,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -396,4 +415,5 @@ Total findings: **15** (High: 0, Medium: 0, Low: 5, Info: 10)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

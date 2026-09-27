@@ -7,12 +7,12 @@
 | Target | https://trello.com/ |
 | Bug bounty program | Trello |
 | Listed scope domain | trello.com |
-| Test date | 2026-09-27 00:33 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:36 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
+Total findings: **27** (High: 0, Medium: 0, Low: 5, Info: 22)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,6 +39,10 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 | 21 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
 | 22 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 | 23 | info | HTML11 | Document references many third-party domains | CWE-200 |
+| 24 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 25 | info | H25 | server-timing response header exposed | CWE-200 |
+| 26 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 27 | info | WK4 | RFC 8615 change-password endpoint live | CWE-200 |
 
 ## Detailed findings
 
@@ -117,7 +121,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 12. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=j10V2FxDCOpk-ZtvXbt0csUYbGo4uttk0VIeNN3pMwQ; facebook-domain-verification=5g7n6qixu6oqonzuw4igcyn2fd52yi; google-site-verification=m3SBLzut__3UbFT85xIcXyZs4CsOKfX6MrdByMh6xSM
+- **Detail:** Apex TXT records with verification/token content: google-site-verification=L1Pv1rpciXhbLcwV1z84F6fdeNpGMIDd4nrgAzCQncc; google-site-verification=XiTuMrGYNDAcJ3h6FgJn-qK1wWhcRCTrwK7ihP4lgzQ; mailru-verification: 26cd15930108c82c
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 13. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -147,7 +151,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 ### 17. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 54.192.248.39 carries PTR server-54-192-248-39.tpe53.r.cloudfront.net. for trello.com.
+- **Detail:** 54.192.248.6 carries PTR server-54-192-248-6.tpe53.r.cloudfront.net. for trello.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 18. [INFO] App-association / digital-asset-links surface published (`WK1`)
@@ -186,6 +190,30 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - **Detail:** Root document of trello.com references 5 distinct third-party registrable domains (e.g. orangelogic.com, ctfassets.net, atlassian.com, atl-paas.net, techvalidate.com); each is a supply-chain/trust dependency of the page.
 - **Recommendation:** Review third-party integrations and pin critical ones (SRI/subresource policies).
 
+### 24. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of trello.com carries alt-svc h3=":443"; ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
+- **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
+
+### 25. [INFO] server-timing response header exposed (`H25`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of trello.com sends server-timing (cdn-cache-hit,cdn-pop;desc="TPE53-P3",cdn-rid;desc="3TdPZ1rh7h28Twmx9-dl4YZQ-Fmt); server/edge processing metrics are disclosed to any client.
+- **Recommendation:** Restrict server-timing to authenticated/debug contexts if the internals are sensitive.
+
+### 26. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on trello.com identify the edge as CloudFront / Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 27. [INFO] RFC 8615 change-password endpoint live (`WK4`)
+
+- **CWE:** CWE-200
+- **Detail:** /.well-known/change-password on trello.com answers 200; a password-change service endpoint is advertised.
+- **Recommendation:** Confirm the endpoint is an intended user-facing service.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -193,39 +221,39 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   "domain": "trello.com",
   "dns": {
     "a": [
-      "54.192.248.39",
-      "54.192.248.49",
       "54.192.248.6",
-      "54.192.248.64"
+      "54.192.248.49",
+      "54.192.248.64",
+      "54.192.248.39"
     ],
     "aaaa": [],
     "cname": null,
     "mx": [
-      "mxb-001d9801.gslb.pphosted.com (pref 10)",
-      "mxa-001d9801.gslb.pphosted.com (pref 10)"
+      "mxa-001d9801.gslb.pphosted.com (pref 10)",
+      "mxb-001d9801.gslb.pphosted.com (pref 10)"
     ],
     "ns": [
-      "ns-722.awsdns-26.net.",
-      "ns-2013.awsdns-59.co.uk.",
+      "ns-402.awsdns-50.com.",
       "ns-1442.awsdns-52.org.",
-      "ns-402.awsdns-50.com."
+      "ns-2013.awsdns-59.co.uk.",
+      "ns-722.awsdns-26.net."
     ],
     "caa": [],
     "spf": [
-      "google-site-verification=j10V2FxDCOpk-ZtvXbt0csUYbGo4uttk0VIeNN3pMwQ",
-      "facebook-domain-verification=5g7n6qixu6oqonzuw4igcyn2fd52yi",
-      "google-site-verification=m3SBLzut__3UbFT85xIcXyZs4CsOKfX6MrdByMh6xSM",
-      "mailru-verification: 26cd15930108c82c",
-      "google-site-verification=XiTuMrGYNDAcJ3h6FgJn-qK1wWhcRCTrwK7ihP4lgzQ",
-      "slack-domain-verification=IQyaWt1Bt2nVwCvOsgj2ObAap344ynM5bV6C8zlZ",
-      "google-site-verification=lFRc2QYcvrD1x-JP-sbqyEHEVFTzLiYr_s5TMwqDPGE",
-      "google-site-verification=rSOg_zfvrFkmPwI-Yg4oLj8SNdFQnPCeo9a0GtDf_y4",
-      "google-site-verification=klLlb7yZqSKsDzIEQ_Ck9G8vJZrZUYSl7G6SYm5ugaU",
       "google-site-verification=L1Pv1rpciXhbLcwV1z84F6fdeNpGMIDd4nrgAzCQncc",
-      "google-site-verification=dk_f7jMXJqZs_HAQ5Qvd1LMExtsW6rL0_3vK6wMWxyM",
+      "google-site-verification=XiTuMrGYNDAcJ3h6FgJn-qK1wWhcRCTrwK7ihP4lgzQ",
+      "mailru-verification: 26cd15930108c82c",
+      "google-site-verification=j10V2FxDCOpk-ZtvXbt0csUYbGo4uttk0VIeNN3pMwQ",
       "google-site-verification=UqQbR3bkx0DW0mTjn4zpy-pFaTOtklFFLgVJPLpWBfg",
+      "google-site-verification=klLlb7yZqSKsDzIEQ_Ck9G8vJZrZUYSl7G6SYm5ugaU",
+      "google-site-verification=rSOg_zfvrFkmPwI-Yg4oLj8SNdFQnPCeo9a0GtDf_y4",
       "atlassian-domain-verification=ZRphniOpyvhHV76mRmxnLkHJVrKnbeOIxmhbxb8PF6AarX0FypthxYB/r5XpVC2E",
-      "v=spf1 include:_spf.google.com include:_spf.salesforce.com include:spemail.trello.com include:cust-spf.exacttarget.com include:amazonses.com -all"
+      "slack-domain-verification=IQyaWt1Bt2nVwCvOsgj2ObAap344ynM5bV6C8zlZ",
+      "google-site-verification=dk_f7jMXJqZs_HAQ5Qvd1LMExtsW6rL0_3vK6wMWxyM",
+      "google-site-verification=m3SBLzut__3UbFT85xIcXyZs4CsOKfX6MrdByMh6xSM",
+      "google-site-verification=lFRc2QYcvrD1x-JP-sbqyEHEVFTzLiYr_s5TMwqDPGE",
+      "v=spf1 include:_spf.google.com include:_spf.salesforce.com include:spemail.trello.com include:cust-spf.exacttarget.com include:amazonses.com -all",
+      "facebook-domain-verification=5g7n6qixu6oqonzuw4igcyn2fd52yi"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; sp=quarantine; adkim=r; aspf=r; fo=1; pct=100; rua=mailto:dmarc_rua@emaildefense.proofpoint.com,mailto:dmarc-rua@abuse.atlassian.com; ruf=mailto:dmarc_ruf@emaildefense.proofpoint.com,mailto:dmarc-ruf@abuse.atlassian.com;"
@@ -307,7 +335,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     }
   },
   "ports": {
-    "ip": "54.192.248.39",
+    "ip": "54.192.248.6",
     "open": []
   },
   "https": {
@@ -362,11 +390,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=j10V2FxDCOpk-ZtvXbt0csUYbGo4uttk0VIeNN3pMwQ",
-    "facebook-domain-verification=5g7n6qixu6oqonzuw4igcyn2fd52yi",
-    "google-site-verification=m3SBLzut__3UbFT85xIcXyZs4CsOKfX6MrdByMh6xSM",
+    "google-site-verification=L1Pv1rpciXhbLcwV1z84F6fdeNpGMIDd4nrgAzCQncc",
+    "google-site-verification=XiTuMrGYNDAcJ3h6FgJn-qK1wWhcRCTrwK7ihP4lgzQ",
     "mailru-verification: 26cd15930108c82c",
-    "google-site-verification=XiTuMrGYNDAcJ3h6FgJn-qK1wWhcRCTrwK7ihP4lgzQ"
+    "google-site-verification=j10V2FxDCOpk-ZtvXbt0csUYbGo4uttk0VIeNN3pMwQ",
+    "google-site-verification=UqQbR3bkx0DW0mTjn4zpy-pFaTOtklFFLgVJPLpWBfg"
   ],
   "tls2": {
     "alpn": "",
@@ -414,7 +442,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
   "x12": {
     "status": 200,
     "ptr": [
-      "server-54-192-248-39.tpe53.r.cloudfront.net."
+      "server-54-192-248-6.tpe53.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -446,8 +474,18 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
     "cipher_ver": "TLSv1.3",
     "root_status": 200
   },
-  "elapsed_s": 11.1,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 200,
+    "alt_svc": "h3=\":443\"; ma=86400",
+    "server_timing": "cdn-cache-hit,cdn-pop;desc=\"TPE53-P3\",cdn-rid;desc=\"3TdPZ1rh7h28Twmx9-dl4YZQ-Fmt5KlPLvpEvqrumgMy4r4P9AAo8g==\",cdn-hit-la",
+    "cdn": [
+      "CloudFront",
+      "Fastly"
+    ],
+    "change_password": true
+  },
+  "elapsed_s": 12.7,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -460,4 +498,5 @@ Total findings: **23** (High: 0, Medium: 0, Low: 5, Info: 18)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

@@ -7,12 +7,12 @@
 | Target | https://cell.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | cell.com |
-| Test date | 2026-09-27 00:12 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:12 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 3, Info: 18)
+Total findings: **24** (High: 0, Medium: 0, Low: 3, Info: 21)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,7 +36,10 @@ Total findings: **21** (High: 0, Medium: 0, Low: 3, Info: 18)
 | 18 | info | HTML1 | Security policy set via <meta http-equiv> | CWE-1021 |
 | 19 | info | SEC1 | security.txt published with a contact address | CWE-1038 |
 | 20 | info | HTML8 | Inline scripts without nonce/hash under a CSP | CWE-1021 |
-| 21 | info | CT1 | 14 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 21 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 22 | info | H25 | server-timing response header exposed | CWE-200 |
+| 23 | info | HTML14 | Public root document marked noindex | CWE-200 |
+| 24 | info | CT1 | 14 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -49,13 +52,13 @@ Total findings: **21** (High: 0, Medium: 0, Low: 3, Info: 18)
 ### 2. [INFO] Alternate web service (port 8080) reachable (`PRT8080`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 162.159.140.114:8080 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.66.0.112:8080 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 3. [INFO] Alternate web service (port 8443) reachable (`PRT8443`)
 
 - **CWE:** CWE-200
-- **Detail:** TCP connect to 162.159.140.114:8443 succeeded (state-only check, no payload sent).
+- **Detail:** TCP connect to 172.66.0.112:8443 succeeded (state-only check, no payload sent).
 - **Recommendation:** If the service is not required publicly, close the port or restrict by network.
 
 ### 4. [INFO] Technology fingerprint (`TECH1`)
@@ -105,7 +108,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 3, Info: 18)
 ### 11. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-ssq6py=6YMLbUb5ERHhYY7Heuk7JKNHt; onetrust-domain-verification=509af418dcce43c5a6330cd2128ee529; adobe-idp-site-verification=fd4fae74b683e6e22ef9b491871ae9f0faf7856b8a8588d267e2
+- **Detail:** Apex TXT records with verification/token content: anthropic-domain-verification-ssq6py=6YMLbUb5ERHhYY7Heuk7JKNHt; onetrust-domain-verification=509af418dcce43c5a6330cd2128ee529; miro-verification=edd5a54fc20add96505c5c718975977b28f370a9
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 12. [INFO] No OCSP responder URL in certificate (no stapling possible) (`OCSP3`)
@@ -135,7 +138,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 3, Info: 18)
 ### 16. [INFO] Error-page technology fingerprint (`ERR1`)
 
 - **CWE:** CWE-200
-- **Detail:** GET /xk20eccv1iluyr.html -> 403; error page/headers match: Cloudflare.
+- **Detail:** GET /xk8y5ysyk6dksg.html -> 403; error page/headers match: Cloudflare.
 - **Recommendation:** Trim error-page banners/headers so stack details are not disclosed on error responses.
 
 ### 17. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -162,7 +165,25 @@ Total findings: **21** (High: 0, Medium: 0, Low: 3, Info: 18)
 - **Detail:** Root document of cell.com sends a CSP but contains 1 inline script(s) with no nonce- or hash-attribute, so the policy must rely on 'unsafe-inline'.
 - **Recommendation:** Use per-script nonces/hashes and drop 'unsafe-inline'.
 
-### 21. [INFO] 14 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 21. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of cell.com carries alt-svc h3=":443"; ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
+- **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
+
+### 22. [INFO] server-timing response header exposed (`H25`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of cell.com sends server-timing (chlray;desc="a416a4e1084149fa"); server/edge processing metrics are disclosed to any client.
+- **Recommendation:** Restrict server-timing to authenticated/debug contexts if the internals are sensitive.
+
+### 23. [INFO] Public root document marked noindex (`HTML14`)
+
+- **CWE:** CWE-200
+- **Detail:** The root document of cell.com is marked noindex (meta robots or X-Robots-Tag); a public homepage that is not indexable is a posture anomaly worth reviewing.
+- **Recommendation:** Confirm the noindex directive is intentional.
+
+### 24. [INFO] 14 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: staging.www.cell.com
@@ -175,8 +196,8 @@ Total findings: **21** (High: 0, Medium: 0, Low: 3, Info: 18)
   "domain": "cell.com",
   "dns": {
     "a": [
-      "162.159.140.114",
-      "172.66.0.112"
+      "172.66.0.112",
+      "162.159.140.114"
     ],
     "aaaa": [],
     "cname": null,
@@ -190,17 +211,17 @@ Total findings: **21** (High: 0, Medium: 0, Low: 3, Info: 18)
     ],
     "caa": [],
     "spf": [
+      "ZOOM_verify_W4AuTEx9ROGD4kK_ePkcBA",
       "anthropic-domain-verification-ssq6py=6YMLbUb5ERHhYY7Heuk7JKNHt",
+      "NNaG7DvrFpIe+hqV6axdB2BDDbaBT5OUuQ8dl5fRyvYVFnuNb39lU9OREInFizJw5B3FZ91RQjKgRLOa+7BJXA==",
       "onetrust-domain-verification=509af418dcce43c5a6330cd2128ee529",
+      "miro-verification=edd5a54fc20add96505c5c718975977b28f370a9",
+      "pendo-domain-verification=f1e205fa-06f4-4a13-a73a-3e0f82e7f104",
       "adobe-idp-site-verification=fd4fae74b683e6e22ef9b491871ae9f0faf7856b8a8588d267e24565628d2dbd",
       "onetrust-domain-verification=703cad9baa55456ab0ed05c40cd00445",
+      "MS=ms13784580",
       "v=spf1 include:spf.protection.outlook.com include:519224.spf06.hubspotemail.net ip4:202.54.185.101 ip4:210.18.134.82 ip4:202.54.183.83 ip4:203.129.255.210 ip4:122.187.94.54 ip4:115.110.117.138 ip4:103.130.89.242 ip4:47.247.140.234 ip4:47.247.140.230",
       " include:rnmk.com -all",
-      "pendo-domain-verification=f1e205fa-06f4-4a13-a73a-3e0f82e7f104",
-      "ZOOM_verify_W4AuTEx9ROGD4kK_ePkcBA",
-      "MS=ms13784580",
-      "miro-verification=edd5a54fc20add96505c5c718975977b28f370a9",
-      "NNaG7DvrFpIe+hqV6axdB2BDDbaBT5OUuQ8dl5fRyvYVFnuNb39lU9OREInFizJw5B3FZ91RQjKgRLOa+7BJXA==",
       "atlassian-domain-verification=2ckcJUmjEfh8TAauQPrWb9eLXpM1UyNHPk+6SmzC3X0tqBzJKZFYmm9rbKXfVm0v"
     ],
     "dmarc": [
@@ -230,7 +251,7 @@ Total findings: **21** (High: 0, Medium: 0, Low: 3, Info: 18)
     }
   },
   "ports": {
-    "ip": "162.159.140.114",
+    "ip": "172.66.0.112",
     "open": [
       8080,
       8443
@@ -309,9 +330,9 @@ Total findings: **21** (High: 0, Medium: 0, Low: 3, Info: 18)
   "apex_txt": [
     "anthropic-domain-verification-ssq6py=6YMLbUb5ERHhYY7Heuk7JKNHt",
     "onetrust-domain-verification=509af418dcce43c5a6330cd2128ee529",
-    "adobe-idp-site-verification=fd4fae74b683e6e22ef9b491871ae9f0faf7856b8a8588d267e2",
-    "onetrust-domain-verification=703cad9baa55456ab0ed05c40cd00445",
-    "pendo-domain-verification=f1e205fa-06f4-4a13-a73a-3e0f82e7f104"
+    "miro-verification=edd5a54fc20add96505c5c718975977b28f370a9",
+    "pendo-domain-verification=f1e205fa-06f4-4a13-a73a-3e0f82e7f104",
+    "adobe-idp-site-verification=fd4fae74b683e6e22ef9b491871ae9f0faf7856b8a8588d267e2"
   ],
   "tls2": {
     "alpn": "",
@@ -382,8 +403,14 @@ Total findings: **21** (High: 0, Medium: 0, Low: 3, Info: 18)
     "cipher_ver": "TLSv1.3",
     "root_status": 403
   },
-  "elapsed_s": 8.1,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 403,
+    "alt_svc": "h3=\":443\"; ma=86400",
+    "server_timing": "chlray;desc=\"a416a4e1084149fa\"",
+    "noindex": true
+  },
+  "elapsed_s": 10.0,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -396,4 +423,5 @@ Total findings: **21** (High: 0, Medium: 0, Low: 3, Info: 18)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

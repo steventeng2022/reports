@@ -7,12 +7,12 @@
 | Target | https://popularmechanics.com/ |
 | Bug bounty program | [top-websites gist (no active program match)]() |
 | Listed scope domain | popularmechanics.com |
-| Test date | 2026-09-27 00:29 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:31 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
+Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,9 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 | 17 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 18 | info | CCH1 | HTML document served with cacheable freshness headers | CWE-922 |
 | 19 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
+| 20 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 21 | info | H25 | server-timing response header exposed | CWE-200 |
+| 22 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
 
 ## Detailed findings
 
@@ -128,7 +131,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 ### 14. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: google-site-verification=98saqo61zkfl_yfZaXKLgLkazlZwpUcMCkqCFEO-O18; facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9; tollbit-domain-verification=ece496246caa370d7f007485c8f75bd2fddff24339ca004233b2
+- **Detail:** Apex TXT records with verification/token content: tollbit-domain-verification=ece496246caa370d7f007485c8f75bd2fddff24339ca004233b2; facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9; _globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 15. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -161,6 +164,24 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - **Detail:** No CAA record found for popularmechanics.com, so any public CA can issue a certificate for the zone.
 - **Recommendation:** Publish a CAA record (issue; <CA>) to constrain which CAs may issue for the domain.
 
+### 20. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of popularmechanics.com carries alt-svc h3=":443";ma=86400,h3-29=":443";ma=86400,h3-27=":443";ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
+- **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
+
+### 21. [INFO] server-timing response header exposed (`H25`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of popularmechanics.com sends server-timing (time-start-msec;dur=1790472708096,time-elapsed;dur=0,fastly-pop;desc=NRT,hit-sta); server/edge processing metrics are disclosed to any client.
+- **Recommendation:** Restrict server-timing to authenticated/debug contexts if the internals are sensitive.
+
+### 22. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on popularmechanics.com identify the edge as Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
 ## Evidence (raw response observations)
 
 ```json
@@ -168,10 +189,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
   "domain": "popularmechanics.com",
   "dns": {
     "a": [
-      "151.101.64.155",
+      "151.101.128.155",
       "151.101.0.155",
-      "151.101.192.155",
-      "151.101.128.155"
+      "151.101.64.155",
+      "151.101.192.155"
     ],
     "aaaa": [],
     "cname": null,
@@ -179,26 +200,26 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
       "popularmechanics-com.mail.protection.outlook.com (pref 10)"
     ],
     "ns": [
-      "ns-1955.awsdns-52.co.uk.",
-      "ns-790.awsdns-34.net.",
       "ns-1122.awsdns-12.org.",
-      "ns-181.awsdns-22.com."
+      "ns-181.awsdns-22.com.",
+      "ns-1955.awsdns-52.co.uk.",
+      "ns-790.awsdns-34.net."
     ],
     "caa": [],
     "spf": [
-      "fastly-domain-delegation-tHoPyhjKot-363395-2021-04-28",
-      "google-site-verification=98saqo61zkfl_yfZaXKLgLkazlZwpUcMCkqCFEO-O18",
-      "facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9",
       "tollbit-domain-verification=ece496246caa370d7f007485c8f75bd2fddff24339ca004233b2740cc82bada5",
-      "google-site-verification=twOgjzEass2e5I7cd-1TQlMR9dhhBOBVnI-e2P7hSvs",
+      "facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9",
       "BSI91896679786",
       "v=spf1 include:aspmx.sailthru.com include:spf.protection.outlook.com ip4:63.240.19.128/25 ip4:12.182.88.0/25 ip4:12.130.33.128/25 ip4:24.103.50.168/29 ip4:205.220.176.159 ip4:205.220.164.154 ~all",
-      "MS=ms37465013",
       "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
+      "google-site-verification=98saqo61zkfl_yfZaXKLgLkazlZwpUcMCkqCFEO-O18",
+      "MS=ms37465013",
+      "9991472f6clc7g866tmn1tbhspnwxcdl",
+      "google-site-verification=twOgjzEass2e5I7cd-1TQlMR9dhhBOBVnI-e2P7hSvs",
       "fastly-domain-delegation-LJIHG7If6u5dy45rhtfjyGUKHk-00839260-20260924",
-      "google-site-verification=wcwFYNVQ_gHEG0lRSSOEkrXtuYQ5zNIXFTodmJivqgw",
       "yahoo-verification-key=5xONH6yORwG/7kfa3pYWXykyZGH78hWvc/P+MqxMxhI=",
-      "9991472f6clc7g866tmn1tbhspnwxcdl"
+      "fastly-domain-delegation-tHoPyhjKot-363395-2021-04-28",
+      "google-site-verification=wcwFYNVQ_gHEG0lRSSOEkrXtuYQ5zNIXFTodmJivqgw"
     ],
     "dmarc": [
       "v=DMARC1; p=reject; rua=mailto:dmarc_agg@vali.email"
@@ -374,7 +395,7 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     }
   },
   "ports": {
-    "ip": "151.101.64.155",
+    "ip": "151.101.128.155",
     "open": []
   },
   "https": {
@@ -426,11 +447,11 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "status": "ct-pending"
   },
   "apex_txt": [
-    "google-site-verification=98saqo61zkfl_yfZaXKLgLkazlZwpUcMCkqCFEO-O18",
-    "facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9",
     "tollbit-domain-verification=ece496246caa370d7f007485c8f75bd2fddff24339ca004233b2",
-    "google-site-verification=twOgjzEass2e5I7cd-1TQlMR9dhhBOBVnI-e2P7hSvs",
-    "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3"
+    "facebook-domain-verification=i25ihj6b5eze1xweou34v7znz6k5v9",
+    "_globalsign-domain-verification=2wRqY6IrIINLY7B8Qcp-qur9HsiRTO04g4gwsMmFy3",
+    "google-site-verification=98saqo61zkfl_yfZaXKLgLkazlZwpUcMCkqCFEO-O18",
+    "google-site-verification=twOgjzEass2e5I7cd-1TQlMR9dhhBOBVnI-e2P7hSvs"
   ],
   "tls2": {
     "alpn": "",
@@ -503,8 +524,16 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
     "cipher_ver": "TLSv1.3",
     "root_status": 301
   },
-  "elapsed_s": 20.1,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 301,
+    "alt_svc": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400",
+    "server_timing": "time-start-msec;dur=1790472708096,time-elapsed;dur=0,fastly-pop;desc=NRT,hit-state;desc=HIT-SYNTH",
+    "cdn": [
+      "Fastly"
+    ]
+  },
+  "elapsed_s": 23.2,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -517,4 +546,5 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.

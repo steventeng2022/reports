@@ -7,12 +7,12 @@
 | Target | https://digitaltrends.com/ |
 | Bug bounty program | top-websites gist (no active program match) |
 | Listed scope domain | digitaltrends.com |
-| Test date | 2026-09-27 00:15 UTC |
-| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication). No injection, no fuzzing, no forms, no auth, no state changes. |
+| Test date | 2026-09-27 01:16 UTC |
+| Method | Non-aggressive: passive recon (DNS records incl. wildcard/CNAME-chain detection, DNSSEC, SPF/DMARC/MTA-STS/TLS-RPT mail-policy analysis, certificate-transparency subdomains) + read-only active checks (HTTP(S) headers, cookie flags incl. HttpOnly, CORS with Origin header, GET-only open-redirect/redirect-loop/Host-header-reflection probes, GET-only sensitive-path checks, robots.txt asset map, TCP-connect port state, TLS protocol/cipher/certificate DER analysis incl. OCSP revocation status and SNI fallback, certificate validity-window checks, HSTS preload-list membership, CSP directive analysis, cacheable-document header analysis, compound Secure+SameSite cookie gaps, single-nameserver risk, PTR reverse-record fingerprint, cookie-flag surface (SameSite-without-Secure, long session lifetimes, framework-attributable cookies), cross-domain redirect handoff, plain-HTTP cookie surface, app-association well-known endpoints, error-page fingerprinting, CAA absence, multi-issuer CT footprint, OCSP-stapling observation, certificate hygiene from existing DER (short serial, self-signed leaf, CA:TRUE, X.509 v1/v2, CRL distribution-point reachability), HSTS subdomain coverage, deprecated X-Frame-Options ALLOW-FROM, Referrer-Policy unsafe-url, Server version disclosure, public-suffix cookie Domain, low-entropy session tokens, meta-tag security policies, SRI-less third-party scripts, third-party iframes, security.txt contact, sitemap inventory, observed-handshake hygiene (RFC 8996 deprecated TLS 1.0/1.1, RC4/3DES weak-primitive ciphers, static-RSA key exchange without forward secrecy), root-document surface (meta-generator disclosure, forms without anti-CSRF token, plain-HTTP form actions, insecure http:// references, CSP inline-script posture, cross-host canonical URLs, plaintext e-mail addresses, third-party domain inventory), HTTP/1.0 response versions, OIDC discovery publication, edge/protocol-advertisement surface (alt-svc QUIC advertisement, non-standard alt-svc port, server-timing exposure, CDN/edge header fingerprint), root-document network surface (preconnect/dns-prefetch third-party declarations, cross-origin base-href, noindex root posture), certificate posture from existing handshake evidence (TLS 1.2-only ceiling, SHA-1 leaf signature, weak leaf key), JWKS publication, RFC 8615 change-password endpoint). No injection, no fuzzing, no forms, no auth, no state changes. |
 
 ## Summary
 
-Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
+Total findings: **26** (High: 0, Medium: 0, Low: 4, Info: 22)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,7 +39,9 @@ Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
 | 21 | info | DNS7 | No CAA record (any CA may issue) | CWE-295 |
 | 22 | info | HTML2 | Third-party <script> loaded without Subresource Integrity | CWE-345 |
 | 23 | info | SIT1 | sitemap.xml discloses an indexed URL inventory | CWE-200 |
-| 24 | info | CT1 | 23 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 24 | info | H23 | Edge advertises HTTP/3 (QUIC) via alt-svc | CWE-200 |
+| 25 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
+| 26 | info | CT1 | 23 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 
 ## Detailed findings
 
@@ -153,7 +155,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
 ### 17. [INFO] Third-party verification tokens in apex TXT records (`DNS5`)
 
 - **CWE:** CWE-200
-- **Detail:** Apex TXT records with verification/token content: atlassian-domain-verification=fJAmOfQYHw3K7C1fuKa4yAi1JiFeMy47sg81/YoPzdpRty8zLV; facebook-domain-verification=o9gokha6nwug1sltr4wj9wtcks2ro4; tollbit-domain-verification=834a1886734f6bddd5015deaacc39c6e682c78b4e60db097b72d
+- **Detail:** Apex TXT records with verification/token content: tollbit-domain-verification=834a1886734f6bddd5015deaacc39c6e682c78b4e60db097b72d; apple-domain-verification=ixKwVGxwE9TXeZ3F; google-site-verification=DGgmOFBDVC5ksJtU4Q5hyh9CvOXOdkNApwFou-IFOVo
 - **Recommendation:** Review published verification records; they confirm domain ownership to third parties.
 
 ### 18. [INFO] OCSP endpoint unreachable or returned an error (`OCSP2`)
@@ -171,7 +173,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
 ### 20. [INFO] Reverse-DNS (PTR) fingerprint of apex IP (`PTR1`)
 
 - **CWE:** CWE-200
-- **Detail:** 3.169.55.55 carries PTR server-3-169-55-55.tpe54.r.cloudfront.net. for digitaltrends.com.
+- **Detail:** 3.169.55.39 carries PTR server-3-169-55-39.tpe54.r.cloudfront.net. for digitaltrends.com.
 - **Recommendation:** PTR labels can leak hosting/asset naming; review for internal-hostname exposure.
 
 ### 21. [INFO] No CAA record (any CA may issue) (`DNS7`)
@@ -192,7 +194,19 @@ Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
 - **Detail:** /sitemap.xml on digitaltrends.com lists 294 <loc> URL(s) across 295 sitemap-index entr(ies); the public URL inventory helps passive reconnaissance.
 - **Recommendation:** Review the sitemap for stale/unintended URLs; keep it minimal.
 
-### 24. [INFO] 23 hostnames found via Certificate Transparency (certspotter) (`CT1`)
+### 24. [INFO] Edge advertises HTTP/3 (QUIC) via alt-svc (`H23`)
+
+- **CWE:** CWE-200
+- **Detail:** The root response of digitaltrends.com carries alt-svc h3=":443"; ma=86400; QUIC/HTTP3 is enabled at the edge (protocol + port inventory).
+- **Recommendation:** Confirm the QUIC port/endpoint is intended and monitored.
+
+### 25. [INFO] Edge/CDN layer identified from response headers (`H26`)
+
+- **CWE:** CWE-200
+- **Detail:** Response headers on digitaltrends.com identify the edge as CloudFront / Fastly; the CDN tier (caching, WAF, protocol handling) is part of the attack surface and should be inventoried.
+- **Recommendation:** Keep the CDN tier in the asset inventory and verify its security policy (WAF/cache) is reviewed.
+
+### 26. [INFO] 23 hostnames found via Certificate Transparency (certspotter) (`CT1`)
 
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: altis.staging.es.digitaltrends.com, altis.staging.www.digitaltrends.com, dev.es.digitaltrends.com, dev.www.digitaltrends.com, files.digitaltrends.com, staging.altis.digitaltrends.com, staging.es.digitaltrends.com, staging.www.digitaltrends.com, status.digitaltrends.com
@@ -205,10 +219,10 @@ Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
   "domain": "digitaltrends.com",
   "dns": {
     "a": [
-      "3.169.55.55",
-      "3.169.55.28",
       "3.169.55.39",
-      "3.169.55.89"
+      "3.169.55.28",
+      "3.169.55.89",
+      "3.169.55.55"
     ],
     "aaaa": [],
     "cname": null,
@@ -217,36 +231,36 @@ Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
     ],
     "ns": [
       "ns-78.awsdns-09.com.",
-      "ns-666.awsdns-19.net.",
       "ns-1522.awsdns-62.org.",
+      "ns-666.awsdns-19.net.",
       "ns-1711.awsdns-21.co.uk."
     ],
     "caa": [],
     "spf": [
-      "atlassian-domain-verification=fJAmOfQYHw3K7C1fuKa4yAi1JiFeMy47sg81/YoPzdpRty8zLVRGO0RsFE2nBJ8M",
-      "facebook-domain-verification=o9gokha6nwug1sltr4wj9wtcks2ro4",
-      "0ed1fe018a398da5ca17fb44baa314e68a3dc33e5d",
-      "MS=ms61723988",
       "tollbit-domain-verification=834a1886734f6bddd5015deaacc39c6e682c78b4e60db097b72da9aa949d693d",
-      "google-site-verification=LhEEOYALF-FSwQtsNYjY34HKhnDVrnDjf79R-jywnA8",
-      "5HwOFRfvC6HJXoxZ0NSTFWTYRqxdotArg8062xyCJLY=",
-      "ahrefs-site-verification_9a82eef87599150f2c7cb0a33fd6674efaec660b67d411fe3aaed0db8e928d0d",
-      "google-site-verification=-MksWPwuf34sS1-oJvSzJIW9KsE7CskTBNvUJUs9zGU",
-      "fastly-domain-delegation-kjfbsakjhkjfakl-178404-2019-10-16",
-      "dropbox-domain-verification=9zrbo1ot31id",
-      "google-site-verification=KwP_ps6K2dA_GqqH09sP6ZRPv71JHxnSBwoZ9uSyCgo",
-      "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
-      "atlassian-domain-verification=3UciTRhiPPalGnfMwEyifXMToIaV1gtpnmaMiUMu/9js/FnaCipcVQtCjIbTpoMk",
-      "google-gws-recovery-domain-verification=71417947",
-      "MS=ms32022712",
-      "anthropic-domain-verification-126xck=x61kgVFV21lGsbJaZccxJJXDS",
-      "v=spf1 include:spf.protection.outlook.com include:spf.tipalti.com -all",
-      "google-site-verification=nZ03eoxIbZX2vx96rqCcdtoGnh3s5YYKrTLrXSNsrBk",
-      "uber-domain-verification=69ff25a9-2786-43e3-a501-el0bf2fcf5c6",
-      "ZOOM_verify_XXjQmpVqSESiHkuoW4HdGw",
+      "apple-domain-verification=ixKwVGxwE9TXeZ3F",
       "google-site-verification=DGgmOFBDVC5ksJtU4Q5hyh9CvOXOdkNApwFou-IFOVo",
       "yandex-verification: d3d90a55ca899aa7",
-      "apple-domain-verification=ixKwVGxwE9TXeZ3F",
+      "MS=ms61723988",
+      "uber-domain-verification=69ff25a9-2786-43e3-a501-el0bf2fcf5c6",
+      "fastly-domain-delegation-kjfbsakjhkjfakl-178404-2019-10-16",
+      "google-site-verification=-MksWPwuf34sS1-oJvSzJIW9KsE7CskTBNvUJUs9zGU",
+      "v=spf1 include:spf.protection.outlook.com include:spf.tipalti.com -all",
+      "dropbox-domain-verification=9zrbo1ot31id",
+      "atlassian-domain-verification=fJAmOfQYHw3K7C1fuKa4yAi1JiFeMy47sg81/YoPzdpRty8zLVRGO0RsFE2nBJ8M",
+      "ahrefs-site-verification_9a82eef87599150f2c7cb0a33fd6674efaec660b67d411fe3aaed0db8e928d0d",
+      "MS=ms32022712",
+      "_globalsign-domain-verification=Fw09cFhmPL_-Bfg6BV5_NkyDEkXJfmQd4uPViX560A",
+      "atlassian-domain-verification=3UciTRhiPPalGnfMwEyifXMToIaV1gtpnmaMiUMu/9js/FnaCipcVQtCjIbTpoMk",
+      "google-site-verification=KwP_ps6K2dA_GqqH09sP6ZRPv71JHxnSBwoZ9uSyCgo",
+      "google-gws-recovery-domain-verification=71417947",
+      "anthropic-domain-verification-126xck=x61kgVFV21lGsbJaZccxJJXDS",
+      "ZOOM_verify_XXjQmpVqSESiHkuoW4HdGw",
+      "5HwOFRfvC6HJXoxZ0NSTFWTYRqxdotArg8062xyCJLY=",
+      "0ed1fe018a398da5ca17fb44baa314e68a3dc33e5d",
+      "google-site-verification=nZ03eoxIbZX2vx96rqCcdtoGnh3s5YYKrTLrXSNsrBk",
+      "google-site-verification=LhEEOYALF-FSwQtsNYjY34HKhnDVrnDjf79R-jywnA8",
+      "facebook-domain-verification=o9gokha6nwug1sltr4wj9wtcks2ro4",
       "google-site-verification=9UqhZ3_NAJ9h080POi3QF5x58xVh8Fh6ksz_7VTBhrA",
       "openai-domain-verification=dv-YGTwSC2FWeOKciA5bJnao9yN"
     ],
@@ -304,7 +318,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
     }
   },
   "ports": {
-    "ip": "3.169.55.55",
+    "ip": "3.169.55.39",
     "open": []
   },
   "https": {
@@ -391,11 +405,11 @@ Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
     ]
   },
   "apex_txt": [
-    "atlassian-domain-verification=fJAmOfQYHw3K7C1fuKa4yAi1JiFeMy47sg81/YoPzdpRty8zLV",
-    "facebook-domain-verification=o9gokha6nwug1sltr4wj9wtcks2ro4",
     "tollbit-domain-verification=834a1886734f6bddd5015deaacc39c6e682c78b4e60db097b72d",
-    "google-site-verification=LhEEOYALF-FSwQtsNYjY34HKhnDVrnDjf79R-jywnA8",
-    "ahrefs-site-verification_9a82eef87599150f2c7cb0a33fd6674efaec660b67d411fe3aaed0d"
+    "apple-domain-verification=ixKwVGxwE9TXeZ3F",
+    "google-site-verification=DGgmOFBDVC5ksJtU4Q5hyh9CvOXOdkNApwFou-IFOVo",
+    "yandex-verification: d3d90a55ca899aa7",
+    "uber-domain-verification=69ff25a9-2786-43e3-a501-el0bf2fcf5c6"
   ],
   "tls2": {
     "alpn": "",
@@ -443,7 +457,7 @@ Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
   "x12": {
     "status": 405,
     "ptr": [
-      "server-3-169-55-55.tpe54.r.cloudfront.net."
+      "server-3-169-55-39.tpe54.r.cloudfront.net."
     ]
   },
   "x13": {
@@ -473,8 +487,16 @@ Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
     "cipher_ver": "TLSv1.3",
     "root_status": 405
   },
-  "elapsed_s": 11.4,
-  "rechecked": "2026-09-27 00:08 UTC"
+  "x16": {
+    "root_status": 405,
+    "alt_svc": "h3=\":443\"; ma=86400",
+    "cdn": [
+      "CloudFront",
+      "Fastly"
+    ]
+  },
+  "elapsed_s": 13.2,
+  "rechecked": "2026-09-27 01:08 UTC"
 }
 ```
 
@@ -487,4 +509,5 @@ Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
 - OCSP stapling presence was observed by sending one template TLS ClientHello (fresh random + session-id; only the SNI rewritten to the target) and inspecting the server's first flight for the certificate_status extension; on TLS1.2 that observation is conclusive, on TLS1.3-only servers it is recorded as inconclusive. Observe-only: no second flight, no completed handshake, no state change.
 - re-run #14 passive additions: certificate hygiene is parsed from the DER the base TLS check already fetched (no extra requests); HTML-level angles read the root document already fetched for header checks; the only extra requests are read-only GETs to /.well-known/security.txt (or /security.txt), /sitemap.xml, and at most one certificate CRL distribution point.
 - re-run #15 passive additions: TLS 1.0/1.1, cipher-suite and key-exchange observations come from the handshake the base TLS check already performed plus one quiet re-handshake with no HTTP traffic; HTML-level angles read the root document already fetched for header checks; the only extra request this pass is a read-only GET to /.well-known/openid-configuration (plus the earlier passes' security.txt, sitemap.xml and CRL GETs).
+- re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
