@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| lh5.googleusercontent.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
 | audacityteam.org | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | neh.gov | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | npmjs.com | 34 | 30 | 0 | 3 | 1 | top-websites gist (no active program match) |
