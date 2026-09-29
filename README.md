@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| thoughtcatalog.com | 17 | 8 | 0 | 6 | 3 | top-websites gist (no active program match) |
 | tumblr.com | 7 | 1 | 1 | 3 | 2 | top-websites gist (no active program match) |
 | thesun.co.uk | 22 | 0 | 4 | 15 | 3 | top-websites gist (no active program match) |
 | sciencemag.org | 33 | 0 | 0 | 30 | 3 | top-websites gist (no active program match) |
