@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| hawaii.edu | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | nicovideo.jp | 27 | 0 | 1 | 23 | 3 | top-websites gist (no active program match) |
 | deepl.com | 32 | 0 | 0 | 31 | 1 | top-websites gist (no active program match) |
 | s3.amazonaws.com | 8 | 0 | 2 | 4 | 2 | AWS |
