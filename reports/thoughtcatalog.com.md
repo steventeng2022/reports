@@ -12,18 +12,18 @@
 
 ## Summary
 
-Total findings: **17** (High: 8, Medium: 0, Low: 6, Info: 3)
+Total findings: **17** (High: 0, Medium: 0, Low: 14, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 2 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 3 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 4 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 5 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 6 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 7 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 8 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
+| 1 | low | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 2 | low | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 3 | low | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 4 | low | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 5 | low | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 6 | low | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 7 | low | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 8 | low | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
 | 9 | low | H2 | Missing CSP header | CWE-1021 |
 | 10 | low | H4 | No clickjacking protection | CWE-1023 |
 | 11 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -36,45 +36,53 @@ Total findings: **17** (High: 8, Medium: 0, Low: 6, Info: 3)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 1. [LOW] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://thoughtcatalog.com/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted - endpoint returns HTTP 404 (SiteArc error page); fresh token reflects only inside the SiteArc `_stq.push` analytics object with `<`/`"`/`:` characters stripped; breakout payload `x</script><img src=x onerror=alert(1)>` not emitted raw. Downgraded HIGH -> LOW.
 
-### 2. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 2. [LOW] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter query on https://thoughtcatalog.com/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted - endpoint returns HTTP 404 (SiteArc error page); fresh token reflects only inside the SiteArc `_stq.push` analytics object with `<`/`"`/`:` characters stripped; breakout payload `x</script><img src=x onerror=alert(1)>` not emitted raw. Downgraded HIGH -> LOW.
 
-### 3. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 3. [LOW] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://thoughtcatalog.com/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted - endpoint returns HTTP 404 (SiteArc error page); fresh token reflects only inside the SiteArc `_stq.push` analytics object with `<`/`"`/`:` characters stripped; breakout payload `x</script><img src=x onerror=alert(1)>` not emitted raw. Downgraded HIGH -> LOW.
 
-### 4. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 4. [LOW] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter query on https://thoughtcatalog.com/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted - endpoint returns HTTP 404 (SiteArc error page); fresh token reflects only inside the SiteArc `_stq.push` analytics object with `<`/`"`/`:` characters stripped; breakout payload `x</script><img src=x onerror=alert(1)>` not emitted raw. Downgraded HIGH -> LOW.
 
-### 5. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 5. [LOW] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://thoughtcatalog.com/results reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted - endpoint returns HTTP 404 (SiteArc error page); fresh token reflects only inside the SiteArc `_stq.push` analytics object with `<`/`"`/`:` characters stripped; breakout payload `x</script><img src=x onerror=alert(1)>` not emitted raw. Downgraded HIGH -> LOW.
 
-### 6. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 6. [LOW] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://thoughtcatalog.com/redirect reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted - endpoint returns HTTP 404 (SiteArc error page); fresh token reflects only inside the SiteArc `_stq.push` analytics object with `<`/`"`/`:` characters stripped; breakout payload `x</script><img src=x onerror=alert(1)>` not emitted raw. Downgraded HIGH -> LOW.
 
-### 7. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 7. [LOW] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://thoughtcatalog.com/link reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted - endpoint returns HTTP 404 (SiteArc error page); fresh token reflects only inside the SiteArc `_stq.push` analytics object with `<`/`"`/`:` characters stripped; breakout payload `x</script><img src=x onerror=alert(1)>` not emitted raw. Downgraded HIGH -> LOW.
 
-### 8. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 8. [LOW] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://thoughtcatalog.com/out reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted - endpoint returns HTTP 404 (SiteArc error page); fresh token reflects only inside the SiteArc `_stq.push` analytics object with `<`/`"`/`:` characters stripped; breakout payload `x</script><img src=x onerror=alert(1)>` not emitted raw. Downgraded HIGH -> LOW.
 
 ### 9. [LOW] Missing CSP header (`H2`)
 
@@ -124,3 +132,10 @@ Total findings: **17** (High: 8, Medium: 0, Low: 6, Info: 3)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-29, agent-aggressive)
+
+Re-checked all 8 HIGH I1 findings ("reflected XSS in JavaScript context" on /search, /results, /redirect, /link, /out) with fresh unique tokens and script-breakout payloads via direct HTTP:
+- All six endpoints now return **HTTP 404**; the token reflects only in the SiteArc 404-page snippet: `{"srv":"thoughtcatalog.com","arch_err":"/search?q=TOKEN",...}` inside `_stq.push(...)`.
+- Breakout probes: `q=x</script><img src=x onerror=alert(1)>` -> payload characters stripped (no raw `onerror`, no `%3C` leftover, no HTML escaping); `url=...x=a%22>` quote also stripped. No JS dialog / no img emit possible from raw HTTP.
+- Conclusion: scanner I1 heuristic tripped on the analytics object, not a breakable JS string. All 8 HIGH -> LOW. Index row updated (17 total: 0H/0M/14L/3I).

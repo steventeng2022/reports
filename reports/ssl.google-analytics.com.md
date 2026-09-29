@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **13** (High: 2, Medium: 1, Low: 7, Info: 3)
+Total findings: **13** (High: 0, Medium: 3, Low: 7, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I2 | Reflected XSS via attribute injection | CWE-79 |
-| 2 | high | I2 | Reflected XSS via attribute injection | CWE-79 |
+| 1 | medium | I2 | Reflected XSS via attribute injection | CWE-79 |
+| 2 | medium | I2 | Reflected XSS via attribute injection | CWE-79 |
 | 3 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 4 | low | H1 | Missing HSTS header | CWE-319 |
 | 5 | low | H2 | Missing CSP header | CWE-1021 |
@@ -36,11 +36,13 @@ Total findings: **13** (High: 2, Medium: 1, Low: 7, Info: 3)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.google.com/: injecting "\"' onerror=\"alert(1)//" yields an unquoted onerror handler. Event fires on render.
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted - the ssl.google-analytics.com host itself 301/302-redirects to the marketingplatform.google.com marketing page where `q` does NOT reflect; the scanner's www.google.com `q` reflection is HTML/URL-escaped (token in `&amp;`-escaped prev-links, a <textarea> value, JSON arrays) and the attribute-injection payload `"' onerror="alert(1)//` produced NO unquoted handler (attrinj=false). Downgraded HIGH -> MEDIUM.
 
 ### 2. [HIGH] Reflected XSS via attribute injection (`I2`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.google.com/: injecting "\"' onerror=\"alert(1)//" yields an unquoted onerror handler. Event fires on render.
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted - the ssl.google-analytics.com host itself 301/302-redirects to the marketingplatform.google.com marketing page where `q` does NOT reflect; the scanner's www.google.com `q` reflection is HTML/URL-escaped (token in `&amp;`-escaped prev-links, a <textarea> value, JSON arrays) and the attribute-injection payload `"' onerror="alert(1)//` produced NO unquoted handler (attrinj=false). Downgraded HIGH -> MEDIUM.
 
 ### 3. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
@@ -100,3 +102,10 @@ Total findings: **13** (High: 2, Medium: 1, Low: 7, Info: 3)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-29, agent-aggressive)
+
+Re-checked both I2 attribute-injection HIGHs with fresh tokens and the `"\x27 onerror=\x22alert(1)//` payload (direct HTTP):
+- `GET https://ssl.google-analytics.com/?q=TOKEN` -> redirect to `https://marketingplatform.google.com/about/analytics/`; `q` does not reflect on the target host (tokRefs=0).
+- Scanner detail referenced www.google.com: token reflects 5x, all escaped (amp-escaped URLs, textarea content, JS/JSON arrays); attribute-injection payload -> no raw `onerror="` handler anywhere.
+- Conclusion: no attribute injection; reflection is escaped. Both HIGH -> MEDIUM (XSS-adjacent escaped reflection on the www.google.com host only). Index row updated (13 total: 0H/3M/7L/3I).

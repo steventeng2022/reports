@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **11** (High: 1, Medium: 0, Low: 9, Info: 1)
+Total findings: **11** (High: 0, Medium: 1, Low: 9, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I2 | Reflected XSS via attribute injection | CWE-79 |
+| 1 | medium | I2 | Reflected XSS via attribute injection | CWE-79 |
 | 2 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -34,6 +34,7 @@ Total findings: **11** (High: 1, Medium: 0, Low: 9, Info: 1)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://fr.linkedin.com/redirect: injecting "\"' onerror=\"alert(1)//" yields an unquoted onerror handler. Event fires on render.
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted as attribute injection - `/redirect?url=` reflects the value raw as PLAIN TEXT inside `<span class="t-bold">...</span>` ("Lien inactif" error page); angle brackets ARE HTML-escaped (`&lt;img src=x onerror=alert(1)&gt;`, `&lt;/span&gt;` breakout escaped), so quotes-only payload cannot open an attribute. Redirects are same-origin-only (`//host` and `https:host` neutralized to relative paths; cross-origin https rendered as error page, no cross-site Location). Downgraded HIGH -> MEDIUM.
 
 ### 2. [LOW] Cookies without HttpOnly flag (`C2`)
 
@@ -88,3 +89,11 @@ Total findings: **11** (High: 1, Medium: 0, Low: 9, Info: 1)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-29, agent-aggressive)
+
+Re-checked the I2 attribute-injection HIGH on fr.linkedin.com/redirect with fresh tokens and multiple payloads (direct HTTP):
+- Raw token reflects once, as plain text: `<span class="t-bold">TOKEN</span>` (LinkedIn trust-frontend "Lien inactif" error page) - not an attribute, not a script.
+- `<img src=x onerror=alert(1)>` -> reflected HTML-ESCAPED as `&lt;img src=x onerror=alert(1)&gt;`; `</span><img ...>` breakout -> both angle brackets escaped; `<script>alert(3)</script>` -> escaped, no raw script.
+- Open-redirect matrix: `url=https://evil...` -> 200 error page (no Location); `url=//evil...` -> 303 `/evil...` (relative); `url=https:evil...` -> 200; `url=https://fr.linkedin.com/?x=TOK` -> 303 same-origin. Same-origin-only redirect - not an open redirect.
+- Conclusion: no XSS, no open redirect. HIGH -> MEDIUM (unescaped plain-text echo remains XSS-adjacent). Index row updated (11 total: 0H/1M/9L/1I).

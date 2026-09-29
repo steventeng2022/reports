@@ -12,14 +12,14 @@
 
 ## Summary
 
-Total findings: **19** (High: 4, Medium: 0, Low: 13, Info: 2)
+Total findings: **19** (High: 0, Medium: 4, Low: 13, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I30 | Reflected XSS in JavaScript context (alert payload round-trips) | CWE-79 |
-| 2 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 3 | high | I30 | Reflected XSS in JavaScript context (alert payload round-trips) | CWE-79 |
-| 4 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
+| 1 | medium | I30 | Reflected XSS in JavaScript context (alert payload round-trips) | CWE-79 |
+| 2 | medium | I1 | Reflected XSS in JavaScript context | CWE-79 |
+| 3 | medium | I30 | Reflected XSS in JavaScript context (alert payload round-trips) | CWE-79 |
+| 4 | medium | I1 | Reflected XSS in JavaScript context | CWE-79 |
 | 5 | low | H1 | Missing HSTS header | CWE-319 |
 | 6 | low | H2 | Missing CSP header | CWE-1021 |
 | 7 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -42,21 +42,25 @@ Total findings: **19** (High: 4, Medium: 0, Low: 13, Info: 2)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://stumbleupon.com/ reflects ;alert(1)// unquoted inside a <script> block; JS executes on page load.
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted as unquoted-JS-context XSS - fresh token and `;alert(1)//`/`x;alert(2)//` payloads reflect only inside the Next.js `__NEXT_DATA__` application/json script as a QUOTED JSON string (`"query":{"q":"x;alert(2)//","topic":"HOME"}`); `;` cannot break a JSON string, quotes are JSON-escaped by the serializer. Downgraded HIGH -> MEDIUM.
 
 ### 2. [HIGH] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://stumbleupon.com/ reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted as unquoted-JS-context XSS - fresh token and `;alert(1)//`/`x;alert(2)//` payloads reflect only inside the Next.js `__NEXT_DATA__` application/json script as a QUOTED JSON string (`"query":{"q":"x;alert(2)//","topic":"HOME"}`); `;` cannot break a JSON string, quotes are JSON-escaped by the serializer. Downgraded HIGH -> MEDIUM.
 
 ### 3. [HIGH] Reflected XSS in JavaScript context (alert payload round-trips) (`I30`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://stumbleupon.com/ reflects ;alert(1)// unquoted inside a <script> block; JS executes on page load.
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted as unquoted-JS-context XSS - fresh token and `;alert(1)//`/`x;alert(2)//` payloads reflect only inside the Next.js `__NEXT_DATA__` application/json script as a QUOTED JSON string (`"query":{"q":"x;alert(2)//","topic":"HOME"}`); `;` cannot break a JSON string, quotes are JSON-escaped by the serializer. Downgraded HIGH -> MEDIUM.
 
 ### 4. [HIGH] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://stumbleupon.com/ reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
+- **Re-verify 2026-09-29 (agent-aggressive):** refuted as unquoted-JS-context XSS - fresh token and `;alert(1)//`/`x;alert(2)//` payloads reflect only inside the Next.js `__NEXT_DATA__` application/json script as a QUOTED JSON string (`"query":{"q":"x;alert(2)//","topic":"HOME"}`); `;` cannot break a JSON string, quotes are JSON-escaped by the serializer. Downgraded HIGH -> MEDIUM.
 
 ### 5. [LOW] Missing HSTS header (`H1`)
 
@@ -136,3 +140,10 @@ Total findings: **19** (High: 4, Medium: 0, Low: 13, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-29, agent-aggressive)
+
+Re-checked all 4 HIGH (2x I30 alert-round-trip, 2x I1) on stumbleupon.com/ with fresh unique tokens and `;alert(N)//` payloads (direct HTTP, Next.js app):
+- Token reflects ONLY in `__NEXT_DATA__` JSON: `"query":{"q":"TOKEN","topic":"HOME"}` inside `<script id="__NEXT_DATA__" type="application/json">` - a quoted, serializer-escaped JSON string (same safe class as geniuslink/producthunt 2026-09-29 refutations).
+- `;alert(1)//` and `x;alert(2)//` appear only as raw text INSIDE that JSON string value; no unquoted script position, no raw `<img>`/breakout, `q` on /search/ is 404 with no reflection.
+- Conclusion: I30 "unquoted inside script" heuristic tripped on the analytics/data JSON. All 4 HIGH -> MEDIUM. Index row updated (19 total: 0H/4M/13L/2I).

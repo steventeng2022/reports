@@ -904,3 +904,17 @@ README downgraded all four rows; index now H=2 (ru.wikipedia 1 + ja.wikipedia 1,
 
 [agent-aggressive | 2026-09-29 ~10:40 CST]
 WIKI SWEEP (follow-up to quality-gate R3): ru.wikipedia.org 1H + ja.wikipedia.org 1H re-verified in live browser - MediaWiki rejects angle-bracket page names ("Invalid page name" / "不適切なページ名" error page, no reflection); plain tokens reflect only as plain <title> text; breakout probes fire no dialog, no raw <img>. Both downgraded 1H -> 1M. Index now has ZERO HIGH rows (635 rows / 13869 = 0H/155M/2744L/10970I). All 8 previously-HIGH sites (snip.ly, geni.us, producthunt, meta/ru/ja wikipedia, + earlier vizio/activecampaign) are now browser-verified refuted or reclassified.
+
+[agent-aggressive | 2026-09-29 ~13:30 CST]
+WAVES 15+16 COMPLETE: wave 15 = 12/12 (163 findings: blog.naver 13 | columbia.edu 6 | sciencemag 33 | thesun 22 | tumblr 7 | thoughtcatalog 17 | blog.feedspot 6 | metro 10 | kotaku 2 | academic.oup 7 | s3.amazonaws 8 | deepl 32); wave 16 = 12/12 (121 findings: nicovideo 27 | hawaii.edu 12 | code.visualstudio 6 | nginx 5 | mozilla 2 | fr.linkedin 11 | ssl.google-analytics 13 | bloglovin 3 | politico 5 | mediafire 14 | stumbleupon 19 | chromium 4). All committed + pushed. claimed.txt += 24 (runwave still does not self-claim).
+QUALITY-GATE ROUNDS 4+5 (fresh unique tokens + script-breakout + attribute-injection probes, direct HTTP):
+- thoughtcatalog.com 8H (I1 /search,/results,/redirect,/link,/out): ALL endpoints 404 (SiteArc); token reflects only in SiteArc _stq.push analytics object, < > " : stripped on breakout. 8H -> 8L.
+- metro.co.uk 2H (I1 members.metro.co.uk/modal-login redirect_to/referring_module): reflects URL-ENCODED in metro.pageData JSON + quoted hidden input; no raw breakout. 2H -> 2M. Bonus: api.metro.co.uk "dangling" M RE-VERIFIED = live WordPress VIP 200 via CloudFront -> M -> I (active subdomain, not dangling).
+- tumblr.com 1H (I7 SSTI ?q=#{17*19}->323): REFUTED - baseline homepage (no q) already contains 323/306 (coincident IDs in 112KB payload); fresh products #{997*83}->82751, #{40*33}->1320, {{13*29}}->377, <%=41*23%>->943 all ABSENT; q echoes only as JSON "link":"?q=" data field. 1H -> 1L.
+- stumbleupon.com 4H (I30/I1 ?q=): reflects only in __NEXT_DATA__ application/json as quoted JSON string; ;alert(1)// and x;alert(2)// stay inside quotes (no JSON breakout). 4H -> 4M.
+- ssl.google-analytics.com 2H (I2 attr-inj): host 301->marketingplatform.google.com where q does NOT reflect; scanner's www.google.com q reflection is escaped (textarea/amp-URLs/JSON arrays), attrinj=false. 2H -> 2M.
+- fr.linkedin.com 1H (I2 /redirect?url=): reflects raw as PLAIN TEXT in <span class=t-bold> (Lien inactif page); angle brackets ARE HTML-escaped (&lt;img ...&gt;, &lt;/span&gt; breakout escaped) -> no attribute open, no XSS; redirect matrix = same-origin-only (//host + https:host neutralized to relative). 1H -> 1M.
+INDEX NOW: 659 rows / 14153 findings = 0H / 179M / 2942L / 11032I. All 18 wave-15/16 HIGH candidates re-verified and downgraded in the same pass - no HIGHs left unverified. Note to @passive: README union will see the new 24 rows + downgraded counts; totals line recomputed from actual rows.
+
+---TALLY (append-only)---
+[2026-09-29 ~13:30] agent-aggressive: 198 sites / ~2155 findings | waves 15+16 = 24 sites / 284 findings pushed | quality-gate R4+R5: 18 HIGH candidates re-verified (8+2+1 wave15, 4+2+1 wave16) -> all refuted/downgraded | README 659 rows / 14153 (0H/179M/2942L/11032I) | next: wave 17
