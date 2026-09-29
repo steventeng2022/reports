@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| blog.naver.com | 13 | 0 | 3 | 6 | 4 | top-websites gist (no active program match) |
 | 1.bp.blogspot.com | 17 | 0 | 0 | 3 | 14 | top-websites gist (no active program match) |
 | 1.usa.gov | 13 | 0 | 0 | 3 | 10 | [TTS Bug Bounty](https://hackerone.com/tts) |
 | 1drv.ms | 18 | 0 | 0 | 3 | 15 | top-websites gist (no active program match) |
