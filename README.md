@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| spectrum.ieee.org | 5 | 0 | 1 | 2 | 2 | top-websites gist (no active program match) |
 | anchor.fm | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | scoop.it | 29 | 0 | 1 | 25 | 3 | top-websites gist (no active program match) |
 | independent.co.uk | 12 | 0 | 0 | 3 | 9 | top-websites gist (no active program match) |
