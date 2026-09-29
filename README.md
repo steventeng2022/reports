@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| kotaku.com | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
 | metro.co.uk | 10 | 2 | 2 | 3 | 3 | top-websites gist (no active program match) |
 | blog.feedspot.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | thoughtcatalog.com | 17 | 8 | 0 | 6 | 3 | top-websites gist (no active program match) |
