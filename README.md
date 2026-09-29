@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| stadt-bremerhaven.de | 8 | 0 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | chiark.greenend.org.uk | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | 0.gravatar.com | 4 | 0 | 0 | 0 | 4 | top-websites gist (no active program match) |
 | google.pl | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
