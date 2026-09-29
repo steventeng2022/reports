@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| thetimes.co.uk | 6 | 0 | 1 | 3 | 2 | top-websites gist (no active program match) |
 | qz.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | media.giphy.com | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
 | snopes.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
