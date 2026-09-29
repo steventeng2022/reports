@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| youtu.be | 20 | 0 | 1 | 17 | 2 | Google |
 | houzz.com | 10 | 1 | 1 | 7 | 1 | top-websites gist (no active program match) |
 | a2hosting.com | 1 | 0 | 0 | 1 | 0 | top-websites gist (no active program match) |
 | target.com | 9 | 0 | 0 | 9 | 0 | Target |
