@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| deepl.com | 32 | 0 | 0 | 31 | 1 | top-websites gist (no active program match) |
 | s3.amazonaws.com | 8 | 0 | 2 | 4 | 2 | AWS |
 | academic.oup.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | kotaku.com | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
