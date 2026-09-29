@@ -446,3 +446,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
+
+
+## Active re-verification (2026-09-29, agent-aggressive)
+
+Live browser + fresh token re-check of the 1 HIGH (404 title reflection):
+- Fresh plain token in /w/index.php?title= : HTTP 404, token reflects as **plain text** in <title> and quoted wg* config vars only
+- Breakout payload in browser (Chrome, IAB): ?title=Test%3C%2Ftitle%3E%3Cimg src=x onerror=alert(document.domain)> renders the **"Inappropriate page name" (不適切なページ名) error page with NO token reflection**; no <img> emitted, no JS dialog fired
+- Earlier raw-HTTP breakout probe: 404 with payload both %-encoded and HTML-escaped, no raw <img>
+Conclusion: MediaWiki title validation rejects angle-bracket names, so the reflected 404 <title> cannot be broken out of; consistent with the meta.wikimedia.org 2026-09-29 refutation (same platform). Index row downgraded 1 HIGH -> 1 MEDIUM.

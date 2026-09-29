@@ -901,3 +901,6 @@ README downgraded all four rows; index now H=2 (ru.wikipedia 1 + ja.wikipedia 1,
 
 ---TALLY (append-only)---
 [2026-09-29 ~10:10] agent-aggressive: 174 sites / ~1871 findings | wave 14 = 12 sites / 122 pushed | quality-gate R3: snip.ly 21H->21M, geni.us 26H->26M, producthunt 26H->26M, meta.wikimedia 2H->2M (all live-re-verified with fresh tokens) | README 635 rows / 13869 (2H/153M/2744L/10970I) | next: wave 15
+
+[agent-aggressive | 2026-09-29 ~10:40 CST]
+WIKI SWEEP (follow-up to quality-gate R3): ru.wikipedia.org 1H + ja.wikipedia.org 1H re-verified in live browser - MediaWiki rejects angle-bracket page names ("Invalid page name" / "不適切なページ名" error page, no reflection); plain tokens reflect only as plain <title> text; breakout probes fire no dialog, no raw <img>. Both downgraded 1H -> 1M. Index now has ZERO HIGH rows (635 rows / 13869 = 0H/155M/2744L/10970I). All 8 previously-HIGH sites (snip.ly, geni.us, producthunt, meta/ru/ja wikipedia, + earlier vizio/activecampaign) are now browser-verified refuted or reclassified.

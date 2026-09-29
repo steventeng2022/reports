@@ -5,7 +5,7 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 13869** (High: 2, Medium: 153, Low: 2744, Info: 10970)
+**Total findings across all sites: 13869** (High: 0, Medium: 155, Low: 2744, Info: 10970)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -339,7 +339,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | itunes.apple.com | 23 | 0 | 0 | 3 | 20 | [Apple](https://security.apple.com) |
 | j.mp | 22 | 0 | 0 | 5 | 17 | top-websites gist (no active program match) |
 | ja-jp.facebook.com | 21 | 0 | 0 | 6 | 15 | [Facebook](https://www.facebook.com/whitehat) |
-| ja.wikipedia.org | 25 | 1 | 1 | 21 | 2 | top-websites gist (no active program match) |
+| ja.wikipedia.org | 25 | 0 | 2 | 21 | 2 | top-websites gist (no active program match) |
 | japantimes.co.jp | 22 | 0 | 0 | 3 | 19 | top-websites gist (no active program match) |
 | jetbrains.com | 24 | 0 | 0 | 5 | 19 | top-websites gist (no active program match) |
 | join.slack.com | 25 | 0 | 0 | 6 | 19 | [Slack](https://hackerone.com/slack) |
@@ -500,7 +500,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | reverbnation.com | 22 | 0 | 0 | 5 | 17 | top-websites gist (no active program match) |
 | rollingstone.com | 19 | 0 | 0 | 5 | 14 | top-websites gist (no active program match) |
 | rottentomatoes.com | 17 | 0 | 0 | 2 | 15 | top-websites gist (no active program match) |
-| ru.wikipedia.org | 22 | 1 | 1 | 18 | 2 | top-websites gist (no active program match) |
+| ru.wikipedia.org | 22 | 0 | 2 | 18 | 2 | top-websites gist (no active program match) |
 | s-media-cache-ak0.pinimg.com | 15 | 0 | 0 | 6 | 9 | top-websites gist (no active program match) |
 | s0.wp.com | 24 | 0 | 0 | 5 | 19 | top-websites gist (no active program match) |
 | salesforce.com | 19 | 0 | 0 | 6 | 13 | [Salesforce](https://www.salesforce.com/company/disclosure/) |
