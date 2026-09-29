@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| gopro.com | 12 | 0 | 4 | 5 | 3 | top-websites gist (no active program match) |
 | apnews.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | stadt-bremerhaven.de | 8 | 0 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | chiark.greenend.org.uk | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
