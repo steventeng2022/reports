@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| buzzfeed.com | 5 | 0 | 1 | 2 | 2 | top-websites gist (no active program match) |
 | blip.tv | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
 | flattr.com | 5 | 0 | 0 | 2 | 3 | top-websites gist (no active program match) |
 | problogger.net | 17 | 0 | 2 | 13 | 2 | top-websites gist (no active program match) |
