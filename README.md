@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| stumbleupon.com | 19 | 4 | 0 | 13 | 2 | top-websites gist (no active program match) |
 | mediafire.com | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
 | politico.com | 5 | 0 | 0 | 3 | 2 | Politico |
 | bloglovin.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
