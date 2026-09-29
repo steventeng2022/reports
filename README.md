@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| politico.com | 5 | 0 | 0 | 3 | 2 | Politico |
 | bloglovin.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | ssl.google-analytics.com | 13 | 2 | 1 | 7 | 3 | top-websites gist (no active program match) |
 | fr.linkedin.com | 11 | 1 | 0 | 9 | 1 | top-websites gist (no active program match) |
