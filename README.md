@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| adweek.com | 20 | 10 | 0 | 7 | 3 | top-websites gist (no active program match) |
 | francetvinfo.fr | 30 | 0 | 0 | 27 | 3 | top-websites gist (no active program match) |
 | newyorker.com | 7 | 0 | 0 | 6 | 1 | top-websites gist (no active program match) |
 | spectrum.ieee.org | 5 | 0 | 1 | 2 | 2 | top-websites gist (no active program match) |
