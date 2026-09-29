@@ -34,6 +34,8 @@ Total findings: **11** (High: 0, Medium: 1, Low: 8, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://gplus.to/wp-json/wp/v2/users returned 200 (42313 bytes) with a matching signature.
+- **Re-verify (2026-09-29, agent-aggressive):** live 200, 42313B; exposes 1 user (id=5, slug `arthur`, name "Arthur Volk", bio + avatar URLs). Kept MEDIUM.
+- **I33 note:** `?author=1` -> 301 https://gplus.to/author/admin -> 200 (85754B author archive) - canonical WordPress author routing; kept LOW (enumeration value primarily via the REST API above). wp-login.php -> 403.
 
 ### 2. [LOW] Site served over plain HTTP without redirect to HTTPS (`T3`)
 

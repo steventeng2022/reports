@@ -5,18 +5,18 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 14326** (High: 2, Medium: 211, Low: 3042, Info: 11071)
+**Total findings across all sites: 14498** (High: 2, Medium: 214, Low: 3186, Info: 11096)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
-| wsj.com | 6 | 0 | 2 | 2 | 2 | The Wall Street Journal |
+| wsj.com | 6 | 0 | 0 | 4 | 2 | The Wall Street Journal |
 | gstatic.com | 35 | 0 | 0 | 34 | 1 | Google |
 | gplus.to | 11 | 0 | 1 | 8 | 2 | top-websites gist (no active program match) |
 | google.cn | 10 | 0 | 0 | 7 | 3 | top-websites gist (no active program match) |
-| ericsson.com | 29 | 28 | 0 | 1 | 0 | top-websites gist (no active program match) |
+| ericsson.com | 29 | 0 | 0 | 29 | 0 | top-websites gist (no active program match) |
 | payhip.com | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | webmasters.googleblog.com | 26 | 0 | 0 | 25 | 1 | top-websites gist (no active program match) |
-| s3-eu-west-1.amazonaws.com | 13 | 0 | 7 | 4 | 2 | top-websites gist (no active program match) |
+| s3-eu-west-1.amazonaws.com | 13 | 0 | 1 | 4 | 8 | top-websites gist (no active program match) |
 | teespring.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | iheart.com | 3 | 0 | 0 | 3 | 0 | top-websites gist (no active program match) |
 | gimp.org | 3 | 0 | 0 | 1 | 2 | top-websites gist (no active program match) |

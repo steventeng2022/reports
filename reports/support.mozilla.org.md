@@ -31,6 +31,7 @@ Total findings: **8** (High: 0, Medium: 1, Low: 4, Info: 3)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /admin/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
+- **Re-verify (2026-09-29, agent-aggressive):** re-tested after the per-request Fastly cooldown window - **200**, 3038B Django admin login page (strict CSP present). Note: Fastly (SIN POP) rate-limits bare requests with 429 + `Retry-After: 600` and the counter resets per request; spaced single requests reach the admin login. Kept MEDIUM.
 
 ### 2. [LOW] Missing HSTS header (`H1`)
 
