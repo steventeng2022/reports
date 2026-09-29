@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| goo.gl | 4 | 0 | 0 | 3 | 1 | Google |
 | google.co.in | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
 | venturebeat.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | lesechos.fr | 31 | 0 | 0 | 30 | 1 | top-websites gist (no active program match) |
