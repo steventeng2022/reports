@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| cbsnews.com | 5 | 0 | 0 | 3 | 2 | Paramount |
 | copyblogger.com | 5 | 0 | 0 | 5 | 0 | top-websites gist (no active program match) |
 | pagead2.googlesyndication.com | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | cnn.com | 16 | 0 | 0 | 5 | 11 | CNN |
