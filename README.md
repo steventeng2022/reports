@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| openstreetmap.org | 13 | 2 | 3 | 3 | 5 | top-websites gist (no active program match) |
 | money.cnn.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | techsmith.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | buzzfeed.com | 5 | 0 | 1 | 2 | 2 | top-websites gist (no active program match) |
