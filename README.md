@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| hulu.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | lh6.googleusercontent.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
 | searchengineland.com | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | google.cz | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
