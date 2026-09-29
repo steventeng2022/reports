@@ -5,15 +5,15 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 14799** (High: 2, Medium: 216, Low: 3413, Info: 11168)
+**Total findings across all sites: 14943** (High: 2, Medium: 216, Low: 3534, Info: 11191)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
 | sony.net | 5 | 0 | 0 | 2 | 3 | top-websites gist (no active program match) |
 | cdn.ampproject.org | 35 | 0 | 0 | 34 | 1 | top-websites gist (no active program match) |
-| google.ru | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
-| youtu.be | 20 | 0 | 1 | 17 | 2 | Google |
-| houzz.com | 10 | 1 | 1 | 7 | 1 | top-websites gist (no active program match) |
+| google.ru | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
+| youtu.be | 20 | 0 | 0 | 18 | 2 | Google |
+| houzz.com | 10 | 0 | 0 | 9 | 1 | top-websites gist (no active program match) |
 | a2hosting.com | 1 | 0 | 0 | 1 | 0 | top-websites gist (no active program match) |
 | target.com | 9 | 0 | 0 | 9 | 0 | Target |
 | tensorflow.org | 32 | 0 | 0 | 31 | 1 | top-websites gist (no active program match) |

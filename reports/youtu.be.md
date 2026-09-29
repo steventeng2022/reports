@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 1, Low: 17, Info: 2)
+Total findings: **20** (High: 0, Medium: 0, Low: 18, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,10 +39,11 @@ Total findings: **20** (High: 0, Medium: 1, Low: 17, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path /api/ from robots.txt - normal youtu.be redirect (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /api/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
+- **Re-verify (2026-09-29, agent-aggressive):** GET /api/ => 303 (ESF) -> https://www.youtube.com/watch?v=api&feature=youtu.be -> 200 (795462B) - the standard youtu.be->youtube.com shortlink redirect with "api" treated as a video id (nonexistent-video page), no hidden API surface. MEDIUM->LOW.
 
 ### 2. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
 

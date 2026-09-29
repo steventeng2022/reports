@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **10** (High: 1, Medium: 1, Low: 7, Info: 1)
+Total findings: **10** (High: 0, Medium: 0, Low: 9, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -29,15 +29,17 @@ Total findings: **10** (High: 1, Medium: 1, Low: 7, Info: 1)
 
 ## Detailed findings
 
-### 1. [HIGH] Server-side template injection (SSTI) (`I7`)
+### 1. [LOW] SSTI candidate on ?q= - refuted (coincident baseline numbers, fresh products absent) (`I7`)
 
 - **CWE:** CWE-94
 - **Detail:** Parameter q on https://www.houzz.com/: payload #{17*19} is evaluated server-side (response contains 323; control #{17*18} contains 306 instead; token not reflected).
+- **Re-verify (2026-09-29, agent-aggressive):** REFUTED - the 951627B baseline homepage (no q) already contains "323" (6x, SVG path data 323.8,90.46) and "306" (6x, ?v=20180306 version strings); fresh unique products #{997*83}->82751 and #{40*33}->1320 are ABSENT (0x) from responses, while {{13*29}}->377 and <%=41*23%>->943 match only the same baseline coincidences (SVG path, fb:app_id 1267585943836190). q reflects raw once (in a data field) but no template engine evaluates it. 1 HIGH -> 1 LOW. Same false-positive family as the tumblr.com SSTI (coincident IDs in a large static payload).
 
-### 2. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 2. [LOW] Hidden path /writeReview2/ew from robots.txt - functional review form (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /writeReview2/ew which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
+- **Re-verify (2026-09-29, agent-aggressive):** GET /writeReview2/ew => 200 (36001B) "Write a Review: Describe Your Experience With a Pro on Houzz" - a live functional page, low disclosure value. MEDIUM->LOW.
 
 ### 3. [LOW] Cookies without Secure flag (`C1`)
 
