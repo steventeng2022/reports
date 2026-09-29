@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
+Total findings: **24** (High: 0, Medium: 0, Low: 4, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -185,6 +185,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 - **CWE:** CWE-200
 - **Detail:** The root of time.com discloses a 2-hop fronting chain (1.1 varnish, 1.1 varnish); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
 - **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
+| 24 | info | S1 | mail.time.com served by live origin behind CloudFront but 404s all paths (abandoned app) | CWE-916 |
+### 24. [INFO] mail.time.com served by live origin behind CloudFront but 404s all paths (abandoned app) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** mail.time.com (via CloudFront) returns a custom 8475-byte "404 page not found" page (with fade-in CSS animation, NO-CACHE/NOINDEX/NOARCHIVE meta) for EVERY path including /robots.txt, /favicon.ico and /login/ (301 -> /login/ -> 404). The origin is live (custom designed 404, not a CloudFront default error) but the app is abandoned - low impact, included for the stale-asset inventory. Re-verified live 2026-09-29.
+- **Recommendation:** Decommission or repurpose the subdomain; it sits on a major program's scope.
 
 ## Evidence (raw response observations)
 
@@ -443,3 +450,7 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
+
+## Active re-verification (2026-09-29, agent-aggressive)
+
+mail.time.com re-checked live: consistent custom 404 (8475 B) on /, /robots.txt, /favicon.ico; /login -> 301 /login/ -> 404; x-cache: Miss from cloudfront with a custom origin response. Live origin, dead app - recorded as INFO. Index row updated (24 total: 0H/0M/4L/20I).

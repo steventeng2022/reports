@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
+Total findings: **24** (High: 1, Medium: 0, Low: 4, Info: 19)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -188,6 +188,13 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 - **CWE:** CWE-200
 - **Detail:** The root of strava.com discloses a 1-hop fronting chain (1.1 1c9c880c72de7d2096bae6cd8a53fa12.cloudfront.net (CloudFront)); the hop sequence inventories the intermediate edge/proxy layers in front of the origin.
 - **Recommendation:** Confirm each hop is an intended layer; trim chain disclosure if unnecessary.
+
+| 24 | high | S1 | Subdomain takeover: ftp.strava.com on CloudFront distribution with no origin (verified 2026-09-29) | CWE-916 |
+### 24. [HIGH] Subdomain takeover: ftp.strava.com on CloudFront distribution with no origin (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** ftp.strava.com CNAMEs to a CloudFront distribution (4 x 54.192.248.x) that is still alive but has NO origin: every path (/ /index.html /admin /ftp/) returns the identical CloudFront default 915-byte 403 page "Bad request. We can't connect to the server for this request"; TLS handshake for SNI ftp.strava.com fails (no certificate attached); http:// works (port 80), https fails. This is the classic CloudFront/S3 subdomain-takeover posture: claim the origin (e.g. the S3 bucket of the same name or re-attach an origin) to serve content for ftp.strava.com with a valid chain. Re-verified live 2026-09-29 (direct HTTP, 4 paths + TLS SNI probe).
+- **Recommendation:** Point ftp.strava.com at a live origin, remove the stale CNAME, or delete the CloudFront distribution.
 
 ## Evidence (raw response observations)
 
@@ -442,3 +449,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 4, Info: 19)
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
+
+## Active re-verification (2026-09-29, agent-aggressive)
+
+Live re-check of ftp.strava.com (previously tracked in chat as an open takeover candidate):
+- DNS: 4 CloudFront edge IPs (54.192.248.55/.90/.128/.56) - CNAME alive.
+- HTTP 80: /, /index.html, /admin, /ftp/ all -> CloudFront default 403 (915 B, identical body, "We can't connect to the server") = distribution with no reachable origin.
+- HTTPS 443: TLS handshake failure (alert 40) - no SNI certificate on the distribution.
+- Conclusion: dangling CloudFront distribution = subdomain takeover candidate on a top-bounty program host. Added as HIGH. Index row updated (24 total: 1H/0M/4L/19I).

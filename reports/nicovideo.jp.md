@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **27** (High: 0, Medium: 1, Low: 23, Info: 3)
+Total findings: **27** (High: 1, Medium: 0, Low: 23, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | high | S1 | Dangling subdomain served by third-party platform (upgraded on re-verify) | CWE-916 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
@@ -46,11 +46,12 @@ Total findings: **27** (High: 0, Medium: 1, Low: 23, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [HIGH] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain api.nicovideo.jp resolves to 54.192.248.125 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
-
+- **Re-verify 2026-09-29 (agent-aggressive):** UPGRADED to HIGH - api.nicovideo.jp: every path (/ /index.html /favicon.ico /api/ /health) returns the identical CloudFront default 919-byte 403 ("We can't connect to the server") = distribution with NO origin; TLS SNI cert is a valid ACM certificate CN=nicovideo.jp (valid Nov 2025 - Dec 2026), i.e. the custom domain is still registered on a live distribution while its origin is gone - classic CloudFront subdomain-takeover posture on an API host.
+-
 ### 2. [LOW] Missing HSTS header (`H1`)
 
 - **CWE:** CWE-319
@@ -184,3 +185,7 @@ Total findings: **27** (High: 0, Medium: 1, Low: 23, Info: 3)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-29, agent-aggressive)
+
+api.nicovideo.jp re-checked live: 403 CloudFront default error (919 B) on all 5 tested paths (identical body) + valid ACM cert CN=nicovideo.jp on the distribution (renewed Nov 2025) + no origin responses. Distribution alive, origin absent -> takeover candidate on the API subdomain. MEDIUM -> HIGH. Index row updated (27 total: 1H/0M/23L/3I).

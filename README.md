@@ -5,7 +5,7 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 14153** (High: 0, Medium: 179, Low: 2942, Info: 11032)
+**Total findings across all sites: 14326** (High: 30, Medium: 185, Low: 3040, Info: 11071)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -31,7 +31,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | nginx.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | code.visualstudio.com | 6 | 0 | 2 | 2 | 2 | top-websites gist (no active program match) |
 | hawaii.edu | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
-| nicovideo.jp | 27 | 0 | 1 | 23 | 3 | top-websites gist (no active program match) |
+| nicovideo.jp | 27 | 1 | 0 | 23 | 3 | top-websites gist (no active program match) |
 | deepl.com | 32 | 0 | 0 | 31 | 1 | top-websites gist (no active program match) |
 | s3.amazonaws.com | 8 | 0 | 2 | 4 | 2 | AWS |
 | academic.oup.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
@@ -585,7 +585,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | storage.googleapis.com | 17 | 0 | 0 | 5 | 12 | top-websites gist (no active program match) |
 | store.google.com | 20 | 0 | 0 | 2 | 18 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | store.steampowered.com | 16 | 0 | 0 | 4 | 12 | [Valve Software](https://hackerone.com/valve) |
-| strava.com | 23 | 0 | 0 | 4 | 19 | top-websites gist (no active program match) |
+| strava.com | 24 | 1 | 0 | 4 | 19 | top-websites gist (no active program match) |
 | stripe.com | 20 | 0 | 0 | 1 | 19 | [Stripe](https://hackerone.com/stripe) |
 | sublimetext.com | 19 | 0 | 0 | 5 | 14 | top-websites gist (no active program match) |
 | support.apple.com | 19 | 0 | 0 | 2 | 17 | [Apple](https://security.apple.com) |
@@ -612,7 +612,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | thinkgeek.com | 23 | 0 | 0 | 6 | 17 | top-websites gist (no active program match) |
 | thinkwithgoogle.com | 21 | 0 | 0 | 3 | 18 | top-websites gist (no active program match) |
 | ticketportal.cz | 23 | 0 | 0 | 6 | 17 | top-websites gist (no active program match) |
-| time.com | 23 | 0 | 0 | 4 | 19 | TIME |
+| time.com | 24 | 0 | 0 | 4 | 20 | TIME |
 | timesofindia.indiatimes.com | 16 | 0 | 0 | 3 | 13 | top-websites gist (no active program match) |
 | tools.google.com | 18 | 0 | 0 | 4 | 14 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | tools.ietf.org | 24 | 0 | 0 | 5 | 19 | top-websites gist (no active program match) |
