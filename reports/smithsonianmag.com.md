@@ -12,38 +12,38 @@
 
 ## Summary
 
-Total findings: **33** (High: 28, Medium: 0, Low: 3, Info: 2)
+Total findings: **33** (High: 0, Medium: 28, Low: 3, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 2 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 3 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 4 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 5 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 6 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 7 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 8 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 9 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 10 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 11 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 12 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 13 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 14 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 15 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 16 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 17 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 18 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 19 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 20 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 21 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 22 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 23 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 24 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 25 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 26 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 27 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 28 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
+| 1 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 2 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 3 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 4 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 5 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 6 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 7 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 8 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 9 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 10 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 11 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 12 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 13 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 14 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 15 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 16 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 17 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 18 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 19 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 20 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 21 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 22 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 23 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 24 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 25 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 26 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 27 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
+| 28 | medium | I1 | Reflected XSS in JavaScript context (refuted on re-verify) | CWE-79 |
 | 29 | low | H2 | Missing CSP header | CWE-1021 |
 | 30 | low | I22 | Protected path listed in robots.txt | CWE-538 |
 | 31 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -52,142 +52,142 @@ Total findings: **33** (High: 28, Medium: 0, Low: 3, Info: 2)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 1. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.smithsonianmag.com/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 2. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 2. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter query on https://www.smithsonianmag.com/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 3. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 3. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.smithsonianmag.com/s reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 4. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 4. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.smithsonianmag.com/results reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 5. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 5. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/redirect reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 6. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 6. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/go reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 7. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 7. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter redirect on https://www.smithsonianmag.com/go reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 8. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 8. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 9. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 9. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter to on https://www.smithsonianmag.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 10. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 10. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/link reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 11. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 11. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/out reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 12. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 12. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/u reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 13. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 13. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/share reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 14. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 14. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.smithsonianmag.com/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 15. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 15. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter query on https://www.smithsonianmag.com/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 16. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 16. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.smithsonianmag.com/s reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 17. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 17. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.smithsonianmag.com/results reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 18. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 18. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/redirect reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 19. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 19. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/go reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 20. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 20. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter redirect on https://www.smithsonianmag.com/go reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 21. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 21. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 22. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 22. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter to on https://www.smithsonianmag.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 23. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 23. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/link reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 24. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 24. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/out reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 25. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 25. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/u reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 26. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 26. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/share reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 27. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 27. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.smithsonianmag.com/view reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 28. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 28. [MEDIUM] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter to on https://www.smithsonianmag.com/forward reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
@@ -220,3 +220,10 @@ Total findings: **33** (High: 28, Medium: 0, Low: 3, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-29, agent-aggressive)
+
+All 28 I1 HIGHs (15 unique endpoints: /search q/query, /s, /results, /redirect, /go url/redirect, /r url/to, /link, /out, /u, /share, /view, /forward; x2 for duplicates) re-checked:
+- Direct HTTP (fresh tokens): ALL 15 endpoints -> **HTTP 403 Cloudflare managed challenge** (cType:"managed", __cf_chl_tk); the token reflects only inside CF's own challenge JS as a quoted string (`cUPMDTk:"/search?q=TOKEN\u0026__cf_chl_tk=..."`). Breakout probes (`x</script><img src=x onerror=alert(1)>`): no raw payload, no %3C leftover, no HTML escaping -> challenge JS sanitizes.
+- IAB browser (Chrome, challenge passed): real /search/?q= page loads (200, "Search Smithsonian Magazine"); token reflects (a) as the search input's value attribute and (b) URL-ENCODED inside the freestar/hadronid tracking script (`url=https%3A%2F%2Fwww.smithsonianmag.com%2Fsearch%2F%3Fq%3DTOKEN`); no JS dialog, no raw <img>.
+- Conclusion: scanner I1 heuristic tripped on the Cloudflare challenge-page JS string. 28 HIGH -> 28 MEDIUM (live 200 page still reflects q in a quoted input + encoded script - XSS-adjacent). Index row updated (33 total: 0H/28M/3L/2I).

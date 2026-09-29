@@ -5,7 +5,7 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 14326** (High: 30, Medium: 185, Low: 3040, Info: 11071)
+**Total findings across all sites: 14326** (High: 2, Medium: 213, Low: 3040, Info: 11071)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -19,7 +19,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | journals.plos.org | 14 | 0 | 0 | 4 | 10 | top-websites gist (no active program match) |
 | mailchi.mp | 33 | 0 | 0 | 31 | 2 | top-websites gist (no active program match) |
 | scratch.mit.edu | 30 | 0 | 1 | 21 | 8 | top-websites gist (no active program match) |
-| smithsonianmag.com | 33 | 28 | 0 | 3 | 2 | top-websites gist (no active program match) |
+| smithsonianmag.com | 33 | 0 | 28 | 3 | 2 | top-websites gist (no active program match) |
 | chromium.org | 4 | 0 | 0 | 1 | 3 | top-websites gist (no active program match) |
 | stumbleupon.com | 19 | 0 | 4 | 13 | 2 | top-websites gist (no active program match) |
 | mediafire.com | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
