@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| science.sciencemag.org | 32 | 30 | 0 | 1 | 1 | top-websites gist (no active program match) |
 | pastebin.com | 26 | 0 | 0 | 25 | 1 | top-websites gist (no active program match) |
 | i1.wp.com | 7 | 0 | 0 | 3 | 4 | top-websites gist (no active program match) |
 | patreon.com | 21 | 0 | 2 | 15 | 4 | top-websites gist (no active program match) |
