@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| ebay.com | 4 | 0 | 0 | 2 | 2 | eBay |
 | mtv.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | cia.gov | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
 | w3.org | 33 | 0 | 0 | 33 | 0 | W3C |
