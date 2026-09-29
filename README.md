@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| billboard.com | 5 | 0 | 0 | 2 | 3 | top-websites gist (no active program match) |
 | refinery29.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | europe1.fr | 14 | 0 | 1 | 2 | 11 | top-websites gist (no active program match) |
 | hulu.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
