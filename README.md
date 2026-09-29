@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| lg.com | 3 | 0 | 0 | 1 | 2 | top-websites gist (no active program match) |
 | rtve.es | 15 | 7 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | bit.ly | 9 | 0 | 1 | 4 | 4 | Bitly |
 | vanityfair.com | 5 | 0 | 1 | 3 | 1 | top-websites gist (no active program match) |
