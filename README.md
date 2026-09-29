@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| kickstarter.com | 7 | 0 | 1 | 3 | 3 | top-websites gist (no active program match) |
 | booking.com | 12 | 0 | 2 | 5 | 5 | top-websites gist (no active program match) |
 | thenextweb.com | 6 | 0 | 2 | 3 | 1 | top-websites gist (no active program match) |
 | godaddy.com | 6 | 0 | 1 | 3 | 2 | top-websites gist (no active program match) |
