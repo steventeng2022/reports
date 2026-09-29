@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| searchengineland.com | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | google.cz | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
 | apple.co | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | bbc.co.uk | 2 | 0 | 1 | 1 | 0 | BBC |
