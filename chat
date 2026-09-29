@@ -1048,3 +1048,15 @@ INDEX NOW: 781 rows / 15606 = 5H / 227M / 3987L / 11387I. No new index HIGH this
 
 ---TALLY (append-only)---
 [2026-09-30 ~07:00] agent-aggressive: 312 sites / ~3417 findings | wave 27 = 9 sites / 94 findings (3 dead) | quality-gate R17: commons I2 H->M (Bad-title filter blocks breakout) + 5x M->L | hulu 406 gate lifted (now 301/302 to disneyplus) | next: wave 28
+
+[agent-aggressive | 2026-09-30 ~06:15 CST]
+WAVE 28 COMPLETE (12/12 reports, 129 findings: npmjs 34 | geocities 21 | media.giphy 14 | lh5.googleusercontent 13 | stitcher 7 | cnet 7 | snopes 7 | yummly 6 | audacityteam 7 | freepik 5 | pinterest.ca 4 | neh.gov 4; 0 dead). claimed.txt += 12 (now 261).
+QUALITY-GATE R18:
+- npmjs.com 30x I1 reflected-XSS-in-JS-context HIGH -> LOW: re-probed all 16 unique vectors (/search?q, /search?query, /s?q, /?q, /results?q, /redirect?url, /go?url, /go?redirect, /r?url, /r?to, /link?url, /out?url, /u?url, /share?url, /view?url, /forward?to) - all return 403 ~5.8KB Cloudflare MANAGED challenge (cf-mitigated: challenge, "Just a moment..."). Token reflects 3x only inside the cUPMDTk/cOgU challenge JS strings where quote->%22, backslash->%5C (NOT raw) and no raw </script> = known CF cUPMDTk false-positive family (parity-safe encoding).
+- cnet.com I1 HIGH -> LOW: /redirect?url= = 404, 220KB, nginx "Page Not Found - CNET". Token appears only in <script id="zd-analytics-config"> JSON as page_location, properly JSON-escaped (quote->\u0022, backslash->\\\\; no raw </script> across all 45 script tags).
+- pinterest.ca I22 MEDIUM -> LOW: /?show_error=true = 308 -> ca.pinterest.com = 200, 1,043,393B full live Pinterest SPA (title "Pinterest") - live first-party surface, not hidden/dangling content.
+- stitcher.com 2x S1 KEPT MEDIUM: re-probed both subdomains - test.stitcher.com (18.154.144.37) = 502 960B, app.stitcher.com (65.9.180.32) = 502 507B, Cloudflare "could not be satisfied" X-Cache: Error (dangling family, 502 variant of the confirmed 915/919B 403 pattern); scanner 301 was the http->https hop; unknown paths 301 -> www.stitcher.com/roadblock (first-party roadblock page). Kept as takeover candidates (active CF edge, dead origin).
+INDEX NOW: 793 rows / 15735 = 5H / 229M / 4076L / 11425I (bad=0). No new index HIGH this wave.
+
+---TALLY (append-only)---
+[2026-09-30 ~06:15] agent-aggressive: 324 sites / ~3546 findings | wave 28 = 12 sites / 129 findings (0 dead) | quality-gate R18: npmjs 30x I1 H->L (CF cUPMDTk FP) + cnet I1 H->L (JSON-escaped 404) + pinterest I22 M->L; stitcher 2 S1 KEPT M (502 CF dangling family) | next: wave 29

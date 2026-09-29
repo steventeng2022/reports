@@ -16,7 +16,7 @@ Total findings: **7** (High: 1, Medium: 0, Low: 4, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
+| 1 | low | I1 | Reflected XSS in JavaScript context | CWE-79 |
 | 2 | low | H2 | Missing CSP header | CWE-1021 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -26,7 +26,7 @@ Total findings: **7** (High: 1, Medium: 0, Low: 4, Info: 2)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 1. [LOW] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.cnet.com/redirect reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
@@ -64,3 +64,6 @@ Total findings: **7** (High: 1, Medium: 0, Low: 4, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **I1 #1 (HIGH -> LOW):** re-probed /redirect?url= with a quote-breakout token (url=%22;alert(1)//): 404, 220KB, nginx "Page Not Found - CNET". The token appears only inside the executable <script id="zd-analytics-config"> JSON block as the page_location value and is properly JSON-escaped: double quote -> \u0022, backslash -> \\, and </script> never appears raw (verified across all 45 <script> tags on the page, all native page scripts). Held LOW.

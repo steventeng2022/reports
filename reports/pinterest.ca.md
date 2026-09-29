@@ -16,14 +16,14 @@ Total findings: **4** (High: 0, Medium: 1, Low: 3, Info: 0)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 2 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 3 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /?show_error=true which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -46,3 +46,6 @@ Total findings: **4** (High: 0, Medium: 1, Low: 3, Info: 0)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **I22 #1 (MEDIUM -> LOW):** re-probed /?show_error=true (the path hidden in robots.txt): 308 redirect to the ca.pinterest.com canonical, which serves 200 with 1,043,393B - a full live Pinterest SPA page (title "Pinterest") with real app content, not hidden/dangling material. Held LOW.

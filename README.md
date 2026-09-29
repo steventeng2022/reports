@@ -5,7 +5,7 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 15606** (High: 5, Medium: 227, Low: 3987, Info: 11387)
+**Total findings across all sites: 15735** (High: 5, Medium: 229, Low: 4076, Info: 11425)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -14,12 +14,12 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | freepik.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | stitcher.com | 7 | 0 | 2 | 3 | 2 | top-websites gist (no active program match) |
 | yummly.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
-| cnet.com | 7 | 1 | 0 | 4 | 2 | top-websites gist (no active program match) |
-| pinterest.ca | 4 | 0 | 1 | 3 | 0 | top-websites gist (no active program match) |
+| cnet.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
+| pinterest.ca | 4 | 0 | 0 | 4 | 0 | top-websites gist (no active program match) |
 | lh5.googleusercontent.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
 | audacityteam.org | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | neh.gov | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
-| npmjs.com | 34 | 30 | 0 | 3 | 1 | top-websites gist (no active program match) |
+| npmjs.com | 34 | 0 | 0 | 33 | 1 | top-websites gist (no active program match) |
 | geocities.com | 21 | 0 | 0 | 20 | 1 | top-websites gist (no active program match) |
 | cbsnews.com | 5 | 0 | 0 | 3 | 2 | Paramount |
 | copyblogger.com | 5 | 0 | 0 | 5 | 0 | top-websites gist (no active program match) |

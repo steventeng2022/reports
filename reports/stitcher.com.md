@@ -64,3 +64,6 @@ Total findings: **7** (High: 0, Medium: 2, Low: 3, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **S1 #1-2 (MEDIUM, kept):** re-probed both subdomains. test.stitcher.com (18.154.144.37) = 502, 960B; app.stitcher.com (65.9.180.32) = 502, 507B; both Cloudflare "ERROR: The request could not be satisfied" error pages with X-Cache: Error - the Cloudflare distribution is alive while the origin is dead, the dangling-family signature (502 variant of the confirmed 915/919B 403 pattern). The scanner had app.stitcher.com at 301 (http->https hop); the https endpoint is the 502 above, and unknown paths on it 301 -> www.stitcher.com/roadblock (first-party roadblock page). Both kept MEDIUM as takeover candidates (active CF edge, dead origin).
