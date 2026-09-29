@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| snopes.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | freepik.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | stitcher.com | 7 | 0 | 2 | 3 | 2 | top-websites gist (no active program match) |
 | yummly.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
