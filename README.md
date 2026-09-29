@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| support.mozilla.org | 8 | 0 | 1 | 4 | 3 | top-websites gist (no active program match) |
 | orcid.org | 9 | 0 | 1 | 5 | 3 | top-websites gist (no active program match) |
 | db.tt | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | twitch.tv | 9 | 0 | 4 | 4 | 1 | Twitch |
