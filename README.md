@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| namecheap.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | ticketmaster.com | 6 | 0 | 1 | 4 | 1 | top-websites gist (no active program match) |
 | whitehouse.gov | 3 | 0 | 0 | 1 | 2 | White House |
 | eventbrite.co.uk | 12 | 0 | 3 | 7 | 2 | top-websites gist (no active program match) |
