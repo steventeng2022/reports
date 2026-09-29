@@ -5,7 +5,7 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 14498** (High: 2, Medium: 214, Low: 3186, Info: 11096)
+**Total findings across all sites: 14667** (High: 2, Medium: 216, Low: 3311, Info: 11138)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -14,13 +14,13 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | indiegogo.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | cdn.jsdelivr.net | 5 | 0 | 0 | 3 | 2 | jsDelivr |
 | siteground.com | 38 | 0 | 0 | 35 | 3 | top-websites gist (no active program match) |
-| lefigaro.fr | 9 | 0 | 1 | 6 | 2 | top-websites gist (no active program match) |
+| lefigaro.fr | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
 | developer.mozilla.org | 7 | 0 | 0 | 7 | 0 | top-websites gist (no active program match) |
 | tiny.cc | 8 | 0 | 0 | 4 | 4 | top-websites gist (no active program match) |
-| propublica.org | 25 | 2 | 3 | 18 | 2 | top-websites gist (no active program match) |
-| digg.com | 28 | 0 | 1 | 22 | 5 | top-websites gist (no active program match) |
+| propublica.org | 25 | 0 | 2 | 20 | 3 | top-websites gist (no active program match) |
+| digg.com | 28 | 0 | 0 | 23 | 5 | top-websites gist (no active program match) |
 | technorati.com | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
-| access.redhat.com | 15 | 0 | 1 | 11 | 3 | top-websites gist (no active program match) |
+| access.redhat.com | 15 | 0 | 0 | 12 | 3 | top-websites gist (no active program match) |
 | wsj.com | 6 | 0 | 0 | 4 | 2 | The Wall Street Journal |
 | gstatic.com | 35 | 0 | 0 | 34 | 1 | Google |
 | gplus.to | 11 | 0 | 1 | 8 | 2 | top-websites gist (no active program match) |

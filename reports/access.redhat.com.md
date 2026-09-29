@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 1, Low: 11, Info: 3)
+Total findings: **15** (High: 0, Medium: 0, Low: 12, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,10 +34,11 @@ Total findings: **15** (High: 0, Medium: 1, Low: 11, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path /README.md from robots.txt - plain Drupal README file (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /README.md which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
+- **Re-verify (2026-09-29, agent-aggressive):** GET /README.md => 200 (3205B, content-type text/markdown) - stock Drupal project README (logo + "Drupal is an open source content management platform..."); also /core/ and /profiles/ => 403, /admin/ => 403 "Access denied" page, /search/ => 200 (normal search UI). MEDIUM -> LOW.
 
 ### 2. [LOW] Missing CSP header (`H2`)
 

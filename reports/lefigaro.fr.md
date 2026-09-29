@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 1, Low: 6, Info: 2)
+Total findings: **9** (High: 0, Medium: 0, Low: 7, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -28,10 +28,11 @@ Total findings: **9** (High: 0, Medium: 1, Low: 6, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path /vos-questions from robots.txt - public product page (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /vos-questions which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
+- **Re-verify (2026-09-29, agent-aggressive):** GET /vos-questions => 200 (292517B) public page "Rechercher une information ou actualité du Figaro avec Perplexity" (Figaro x Perplexity search product); /async/ => 301 -> 404 "Page introuvable". MEDIUM -> LOW.
 
 ### 2. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
 

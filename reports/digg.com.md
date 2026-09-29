@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **28** (High: 0, Medium: 1, Low: 22, Info: 5)
+Total findings: **28** (High: 0, Medium: 0, Low: 23, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -47,10 +47,11 @@ Total findings: **28** (High: 0, Medium: 1, Low: 22, Info: 5)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path /api/ from robots.txt - normal app route, weak disclosure (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /api/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
+- **Re-verify (2026-09-29, agent-aggressive):** GET /api/ => 200 (168478B, Vercel, text/html) - the main app route, no admin/API JSON exposed; /digg-admin/ => 404 (empty). MEDIUM -> LOW.
 
 ### 2. [LOW] Missing CSP header (`H2`)
 

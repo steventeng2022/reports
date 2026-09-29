@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **25** (High: 2, Medium: 3, Low: 18, Info: 2)
+Total findings: **25** (High: 0, Medium: 2, Low: 20, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 2 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
+| 1 | low | I1 | Reflected search URI in Jetpack stats object - quotes stripped (refuted) | CWE-79 |
+| 2 | low | I1 | Reflected search URI in Jetpack stats object - quotes stripped (refuted) | CWE-79 |
 | 3 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
 | 4 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
 | 5 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
@@ -44,12 +44,12 @@ Total findings: **25** (High: 2, Medium: 3, Low: 18, Info: 2)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 1. [LOW] Reflected search URI in Jetpack stats object - quotes stripped, refuted (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter query on https://www.propublica.org/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 2. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 2. [LOW] Reflected search URI in Jetpack stats object - quotes stripped, refuted (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter query on https://www.propublica.org/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
@@ -58,16 +58,19 @@ Total findings: **25** (High: 2, Medium: 3, Low: 18, Info: 2)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://www.propublica.org/graphql with Origin: https://evil-cors.example returned Access-Control-Allow-Origin: https://evil-cors.example with Access-Control-Allow-Credentials: true. Browsers will expose cross-origin responses to any origin the attacker chooses.
+- **Re-verify (2026-09-29, agent-aggressive):** confirmed live - GET /graphql + Origin: https://evil-cors.example => 401 with ACAO=https://evil-cors.example + ACAC=true (ACAH: x-requested-with). Kept MEDIUM.
 
 ### 4. [MEDIUM] CORS reflects attacker-controlled Origin (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://www.propublica.org/graphql with Origin: null returned Access-Control-Allow-Origin: null with Access-Control-Allow-Credentials: true. Browsers will expose cross-origin responses to any origin the attacker chooses.
+- **Re-verify (2026-09-29, agent-aggressive):** confirmed live - GET /graphql + Origin: null => 401 with ACAO=null + ACAC=true. (OPTIONS preflight => 403 without ACAO, but simple-GET echo is the exploitable pattern.) Kept MEDIUM.
 
-### 5. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 5. [LOW] Subdomain is a live AWS API Gateway behind CloudFront (not dangling) (`S1`)
 
 - **CWE:** CWE-916
-- **Detail:** Subdomain api.propublica.org resolves to 65.9.180.101 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
+- **Detail:** Subdomain api.propublica.org resolves to 65.9.180.101 (CloudFront) and serves a **live AWS API Gateway**: GET / => 403 (23B) `{"message":"Forbidden"}` with `x-amz-apigw-id`, `x-amzn-errortype: ForbiddenException`, via CloudFront - an active authenticated API, not a dangling landing page. MEDIUM->LOW.
+- **Re-verify (2026-09-29, agent-aggressive):** headers confirm x-amz-apigw-id=Ed_bhE9noAMELBA=, x-cache "Error from cloudfront", x-amz-cf-pop TPE53-P4.
 
 ### 6. [LOW] Missing CSP header (`H2`)
 
@@ -172,3 +175,10 @@ Total findings: **25** (High: 2, Medium: 3, Low: 18, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+
+## Active re-verification (2026-09-29, agent-aggressive)
+
+- Two `I1` HIGH findings (search token reflected in JavaScript on /search?query=): re-probed with controlled payloads. The token reflects only inside the Jetpack-stats analytics object: `_stq.push(["view", {..., "arch_err":"/search?query=TOKEN", ...}])` on the 404 document. Precision probes: payload `Zx7qK2v9Bm"ENDQ` reflected as `Zx7qK2v9BmENDQ` and `Zx7qK2v9Bm<ENDG` reflected as `Zx7qK2v9BmENDG` - both `"` and `<` are STRIPPED (not escaped) by the stats sanitizer, so the quoted string cannot be broken out of; payload with a backslash tripped the CF challenge (token appears URL-encoded in cUPMDTk, known false-positive family). 2 HIGH -> 2 LOW.
+- `S1` api.propublica.org: live AWS API Gateway (403 ForbiddenException, x-amz-apigw-id), not a dangling CloudFront landing. MEDIUM -> LOW.
+- `I20` x2: kept MEDIUM (ACAO+ACAC echo confirmed on live GET, 401 responses).
