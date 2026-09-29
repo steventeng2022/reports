@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| sfexaminer.com | 9 | 0 | 0 | 8 | 1 | top-websites gist (no active program match) |
 | git-scm.com | 12 | 0 | 0 | 3 | 9 | top-websites gist (no active program match) |
 | bitcointalk.org | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | google.pt | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
