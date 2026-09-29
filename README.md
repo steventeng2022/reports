@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| songkick.com | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
 | edition.cnn.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
 | goo.gl | 4 | 0 | 0 | 3 | 1 | Google |
 | google.co.in | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
