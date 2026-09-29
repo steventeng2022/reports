@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| ericsson.com | 29 | 28 | 0 | 1 | 0 | top-websites gist (no active program match) |
 | payhip.com | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | webmasters.googleblog.com | 26 | 0 | 0 | 25 | 1 | top-websites gist (no active program match) |
 | s3-eu-west-1.amazonaws.com | 13 | 0 | 7 | 4 | 2 | top-websites gist (no active program match) |
