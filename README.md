@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| ssl.google-analytics.com | 13 | 2 | 1 | 7 | 3 | top-websites gist (no active program match) |
 | fr.linkedin.com | 11 | 1 | 0 | 9 | 1 | top-websites gist (no active program match) |
 | mozilla.com | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
 | nginx.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
