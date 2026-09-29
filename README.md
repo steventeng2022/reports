@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| scratch.mit.edu | 30 | 0 | 1 | 21 | 8 | top-websites gist (no active program match) |
 | smithsonianmag.com | 33 | 28 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | chromium.org | 4 | 0 | 0 | 1 | 3 | top-websites gist (no active program match) |
 | stumbleupon.com | 19 | 0 | 4 | 13 | 2 | top-websites gist (no active program match) |
