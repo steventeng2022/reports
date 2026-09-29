@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| pagead2.googlesyndication.com | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | cnn.com | 16 | 0 | 0 | 5 | 11 | CNN |
 | foodnetwork.com | 6 | 0 | 1 | 3 | 2 | top-websites gist (no active program match) |
 | bitbucket.org | 12 | 0 | 2 | 3 | 7 | Atlassian |
