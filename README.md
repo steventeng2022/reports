@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| mozilla.com | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
 | nginx.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | code.visualstudio.com | 6 | 0 | 2 | 2 | 2 | top-websites gist (no active program match) |
 | hawaii.edu | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
