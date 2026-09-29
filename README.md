@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| vox.com | 18 | 0 | 0 | 17 | 1 | top-websites gist (no active program match) |
 | businesswire.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | www8.hp.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | journals.plos.org | 14 | 0 | 0 | 4 | 10 | top-websites gist (no active program match) |
