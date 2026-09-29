@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| thumbtack.com | 13 | 0 | 2 | 3 | 8 | top-websites gist (no active program match) |
 | jamanetwork.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | dol.gov | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | docs.wixstatic.com | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
