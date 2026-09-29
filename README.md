@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| google.pt | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
 | de.wikipedia.org | 19 | 1 | 1 | 15 | 2 | top-websites gist (no active program match) |
 | pwc.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | i.ytimg.com | 4 | 0 | 0 | 3 | 1 | top-websites gist (no active program match) |
