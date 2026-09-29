@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| whitehouse.gov | 3 | 0 | 0 | 1 | 2 | White House |
 | eventbrite.co.uk | 12 | 0 | 3 | 7 | 2 | top-websites gist (no active program match) |
 | symfony.com | 27 | 0 | 0 | 25 | 2 | top-websites gist (no active program match) |
 | thumbtack.com | 13 | 0 | 2 | 3 | 8 | top-websites gist (no active program match) |
