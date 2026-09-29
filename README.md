@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| faz.net | 6 | 0 | 1 | 3 | 2 | top-websites gist (no active program match) |
 | box.net | 31 | 28 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | telegraph.co.uk | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | google.gr | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
