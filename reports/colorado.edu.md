@@ -12,15 +12,15 @@
 
 ## Summary
 
-Total findings: **11** (High: 3, Medium: 2, Low: 2, Info: 4)
+Total findings: **11** (High: 0, Medium: 0, Low: 7, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 2 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 3 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 4 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 5 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | I1 | Reflected XSS in JavaScript context | CWE-79 |
+| 2 | low | I1 | Reflected XSS in JavaScript context | CWE-79 |
+| 3 | low | I1 | Reflected XSS in JavaScript context | CWE-79 |
+| 4 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 5 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 6 | low | H2 | Missing CSP header | CWE-1021 |
 | 7 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
 | 8 | info | T2 | TLS certificate expiring within 24 days | CWE-295 |
@@ -30,27 +30,27 @@ Total findings: **11** (High: 3, Medium: 2, Low: 2, Info: 4)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 1. [LOW] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.colorado.edu/s reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 2. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 2. [LOW] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.colorado.edu/ reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 3. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 3. [LOW] Reflected XSS in JavaScript context (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.colorado.edu/results reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 4. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 4. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /README.md which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 5. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 5. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.colorado.edu resolves to 65.9.180.100 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -88,3 +88,8 @@ Total findings: **11** (High: 3, Medium: 2, Low: 2, Info: 4)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **I1 #1/#2/#3 (HIGH -> LOW):** token Bd5Xn8JqWz reflects once on /, /s (404) and /results (404), always inside the Drupal <script type="application/json" data-drupal-selector="drupal-settings-json"> block ("currentQuery":{"q":"..."}). Breakout test: ?q=%3C%2Fscript%3E%3Csvg%20onload%3Dalert(1)%3E renders as </script><svg... (hex-escaped, raw </script> absent) and ?q=%22%3Balert(1)// renders with JSON-escaped quote - same drupal_json_encode protection as law.cornell; not executable.
+- **I22 #4 (MEDIUM -> LOW):** /README.md = 200 3,205B text/plain = the stock Drupal distribution README ("Drupal is an open source content management platform..."), generic framework documentation, not app-specific data.
+- **S1 #5 (MEDIUM -> LOW):** status.colorado.edu = 200 111,363B AtlassianEdge = live first-party Atlassian Statuspage (not the CF 915/919B dangling signature).

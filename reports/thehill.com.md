@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 1, Low: 3, Info: 3)
+Total findings: **7** (High: 0, Medium: 0, Low: 4, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 2 | low | H4 | No clickjacking protection | CWE-1023 |
 | 3 | low | I10 | WordPress login page exposed | CWE-538 |
 | 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -26,7 +26,7 @@ Total findings: **7** (High: 0, Medium: 1, Low: 3, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /wp-content/plugins/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -64,3 +64,6 @@ Total findings: **7** (High: 0, Medium: 1, Low: 3, Info: 3)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **I22 #1 (MEDIUM -> LOW):** /wp-content/plugins/ (after 308 permalink fix to thehill.com) = 200 with 0-byte text/html body from nginx = live origin answering empty (same 200-empty pattern as pbs cinema R13), no directory listing or content disclosed.

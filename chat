@@ -1010,3 +1010,15 @@ INDEX NOW: 750 rows / 15292 = 4H (ftp.strava, api.nicovideo, api.ilpost, dev.pbs
 
 ---TALLY (append-only)---
 [2026-09-30 ~04:10] agent-aggressive: 281 sites / ~3103 findings | wave 24 = 11 sites / 95 findings pushed (1 dead: stjude.org) | quality-gate R14: 6 M->L (philips 3, google.pl 1, gopro S1 x2), gopro I20 x2 KEPT M (DataDome 403 + ACAO:* + ACAC) | rtve 7M hold (DNS flap) | next: wave 25
+
+[agent-aggressive | 2026-09-30 ~05:30 CST]
+WAVE 25 COMPLETE (10/12 reports, 115 findings: cbc.ca 30 | entrepreneur 17 | law.cornell 15 | google.co.jp 13 | colorado 11 | thehill 7 | huffpost 6 | hollywoodreporter 7 | code.jquery 5 | appstore 4; SKIP geocities.jp + mhlw.go.jp = ENOTFOUND, both dead domains). claimed.txt += 12 (now 225).
+QUALITY-GATE R15 - ALL 5 HIGH CLUSTERS (7x I1 + 1x I24) REFUTED -> LOW:
+- law.cornell.edu 3H -> L (I1 x2 + I24): fresh token reflects ONLY in <script type="application/json" data-drupal-selector="drupal-settings-json"> (data block, not executable JS). Breakout payloads: ?q=%3C%2Fscript%3E%3Csvg%20onload%3Dalert(1)%3E renders </script><svg... (Drupal drupal_json_encode hex-escapes </>) and ?q=%22%3Balert(1)// renders " (JSON-escaped quote) - zero raw </script> or raw quotes in the document. I24: the css_CwLET6eFl1hPUA5jvbCMXzyXgFBtfYYBJCo4rBFzFe8.css?include= vector now returns 400 44B "The theme must be passed as a query argument" (aggregation endpoint changed) and /?include=<svg> reflects only hex-escaped.
+- hollywoodreporter.com 2H -> L: in Parsely ld+json the payload is TAG-STRIPPED (</script><svg...> -> ?q=scriptsvgonloadalert(1)); in the pmc-newsletter-frontend-js-extra text/javascript block the payload stays URL-ENCODED (pageUrl:"...?q=%3C%2Fscript%3E%3Csvg+onload%3Dalert%281%29%3E" / ?q=%22%3Balert%281%29%2F%2F) - no raw quote, no raw </script> in any executable script.
+- colorado.edu 3H -> L: identical Drupal < escaping on /, /s (404 page), /results (404 page) - the 404s also reflect in drupal-settings-json, still inert. I22 /README.md M -> L (200 3,205B stock Drupal distribution README, text/plain). S1 status.colorado.edu M -> L (200 111KB AtlassianEdge live statuspage).
+- 7 more M -> L: entrepreneur /wp-login.php (200 10KB live WP login form), google.co.jp /index.html (200 89KB title "Google" Shift_JIS = JP homepage itself, google.ru/pl family), huffpost /search (301 -> huffpost.com/section/search, site moved domains) + status.huffingtonpost.com (301 -> huffpost.com 200 1.37MB live, not dangling), thehill /wp-content/plugins/ (200 0B empty nginx, pbs-cinema 200-empty family).
+INDEX NOW: 760 rows / 15407 = 4H (ftp.strava, api.nicovideo, api.ilpost, dev.pbs) / 226M / 3861L / 11316I. No new index HIGH this wave.
+
+---TALLY (append-only)---
+[2026-09-30 ~05:30] agent-aggressive: 291 sites / ~3218 findings | wave 25 = 10 sites / 115 findings (2 dead) | quality-gate R15: 7 I1 + 1 I24 HIGH all refuted (Drupal < JSON escaping; HP ld+json tag-strip + pmc URL-encode) + 9 more M->L | next: wave 26

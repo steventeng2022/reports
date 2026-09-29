@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 2, Low: 3, Info: 1)
+Total findings: **6** (High: 0, Medium: 0, Low: 5, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 2 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 3 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 5 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -25,12 +25,12 @@ Total findings: **6** (High: 0, Medium: 2, Low: 3, Info: 1)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /search which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.huffingtonpost.com resolves to 3.169.121.81 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -58,3 +58,7 @@ Total findings: **6** (High: 0, Medium: 2, Low: 3, Info: 1)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **I22 #1 (MEDIUM -> LOW):** /search = 301 -> huffpost.com/section/search -> 301 (site fully moved to huffpost.com; redirect chain lands on the live main site) - the robots path is a redirect, not hidden unauthenticated content.
+- **S1 #2 (MEDIUM -> LOW):** status.huffingtonpost.com = 301 -> huffpost.com 200 1,377,415B live = intentional redirect to the owned main domain, not a dangling third-party platform page.
