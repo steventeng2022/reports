@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **19** (High: 1, Medium: 1, Low: 15, Info: 2)
+Total findings: **19** (High: 0, Medium: 2, Low: 15, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I2 | Reflected XSS via attribute injection | CWE-79 |
-| 2 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | medium | I2 | Reflected XSS via attribute injection (sanitization boundary) | CWE-79 |
+| 2 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -38,12 +38,12 @@ Total findings: **19** (High: 1, Medium: 1, Low: 15, Info: 2)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS via attribute injection (`I2`)
+### 1. [MEDIUM] Reflected XSS via attribute injection - sanitization boundary (`I2`)
 
 - **CWE:** CWE-79
-- **Detail:** Parameter title on https://de.wikipedia.org/w/index.php: injecting "\"' onerror=\"alert(1)//" yields an unquoted onerror handler. Event fires on render.
+- **Detail:** Parameter title on https://de.wikipedia.org/w/index.php: payload reflects in <title> element content of the 404 "Ungültiger Titel" (bad-title) page; breakout titles containing </title> or </h1> also return 404 via the Bad-title filter; no raw onerror inside a firing element attribute - sanitization boundary, not directly exploitable (commons.wikimedia.org precedent).
 
-### 2. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 2. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /api/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -132,6 +132,11 @@ Total findings: **19** (High: 1, Medium: 1, Low: 15, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://de.wikipedia.org/wiki/Wikipedia:Hauptseite
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I2 (HIGH -> MEDIUM):** GET https://de.wikipedia.org/w/index.php?title=PAYLOAD -> 301 -> /wiki/%22%27_onerror%3D%22alert(1)// -> final 404 (53,099 B, bad-title page "Ungültiger Titel"). Payload reflects only inside <title> element content; breakout attempts with </title> and </h1> in the title also 404 (Bad-title filter); no raw onerror inside a firing element attribute. Same sanitization-boundary behavior as commons.wikimedia.org (R17 gate).
+- **I22 (MEDIUM -> LOW):** https://de.wikipedia.org/api/ re-probed = 200, 944 B, <title>APIs</title> landing page; unauthenticated with no app-specific data (exact twin of commons.wikimedia.org /api/).
 
 ## Reproduction notes
 

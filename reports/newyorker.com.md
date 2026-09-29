@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 1, Low: 5, Info: 1)
+Total findings: **7** (High: 0, Medium: 0, Low: 6, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -26,7 +26,7 @@ Total findings: **7** (High: 0, Medium: 1, Low: 5, Info: 1)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /user-context which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -60,6 +60,10 @@ Total findings: **7** (High: 0, Medium: 1, Low: 5, Info: 1)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.newyorker.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** https://www.newyorker.com/user-context re-probed = 200, 171 B, Content-Type application/javascript - a cookie-clearing snippet (CN_segments expiry); live but low-information endpoint, no hidden data exposed.
 
 ## Reproduction notes
 

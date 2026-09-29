@@ -5,21 +5,21 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 15866** (High: 5, Medium: 229, Low: 4181, Info: 11451)
+**Total findings across all sites: 16008** (High: 5, Medium: 232, Low: 4284, Info: 11487)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
 | francetvinfo.fr | 30 | 0 | 0 | 27 | 3 | top-websites gist (no active program match) |
-| newyorker.com | 7 | 0 | 1 | 5 | 1 | top-websites gist (no active program match) |
+| newyorker.com | 7 | 0 | 0 | 6 | 1 | top-websites gist (no active program match) |
 | spectrum.ieee.org | 5 | 0 | 1 | 2 | 2 | top-websites gist (no active program match) |
 | anchor.fm | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
-| scoop.it | 29 | 0 | 1 | 25 | 3 | top-websites gist (no active program match) |
+| scoop.it | 29 | 0 | 0 | 26 | 3 | top-websites gist (no active program match) |
 | independent.co.uk | 12 | 0 | 0 | 3 | 9 | top-websites gist (no active program match) |
 | sfexaminer.com | 9 | 0 | 0 | 8 | 1 | top-websites gist (no active program match) |
 | git-scm.com | 12 | 0 | 0 | 3 | 9 | top-websites gist (no active program match) |
 | bitcointalk.org | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
-| google.pt | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
-| de.wikipedia.org | 19 | 1 | 1 | 15 | 2 | top-websites gist (no active program match) |
+| google.pt | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
+| de.wikipedia.org | 19 | 0 | 2 | 15 | 2 | top-websites gist (no active program match) |
 | pwc.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | i.ytimg.com | 4 | 0 | 0 | 3 | 1 | top-websites gist (no active program match) |
 | tunein.com | 32 | 0 | 0 | 31 | 1 | top-websites gist (no active program match) |

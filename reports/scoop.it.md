@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **29** (High: 0, Medium: 1, Low: 25, Info: 3)
+Total findings: **29** (High: 0, Medium: 0, Low: 26, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
@@ -48,7 +48,7 @@ Total findings: **29** (High: 0, Medium: 1, Low: 25, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /kaptcha/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -192,6 +192,10 @@ Total findings: **29** (High: 0, Medium: 1, Low: 25, Info: 3)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.scoop.it/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** https://www.scoop.it/kaptcha/ re-probed = 404 (9,026 B) now, but sibling endpoints /kaptcha/captcha.jpg and /kaptcha/refresh both return 200 image/jpeg (live kaptcha captcha images). The robots.txt-disallowed path is a standard captcha endpoint family with no hidden data.
 
 ## Reproduction notes
 

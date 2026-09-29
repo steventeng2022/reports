@@ -49,6 +49,10 @@ Total findings: **5** (High: 0, Medium: 1, Low: 2, Info: 2)
 - **CWE:** CWE-200
 - **Detail:** Server header: nginx
 
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I6 (kept MEDIUM):** All 4 next_url variants (//zx7rdtct.example/, https://zx7rdtct.example/, /safe?next=..., //evil.example#x) on /core/saml/main/login return 302 to the trusted IEEE IdP https://services10.ieee.org/idp/SSO.saml2; the attacker target is carried inside RelayState/SAMLRequest rather than as a direct Location to attacker-controlled host. Bounded unauthenticated SAML RelayState injection - no direct open redirect confirmed.
+
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
