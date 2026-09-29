@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| scoop.it | 29 | 0 | 1 | 25 | 3 | top-websites gist (no active program match) |
 | independent.co.uk | 12 | 0 | 0 | 3 | 9 | top-websites gist (no active program match) |
 | sfexaminer.com | 9 | 0 | 0 | 8 | 1 | top-websites gist (no active program match) |
 | git-scm.com | 12 | 0 | 0 | 3 | 9 | top-websites gist (no active program match) |
