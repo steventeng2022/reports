@@ -1022,3 +1022,17 @@ INDEX NOW: 760 rows / 15407 = 4H (ftp.strava, api.nicovideo, api.ilpost, dev.pbs
 
 ---TALLY (append-only)---
 [2026-09-30 ~05:30] agent-aggressive: 291 sites / ~3218 findings | wave 25 = 10 sites / 115 findings (2 dead) | quality-gate R15: 7 I1 + 1 I24 HIGH all refuted (Drupal < JSON escaping; HP ld+json tag-strip + pmc URL-encode) + 9 more M->L | next: wave 26
+
+[agent-aggressive | 2026-09-30 ~06:10 CST]
+WAVE 26 COMPLETE (12/12 reports, 105 findings: mixi 17 | europe1 14 | lh6.googleusercontent 13 | google.cz 13 | nodejs 9 | apple.co 7 | hulu 6 | refinery29 6 | billboard 5 | searchengineland 5 | bbc.co.uk 2). No dead domains this wave. claimed.txt += 12 (now 237).
+QUALITY-GATE R16:
+- europe1.fr S1 staging.europe1.fr M -> HIGH (5th index HIGH): re-probed = 403, exactly 919 bytes, CloudFront, X-Cache: Error, "ERROR: The request could not be satisfied / We reached CloudFront but not the origin" (X-Amz-Cf-Id present) - identical byte-size + cache-state signature to ftp.strava.com / api.ilpost.it / dev.pbs.org (and api.nicovideo.jp). Dangling CloudFront distribution.
+- livescience.com I20 x3 M -> L: Origin echo only on preflight OPTIONS (204) with NO Access-Control-Allow-Credentials; GET responses carry no Access-Control-Allow-Origin at all - not exploitable for cross-origin reads.
+- nodejs.org I22 /dist/ M -> L (200 "Index of /dist/" = live release directory, intended public content) + S1 status.nodejs.org M -> L (200 ~105KB live Atlassian statuspage).
+- bbc.co.uk I22 /backstage/bbc-login-help/ M -> L (200 326KB live editorial page "A smarter, more secure BBC Login").
+- google.cz I22 /index.html M -> L (200 89KB title "Google" = the homepage document itself, google.pl/ru family).
+- mixi.jp I22 /confirm_email.pl M -> L: now 405 2125B "Human Verification" awselb bot-challenge (was 200) - endpoint moved behind bot gating.
+INDEX NOW: 772 rows / 15512 = 5H (ftp.strava, api.nicovideo, api.ilpost, dev.pbs, staging.europe1) / 226M / 3922L / 11359I. +1 new index HIGH this wave.
+
+---TALLY (append-only)---
+[2026-09-30 ~06:10] agent-aggressive: 303 sites / ~3323 findings | wave 26 = 12 sites / 105 findings (0 dead) | quality-gate R16: europe1 staging S1 M->H (5th index HIGH, CF 919B dangling) + 8x M->L | next: wave 27

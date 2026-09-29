@@ -5,22 +5,22 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 15407** (High: 4, Medium: 226, Low: 3861, Info: 11316)
+**Total findings across all sites: 15512** (High: 5, Medium: 226, Low: 3922, Info: 11359)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
-| mixi.jp | 17 | 0 | 1 | 14 | 2 | top-websites gist (no active program match) |
+| mixi.jp | 17 | 0 | 0 | 15 | 2 | top-websites gist (no active program match) |
 | billboard.com | 5 | 0 | 0 | 2 | 3 | top-websites gist (no active program match) |
 | refinery29.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
-| europe1.fr | 14 | 0 | 1 | 2 | 11 | top-websites gist (no active program match) |
+| europe1.fr | 14 | 1 | 0 | 2 | 11 | top-websites gist (no active program match) |
 | hulu.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | lh6.googleusercontent.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
 | searchengineland.com | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
-| google.cz | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
+| google.cz | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
 | apple.co | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
-| bbc.co.uk | 2 | 0 | 1 | 1 | 0 | BBC |
-| nodejs.org | 9 | 0 | 2 | 3 | 4 | OpenJS Foundation |
-| livescience.com | 8 | 0 | 3 | 3 | 2 | top-websites gist (no active program match) |
+| bbc.co.uk | 2 | 0 | 0 | 2 | 0 | BBC |
+| nodejs.org | 9 | 0 | 0 | 5 | 4 | OpenJS Foundation |
+| livescience.com | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
 | colorado.edu | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
 | appstore.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | cbc.ca | 30 | 0 | 0 | 26 | 4 | top-websites gist (no active program match) |

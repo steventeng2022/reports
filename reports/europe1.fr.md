@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 1, Low: 2, Info: 11)
+Total findings: **14** (High: 1, Medium: 0, Low: 2, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | high | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
@@ -33,7 +33,7 @@ Total findings: **14** (High: 0, Medium: 1, Low: 2, Info: 11)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [HIGH] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain staging.europe1.fr resolves to 3.169.231.84 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -106,3 +106,6 @@ Total findings: **14** (High: 0, Medium: 1, Low: 2, Info: 11)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **S1 #1 (MEDIUM -> HIGH, promoted):** staging.europe1.fr re-probed = **403, exactly 919 bytes, CloudFront, X-Cache: Error, "ERROR: The request could not be satisfied / We reached CloudFront but not the origin"** (X-Amz-Cf-Id present) - the identical byte-size + cache-state signature as the three confirmed dangling-distribution HIGHs (ftp.strava.com R12-adjacent, api.ilpost.it R12, dev.pbs.org R13). The subdomain's CloudFront distribution no longer resolves to a live origin. 5th index HIGH.

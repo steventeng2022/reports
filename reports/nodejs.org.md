@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 2, Low: 3, Info: 4)
+Total findings: **9** (High: 0, Medium: 0, Low: 5, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 2 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
 | 5 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -28,12 +28,12 @@ Total findings: **9** (High: 0, Medium: 2, Low: 3, Info: 4)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /dist/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.nodejs.org resolves to 65.9.180.94 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -76,3 +76,7 @@ Total findings: **9** (High: 0, Medium: 2, Low: 3, Info: 4)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **I22 #1 (MEDIUM -> LOW):** /dist/ = 200 114,808B "Index of /dist/" = the live public release-artifacts directory (versioned node binaries), expected public static assets with directory index.
+- **S1 #2 (MEDIUM -> LOW):** status.nodejs.org = 200 105,528B served by AtlassianEdge = live first-party Atlassian Statuspage, not the CF 915/919B dangling signature.

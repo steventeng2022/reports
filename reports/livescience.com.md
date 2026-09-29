@@ -12,13 +12,13 @@
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 3, Low: 3, Info: 2)
+Total findings: **8** (High: 0, Medium: 0, Low: 6, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
-| 2 | medium | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
-| 3 | medium | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
+| 1 | low | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
+| 2 | low | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
+| 3 | low | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
 | 4 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 5 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 6 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -27,17 +27,17 @@ Total findings: **8** (High: 0, Medium: 3, Low: 3, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] CORS reflects attacker-controlled Origin (preflight) (`I20`)
+### 1. [LOW] CORS reflects attacker-controlled Origin (preflight) (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://www.livescience.com/ with Origin: https://evil-cors.example (OPTIONS preflight) returned Access-Control-Allow-Origin: https://evil-cors.example. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 2. [MEDIUM] CORS reflects attacker-controlled Origin (preflight) (`I20`)
+### 2. [LOW] CORS reflects attacker-controlled Origin (preflight) (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://www.livescience.com/api with Origin: https://evil-cors.example (OPTIONS preflight) returned Access-Control-Allow-Origin: https://evil-cors.example. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 3. [MEDIUM] CORS reflects attacker-controlled Origin (preflight) (`I20`)
+### 3. [LOW] CORS reflects attacker-controlled Origin (preflight) (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://www.livescience.com/graphql with Origin: https://evil-cors.example (OPTIONS preflight) returned Access-Control-Allow-Origin: https://evil-cors.example. Browsers will expose cross-origin responses to any origin the attacker chooses.
@@ -70,3 +70,6 @@ Total findings: **8** (High: 0, Medium: 3, Low: 3, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **I20 #1/#2/#3 (MEDIUM -> LOW):** re-sent OPTIONS preflights with Origin: https://evil-cors.example to /, /api, /graphql - all return 204 with Access-Control-Allow-Origin: <echoed origin> but NO Access-Control-Allow-Credentials, and the actual GET responses carry NO Access-Control-Allow-Origin header at all (GET / = 200 no ACAO; GET /api and /graphql = 404 no ACAO). A preflight-only echo without credentials cannot expose cross-origin response bodies (the real response has no CORS grant), so downgraded to LOW.
