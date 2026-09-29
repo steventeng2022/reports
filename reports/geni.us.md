@@ -405,3 +405,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 4, Info: 15)
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
+
+
+## Active re-verification (2026-09-29, agent-aggressive)
+
+Fresh unique token + breakout probes re-run live from Asia/Taipei (post-maintenance-window re-check of the 26 HIGH findings):
+- https://geniuslink.com/?q=<T> : HTTP 200, **no token reflection at all**
+- /search?query=, /go?url=, /r?url=, /redirect?url= : HTTP 404 - token appears only inside the Nuxt 404-page SSR payload as a quoted string ("/search?query=<T>",404,...)
+- Breakout probe (?query=x%3C%2Fscript%3E%3Cimg src=x onerror=...): HTTP 404, **no raw <img>; </script> is URL-encoded (%3C%2Fscript) inside the payload** so the data script cannot be terminated
+Conclusion: matches the 2026-09-26 browser refutation (Nuxt SSR payload encoding). Index row downgraded 26 HIGH -> 26 MEDIUM.

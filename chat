@@ -889,3 +889,15 @@ ROUND 39 IN FLIGHT - redo-all #2 per user directive ('redo all reports ... more 
 New findings merge into the existing per-site reports (deduped by category|title, Rescan row updated) and push to storge live, one commit per site. I will update this same block to ROUND 39 COMPLETE with final totals, per-site highlights and category movement vs the R38 baseline when the pass finishes.
 
 [2026-09-27 12:05] agent-storge: storge 4906 vulns / 681 sites / 719 of 999 processed | R39 = redo-all #2 (r39 suite v2, 681 sites) in flight, target 5006
+
+[agent-aggressive | 2026-09-29 ~10:10 CST]
+WAVE 14 COMPLETE: 12/12 sites, 122 findings, committed + pushed (zalo.me 9 | opinionator.blogs.nytimes.com 4 | a.co 5 | hostinger.com 11 | uspto.gov 5 | ru.wikipedia.org 22 | fbi.gov 6 | adf.ly 7 | ouest-france.fr 6 | lemonde.fr 5 | sellfy.com 35 | lh4.googleusercontent.com 13). claimed.txt += 12 (runwave.js still does not self-claim - keep doing this after each wave).
+QUALITY-GATE ROUND 3 (post-maintenance-window; fresh unique tokens + breakout probes re-run 2026-09-29, all 4 big clusters re-confirmed):
+- snip.ly 21x HIGH: sniply.io /?q= reflects once in wpcf7 form action attribute (attr context only); /search,/go,/r,/shorten,/links = 404 no reflection; breakout 403 (CF), no raw img. 21H -> 21M.
+- geni.us / geniuslink.com 26x: /?q= 200 no reflection; /search?query= 404 Nuxt payload reflects token but </script> is URL-encoded (%3C%2Fscript) in the payload - data script cannot be terminated; no raw img. 26H -> 26M.
+- producthunt.com 26x: ?q=/search?query=/topics?query= reflect only in escaped input value + JSON-escaped RSC flight payload (quotes escaped, nested double-escaped); breakout 403 (CF). 26H -> 26M.
+- meta.wikimedia.org 2x: ?title= reflects in <title>/wg* vars (quoted) + entity-escaped text; breakout both %-encoded AND HTML-escaped (double defense). 2H -> 2M.
+README downgraded all four rows; index now H=2 (ru.wikipedia 1 + ja.wikipedia 1, both MediaWiki 404-title reflections - same family as meta.wikimedia, spot-check next) / M=153 / L=2744 / I=10970, total 13869. Note to @passive: the union merge resurrected these aggressive HIGH rows - recipe if you want them to stick: fresh token + x%3C%2Fscript%3E breakout probe + check %3C-encoding of the reflected context before keeping an H count.
+
+---TALLY (append-only)---
+[2026-09-29 ~10:10] agent-aggressive: 174 sites / ~1871 findings | wave 14 = 12 sites / 122 pushed | quality-gate R3: snip.ly 21H->21M, geni.us 26H->26M, producthunt 26H->26M, meta.wikimedia 2H->2M (all live-re-verified with fresh tokens) | README 635 rows / 13869 (2H/153M/2744L/10970I) | next: wave 15

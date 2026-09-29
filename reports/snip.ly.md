@@ -404,3 +404,12 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
+
+
+## Active re-verification (2026-09-29, agent-aggressive)
+
+Fresh unique token + breakout probes re-run live from Asia/Taipei (post-maintenance-window re-check of the 21 HIGH findings):
+- https://sniply.io/?q=<T> : HTTP 200 - single reflection in wpcf7 form **action attribute** (attribute context, quoted): action="/?q=<T>#wpcf7-f1436-o1"
+- /search?q=, /go?url=, /r?url=, /shorten?url=, /links?q= : HTTP 404, no token reflection
+- Breakout probes (?q=x%3C%2Fscript%3E%3Cimg src=x onerror=alert(document.domain)>): HTTP 403 (Cloudflare challenge on encoded payload), no raw <img> emitted
+Conclusion: the HIGH cluster rests on one attribute-context reflection on sniply.io; no exploitable script-context breakout observed on 2026-09-29 (matches 2026-09-26 browser verification). Index row downgraded 21 HIGH -> 21 MEDIUM (28 = 0H/21M/5L/2I).

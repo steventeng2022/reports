@@ -5,7 +5,7 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 13869** (High: 77, Medium: 78, Low: 2744, Info: 10970)
+**Total findings across all sites: 13869** (High: 2, Medium: 153, Low: 2744, Info: 10970)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -259,7 +259,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | g.page | 18 | 0 | 0 | 5 | 13 | top-websites gist (no active program match) |
 | g1.globo.com | 23 | 0 | 0 | 3 | 20 | top-websites gist (no active program match) |
 | gartner.com | 24 | 0 | 0 | 6 | 18 | top-websites gist (no active program match) |
-| geni.us | 34 | 26 | 1 | 4 | 3 | top-websites gist (no active program match) |
+| geni.us | 34 | 0 | 27 | 4 | 3 | top-websites gist (no active program match) |
 | get.adobe.com | 15 | 0 | 0 | 5 | 10 | [Adobe](https://hackerone.com/adobe) |
 | get.google.com | 19 | 0 | 0 | 4 | 15 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | getpocket.com | 22 | 0 | 0 | 4 | 18 | top-websites gist (no active program match) |
@@ -392,7 +392,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | mega.nz | 21 | 0 | 0 | 4 | 17 | top-websites gist (no active program match) |
 | mentalfloss.com | 22 | 0 | 0 | 4 | 18 | top-websites gist (no active program match) |
 | messenger.com | 19 | 0 | 0 | 8 | 11 | [Facebook](https://www.facebook.com/whitehat) |
-| meta.wikimedia.org | 25 | 2 | 1 | 20 | 2 | top-websites gist (no active program match) |
+| meta.wikimedia.org | 25 | 0 | 3 | 20 | 2 | top-websites gist (no active program match) |
 | metmuseum.org | 20 | 0 | 0 | 5 | 15 | top-websites gist (no active program match) |
 | microsoft.com | 16 | 0 | 0 | 5 | 11 | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
 | mixcloud.com | 24 | 0 | 0 | 4 | 20 | top-websites gist (no active program match) |
@@ -477,7 +477,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | prnewswire.com | 24 | 0 | 0 | 4 | 20 | top-websites gist (no active program match) |
 | prnt.sc | 28 | 0 | 0 | 6 | 22 | top-websites gist (no active program match) |
 | productforums.google.com | 18 | 0 | 0 | 5 | 13 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
-| producthunt.com | 32 | 26 | 0 | 5 | 1 | top-websites gist (no active program match) |
+| producthunt.com | 32 | 0 | 26 | 5 | 1 | top-websites gist (no active program match) |
 | profiles.google.com | 24 | 0 | 0 | 8 | 16 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | psychologytoday.com | 27 | 0 | 0 | 6 | 21 | top-websites gist (no active program match) |
 | pt.slideshare.net | 24 | 0 | 0 | 6 | 18 | top-websites gist (no active program match) |
@@ -529,7 +529,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | smile.amazon.com | 21 | 0 | 0 | 5 | 16 | [Amazon](https://hackerone.com/amazonvrp) |
 | smugmug.com | 23 | 0 | 0 | 5 | 18 | top-websites gist (no active program match) |
 | snapchat.com | 23 | 0 | 0 | 5 | 18 | [Snapchat](https://hackerone.com/snapchat) |
-| snip.ly | 28 | 21 | 0 | 5 | 2 | top-websites gist (no active program match) |
+| snip.ly | 28 | 0 | 21 | 5 | 2 | top-websites gist (no active program match) |
 | socialmediatoday.com | 20 | 0 | 0 | 3 | 17 | top-websites gist (no active program match) |
 | sophos.com | 17 | 0 | 0 | 5 | 12 | [Sophos](https://bugcrowd.com/sophos) |
 | soundcloud.com | 31 | 0 | 0 | 5 | 26 | [SoundCloud](https://bugcrowd.com/soundcloud) |

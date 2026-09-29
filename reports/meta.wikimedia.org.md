@@ -442,3 +442,12 @@ Total findings: **19** (High: 0, Medium: 0, Low: 2, Info: 17)
 - re-run #16 passive additions: the edge/protocol angles read the alt-svc, server-timing and CDN-identification headers from the one root GET; the preconnect/dns-prefetch, base-href and noindex angles parse the already-fetched root document; the TLS 1.2-only ceiling, SHA-1 signature and weak-key angles use the certificate evidence the base TLS check already captured; the only extra requests this pass are two read-only GETs (/.well-known/jwks.json and /.well-known/change-password).
 - re-run #17 passive additions: the retired-header angles (Public-Key-Pins, Expect-CT, X-Permitted-Cross-Domain-Policies, Via, COOP/COEP, Permissions-Policy) read from the one root GET; the wildcard SAN, http:// OCSP and 398-day-cap angles use the certificate evidence the base TLS check already captured (SAN now harvested from the existing DER); the only extra requests this pass are three read-only GETs (/.well-known/dpop-jwks.json, /.well-known/origin-rsa-keys.json, /.well-known/llms.txt).
 - Findings are reported against the public program scope; submission through the program tracker is pending.
+
+
+## Active re-verification (2026-09-29, agent-aggressive)
+
+Fresh unique token + breakout probes re-run live from Asia/Taipei (post-maintenance-window re-check of the 2 HIGH findings):
+- /w/index.php?title=Test<T> : HTTP 404 - token reflects in <title>, wg* JS config variables (all quoted strings) and entity-escaped text
+- /wiki/Special:Search?search=Test<T> : HTTP 200 - quoted/escaped reflections only
+- Breakout probe (?title=Test%3C%2Fscript%3E%3Cimg src=x onerror=...): HTTP 404, **no raw <img>; payload is both URL-encoded (%3C) AND HTML-escaped (&lt;) - double defense**
+Conclusion: matches the 2026-09-26 browser refutation (MediaWiki normalizes + escapes). Index row downgraded 2 HIGH -> 2 MEDIUM.
