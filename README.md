@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| stitcher.com | 7 | 0 | 2 | 3 | 2 | top-websites gist (no active program match) |
 | yummly.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | cnet.com | 7 | 1 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | pinterest.ca | 4 | 0 | 1 | 3 | 0 | top-websites gist (no active program match) |
