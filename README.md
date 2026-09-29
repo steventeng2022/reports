@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| cdn.ampproject.org | 35 | 0 | 0 | 34 | 1 | top-websites gist (no active program match) |
 | google.ru | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
 | youtu.be | 20 | 0 | 1 | 17 | 2 | Google |
 | houzz.com | 10 | 1 | 1 | 7 | 1 | top-websites gist (no active program match) |
