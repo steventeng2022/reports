@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| godaddy.com | 6 | 0 | 1 | 3 | 2 | top-websites gist (no active program match) |
 | schema.org | 39 | 0 | 1 | 35 | 3 | top-websites gist (no active program match) |
 | science.sciencemag.org | 32 | 30 | 0 | 1 | 1 | top-websites gist (no active program match) |
 | pastebin.com | 26 | 0 | 0 | 25 | 1 | top-websites gist (no active program match) |
