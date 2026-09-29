@@ -1060,3 +1060,18 @@ INDEX NOW: 793 rows / 15735 = 5H / 229M / 4076L / 11425I (bad=0). No new index H
 
 ---TALLY (append-only)---
 [2026-09-30 ~06:15] agent-aggressive: 324 sites / ~3546 findings | wave 28 = 12 sites / 129 findings (0 dead) | quality-gate R18: npmjs 30x I1 H->L (CF cUPMDTk FP) + cnet I1 H->L (JSON-escaped 404) + pinterest I22 M->L; stitcher 2 S1 KEPT M (502 CF dangling family) | next: wave 29
+
+[agent-aggressive | 2026-09-30 ~06:45 CST]
+WAVE 29 COMPLETE (12/12 reports, 131 findings: tunein 32 | box.net 31 | google.gr 13 | google.co.nz 13 | qz 6 | thetimes 6 | flaticon 6 | faz.net 6 | discogs 5 | telegraph 5 | i.ytimg 4 | pwc 4; 0 dead). claimed.txt += 12 (now 273).
+QUALITY-GATE R19:
+- box.net 28x I1 HIGH -> LOW: all vectors (/search?q, /s?q, /redirect?url, /out?url, /go?url, /r?url, /share?url + dups) = 403 ~5.7KB Cloudflare MANAGED challenge; token only inside cUPMDTk JS string with quote->%22, backslash->%5C, &->\u0026 (parity-safe, not raw) = CF cUPMDTk FP family (same as npmjs). box.net itself just 301 -> www.box.com.
+- tunein.com 18x I1 HIGH -> LOW (NOT currently reproducible): site behavior changed since the scan - no-trailing-slash paths now 301 -> trailing-slash variants with the token ONLY in the ~70B plain-text redirect body (body ctx, not <script>); all 11 trailing-slash variants = 404 376KB (no token); /search/?q= = 200 602KB (no token, 12x retries); /?q= = 200 447KB (no token). Scanner caught a transient deploy state; residual = plain-text redirect reflection only.
+- tunein.com I22 /version M -> L: 200 162B JSON {"version":"7.40.1","gitSha":...,"buildDate":...} = public version endpoint (commons /api/ precedent).
+- tunein.com S1 status.tunein.com M -> L: 200, 91,708B, <title>TuneIn Status</title> X-Cache: Miss = live first-party status page (no CF dangling signature).
+- thetimes.co.uk S1 api.thetimes.co.uk M -> L: https = 403 42B {"message":"Missing Authentication Token"} IDENTICAL on /, /v1/, /api/, /swagger.json + X-Amz-Cf-Id = live auth-protected AWS API Gateway (foodnetwork 403-JSON precedent, not the CF 915/919B dangling signature).
+- google.gr + google.co.nz I22 M -> L: /index.html = 200 218KB <title>Google</title> = standard public homepage.
+- faz.net I22 M -> L: /?suche=artikelsuche/suche/ = 200 1.64MB live FAZ homepage (param ignored).
+INDEX NOW: 805 rows / 15866 = 5H / 229M / 4181L / 11451I (bad=0). No new index HIGH this wave.
+
+---TALLY (append-only)---
+[2026-09-30 ~06:45] agent-aggressive: 336 sites / ~3677 findings | wave 29 = 12 sites / 131 findings (0 dead) | quality-gate R19: box.net 28x I1 H->L (CF cUPMDTk FP) + tunein 18x I1 H->L (transient deploy; now plain-text 301 reflection only) + 6x M->L (tunein /version JSON + status page live + thetimes API-GW 403 JSON + google.gr/co.nz homepages + faz homepage) | next: wave 30
