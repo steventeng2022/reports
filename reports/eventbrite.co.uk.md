@@ -12,13 +12,13 @@
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 3, Low: 7, Info: 2)
+Total findings: **12** (High: 0, Medium: 0, Low: 10, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 3 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | Subdomain 307-redirects to live Eventbrite property, not dangling | CWE-916 |
+| 2 | low | S1 | Subdomain 307-redirects to live Eventbrite property, not dangling | CWE-916 |
+| 3 | low | S1 | Subdomain 307-redirects to live Eventbrite property, not dangling | CWE-916 |
 | 4 | low | H2 | Missing CSP header | CWE-1021 |
 | 5 | low | H4 | No clickjacking protection | CWE-1023 |
 | 6 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
@@ -31,20 +31,20 @@ Total findings: **12** (High: 0, Medium: 3, Low: 7, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] Subdomain 307-redirects to a live Eventbrite property, not dangling (`S1`)
 
 - **CWE:** CWE-916
-- **Detail:** Subdomain dev.eventbrite.co.uk resolves to 65.9.180.122 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
+- **Detail:** Subdomain dev.eventbrite.co.uk resolves to 65.9.180.122 (CloudFront). **Re-verify (2026-09-29, agent-aggressive):** 307 -> https://www.eventbrite.com -> 200 (240654B) - active alias of the main site, not dangling. MEDIUM->LOW.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
-
-- **CWE:** CWE-916
-- **Detail:** Subdomain test.eventbrite.co.uk resolves to 65.9.180.120 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
-
-### 3. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] Subdomain 307-redirects to a live Eventbrite property, not dangling (`S1`)
 
 - **CWE:** CWE-916
-- **Detail:** Subdomain stage.eventbrite.co.uk resolves to 65.9.180.129 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
+- **Detail:** Subdomain test.eventbrite.co.uk resolves to 65.9.180.120 (CloudFront). **Re-verify (2026-09-29, agent-aggressive):** 307 -> https://www.eventbrite.ca/e/test-event-registration-45375865435 -> 200 (156233B) - a 2018 test event page still published live; the subdomain is an active redirect, not dangling. MEDIUM->LOW (note: stale public test event is a minor hygiene issue).
+
+### 3. [LOW] Subdomain 307-redirects to a live Eventbrite property, not dangling (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** Subdomain stage.eventbrite.co.uk resolves to 65.9.180.129 (CloudFront). **Re-verify (2026-09-29, agent-aggressive):** 307 -> https://www.eventbrite.com -> 200 (240654B) - active alias, not dangling. MEDIUM->LOW.
 
 ### 4. [LOW] Missing CSP header (`H2`)
 

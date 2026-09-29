@@ -5,20 +5,20 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 14667** (High: 2, Medium: 216, Low: 3311, Info: 11138)
+**Total findings across all sites: 14799** (High: 2, Medium: 216, Low: 3413, Info: 11168)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
-| google.co.in | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
+| google.co.in | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
 | venturebeat.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | lesechos.fr | 31 | 0 | 0 | 30 | 1 | top-websites gist (no active program match) |
 | gnu.org | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | namecheap.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
-| ticketmaster.com | 6 | 0 | 1 | 4 | 1 | top-websites gist (no active program match) |
+| ticketmaster.com | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | whitehouse.gov | 3 | 0 | 0 | 1 | 2 | White House |
-| eventbrite.co.uk | 12 | 0 | 3 | 7 | 2 | top-websites gist (no active program match) |
+| eventbrite.co.uk | 12 | 0 | 0 | 10 | 2 | top-websites gist (no active program match) |
 | symfony.com | 27 | 0 | 0 | 25 | 2 | top-websites gist (no active program match) |
-| thumbtack.com | 13 | 0 | 2 | 3 | 8 | top-websites gist (no active program match) |
+| thumbtack.com | 13 | 0 | 0 | 5 | 8 | top-websites gist (no active program match) |
 | jamanetwork.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | dol.gov | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | docs.wixstatic.com | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |

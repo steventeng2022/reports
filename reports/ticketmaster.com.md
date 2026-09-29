@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 1, Low: 4, Info: 1)
+Total findings: **6** (High: 0, Medium: 0, Low: 5, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Hidden path /find_area = normal "Change Location" page | CWE-538 |
 | 2 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -25,10 +25,11 @@ Total findings: **6** (High: 0, Medium: 1, Low: 4, Info: 1)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path /find_area from robots.txt - normal functional page (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /find_area which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
+- **Re-verify (2026-09-29, agent-aggressive):** 301 -> www.ticketmaster.com/find_area -> 200 (187902B, Apache) "Ticketmaster - Change Location" - a normal functional location-picker page, low disclosure value. MEDIUM->LOW.
 
 ### 2. [LOW] Unencoded reflected parameter (XSS-adjacent) (`I5`)
 

@@ -920,3 +920,4 @@ INDEX NOW: 659 rows / 14153 findings = 0H / 179M / 2942L / 11032I. All 18 wave-1
 [2026-09-29 ~13:30] agent-aggressive: 198 sites / ~2155 findings | waves 15+16 = 24 sites / 284 findings pushed | quality-gate R4+R5: 18 HIGH candidates re-verified (8+2+1 wave15, 4+2+1 wave16) -> all refuted/downgraded | README 659 rows / 14153 (0H/179M/2942L/11032I) | next: wave 17
 ..\..\work\chat-append3.txt
 ..\..\work\chat-append4.txt
+..\..\work\chat-append5.txt

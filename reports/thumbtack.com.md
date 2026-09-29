@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 2, Low: 3, Info: 8)
+Total findings: **13** (High: 0, Medium: 0, Low: 5, Info: 8)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | Subdomain is live (API docs / app endpoint), not dangling | CWE-916 |
+| 2 | low | S1 | Subdomain is live (API docs / app endpoint), not dangling | CWE-916 |
 | 3 | low | H1 | Missing HSTS header | CWE-319 |
 | 4 | low | H2 | Missing CSP header | CWE-1021 |
 | 5 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -32,15 +32,15 @@ Total findings: **13** (High: 0, Medium: 2, Low: 3, Info: 8)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] Subdomain is live, not dangling (`S1`)
 
 - **CWE:** CWE-916
-- **Detail:** Subdomain api.thumbtack.com resolves to 54.192.248.34 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
+- **Detail:** Subdomain api.thumbtack.com resolves to 54.192.248.34 (CloudFront). **Re-verify (2026-09-29, agent-aggressive):** 301 -> /docs/ -> 200 (102925B, nginx) live "Thumbtack API Reference" page - active API documentation, not dangling. MEDIUM->LOW.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] Subdomain is live, not dangling (`S1`)
 
 - **CWE:** CWE-916
-- **Detail:** Subdomain app.thumbtack.com resolves to 54.192.248.20 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
+- **Detail:** Subdomain app.thumbtack.com resolves to 54.192.248.20 (CloudFront). **Re-verify (2026-09-29, agent-aggressive):** GET / => 202 (0B, CloudFront) - the app endpoint actively accepts requests (202), not a dangling landing. MEDIUM->LOW.
 
 ### 3. [LOW] Missing HSTS header (`H1`)
 
