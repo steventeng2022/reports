@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| bit.ly | 9 | 0 | 1 | 4 | 4 | Bitly |
 | vanityfair.com | 5 | 0 | 1 | 3 | 1 | top-websites gist (no active program match) |
 | popsci.com | 20 | 0 | 0 | 16 | 4 | top-websites gist (no active program match) |
 | fao.org | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
