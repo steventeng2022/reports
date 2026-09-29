@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| technorati.com | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
 | access.redhat.com | 15 | 0 | 1 | 11 | 3 | top-websites gist (no active program match) |
 | wsj.com | 6 | 0 | 0 | 4 | 2 | The Wall Street Journal |
 | gstatic.com | 35 | 0 | 0 | 34 | 1 | Google |
