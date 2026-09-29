@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| fr.linkedin.com | 11 | 1 | 0 | 9 | 1 | top-websites gist (no active program match) |
 | mozilla.com | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
 | nginx.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | code.visualstudio.com | 6 | 0 | 2 | 2 | 2 | top-websites gist (no active program match) |
