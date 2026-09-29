@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| livescience.com | 8 | 0 | 3 | 3 | 2 | top-websites gist (no active program match) |
 | colorado.edu | 11 | 0 | 0 | 7 | 4 | top-websites gist (no active program match) |
 | appstore.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | cbc.ca | 30 | 0 | 0 | 26 | 4 | top-websites gist (no active program match) |
