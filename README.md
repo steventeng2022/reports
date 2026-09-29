@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| cdn.jsdelivr.net | 5 | 0 | 0 | 3 | 2 | jsDelivr |
 | siteground.com | 38 | 0 | 0 | 35 | 3 | top-websites gist (no active program match) |
 | lefigaro.fr | 9 | 0 | 1 | 6 | 2 | top-websites gist (no active program match) |
 | developer.mozilla.org | 7 | 0 | 0 | 7 | 0 | top-websites gist (no active program match) |
