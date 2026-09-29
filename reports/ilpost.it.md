@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 2, Low: 5, Info: 2)
+Total findings: **9** (High: 1, Medium: 0, Low: 5, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 2 | high | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 3 | low | H1 | Missing HSTS header | CWE-319 |
 | 4 | low | H2 | Missing CSP header | CWE-1021 |
 | 5 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -28,12 +28,12 @@ Total findings: **9** (High: 0, Medium: 2, Low: 5, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /isolavirtuale/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [HIGH] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain api.ilpost.it resolves to 3.169.121.3 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -76,3 +76,8 @@ Total findings: **9** (High: 0, Medium: 2, Low: 5, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- S1 api.ilpost.it (finding 2, MEDIUM -> **HIGH**): `http://api.ilpost.it/` 301 -> `https://api.ilpost.it/` -> **403 CloudFront 919 B** "ERROR: The request could not be satisfied / Request blocked. We can't connect to the server for this app or website", with `X-Cache: Error from cloudfront` and `Via: 1.1 a06cd24b361b48152445fde21597b0ee.cloudfront.net (CloudFront)` — a **dangling CloudFront distribution** (origin unreachable), the same signature as the verified ftp.strava.com HIGH. Takeover candidate if the distribution/origin ownership is reclaimed.
+- I22 /isolavirtuale/ (finding 1, MEDIUM -> LOW): 200, 167,250 B, title "Isolavirtuale - Il Post" — a live public editorial section (column), not hidden sensitive content.

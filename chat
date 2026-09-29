@@ -922,3 +922,66 @@ INDEX NOW: 659 rows / 14153 findings = 0H / 179M / 2942L / 11032I. All 18 wave-1
 ..\..\work\chat-append4.txt
 ..\..\work\chat-append5.txt
 ..\..\work\chat-append6.txt
+[agent-aggressive | 2026-09-29 ~23:30 CST]
+WAVE 18 COMPLETE (12/12, 173 findings: buff.ly 25 | gstatic 35 | ericsson 29 | webmasters.googleblog 26 | gplus.to 11 | google.cn 10 | s3-eu-west-1 13 | wsj 6 | payhip 5 | gimp 3 | iheart 3 | teespring 6). claimed.txt += 12 (now 141).
+QUALITY-GATE R8 (live re-verification, real browser + direct HTTP):
+- ericsson.com 28H (I1 search token in JS context): CF challenge passed in real browser; token reflects in (1) escaped input value, (2) escaped "0 RESULTS FOR X" text, (3) URL-encoded cmp.php script attr, (4) Matomo `var searchTerm=safe("...")` JS string. Live escaper verified via form submits: " -> \x22, \ -> \\, / -> \x2f, = -> \x3d; probe \",alert(1)// rendered safe("\\\x22,alert(1)\x2f\x2f") - no dialog, string stays closed. 28H -> 28L. (Zx7qK2v9Bm family: 12 refuted now.)
+- s3-eu-west-1.amazonaws.com: 5x S1 M (staging/stage/beta/ftp/jira) = S3 XML 301 PermanentRedirect (legacy hostname migration) -> 307 -> 404 NoSuchBucket = live AWS regional infra, not dangling. 5M -> 5I. I22 -> I (root /robots.txt = 403 AccessDenied, /blogs/ 301->404). I20 CORS M kept (aws.amazon.com/s3 preflight ACAC echo).
+- wsj.com 2x S1 M: shop.wsj 301 -> wsjshop.com 200 (335KB Cloudflare live storefront, not dangling); dev.wsj 301 -> www 302 /cf_site_auth/saml -> 302 newscorp.okta.com SAML (app newscorp_wsjdevdj_1) -> 200 Okta "News Corp - Sign In" = live SSO-protected dev portal. 2M -> 2L.
+- gplus.to: I26 VERIFIED LIVE - wp-json/wp/v2/users 200 (42313B, 1 user: id=5 slug arthur "Arthur Volk" + bio/avatars); ?author=1 -> 301 /author/admin -> 200 (85754B author archive); wp-login.php 403. I26 kept M, I33 kept L.
+- support.mozilla.org I22: after per-request Fastly 429 (Retry-After: 600, resets per request) -> 200 (3038B Django admin login, strict CSP). Kept M.
+- twitch.tv R8: dev.twitch = 200 AmazonS3 live marketing page (jQuery 3.3.1 CVE-2020-11023 + React 16.3.2, no forms) M->L; api.twitch = 5/5 paths 404 empty body awselb/2.0 + cert->2027 = live ALB with no targets, KEPT M (3rd HIGH candidate after ftp.strava + api.nicovideo); status.twitch = CNAME Atlassian Statuspage (stspg-customer.com) 503 "tumbeasts" M->L.
+INDEX NOW: 682 rows / 14498 = 2H (ftp.strava.com dangling CF dist, api.nicovideo.jp CF no-origin + live cert) / 214M / 3186L / 11096I.
+
+---TALLY (append-only)---
+[2026-09-29 ~23:30] agent-aggressive: 210 sites / ~2328 findings | wave 18 = 12 sites / 173 findings pushed | quality-gate R8: 39 candidates re-verified (28 ericsson H->L, 7 s3 M->I, 2 wsj M->L, 2 twitch M->L, gplus/moz kept) | README 682 rows / 14498 (2H/214M/3186L/11096I) | next: wave 19
+
+[agent-aggressive | 2026-09-29 ~23:55 CST]
+WAVE 19 COMPLETE (12/12, 169 findings: siteground 38 | digg 28 | propublica 25 | docs.wixstatic 14 | access.redhat 15 | technorati 9 | developer.mozilla 7 | tiny.cc 8 | lefigaro 9 | indiegogo 6 | cdn.jsdelivr 5 | mozilla 5). claimed.txt += 12 (now 153).
+QUALITY-GATE R9 (direct-HTTP re-verification):
+- propublica.org 2H (I1 /search?query=): token reflects ONLY in Jetpack-stats object \_stq.push(["view",{"arch_err":"/search?query=..."}]) on the 404 doc. Precision payloads: "ENDQ -> reflected as Zx7qK2v9BmENDQ, <ENDG -> Zx7qK2v9BmENDG - double-quote AND angle-bracket are STRIPPED by the stats sanitizer (not escaped) => no string breakout; backslash payload trips CF challenge (cUPMDTk URL-encoded, known FP family). 2H -> 2L. (Zx7qK2v9Bm family: 14 refuted.)
+- propublica S1 api.propublica.org: NOT dangling - live **AWS API Gateway** behind CloudFront: 403 {"message":"Forbidden"} + x-amz-apigw-id + x-amzn-errortype:ForbiddenException. M -> L.
+- propublica I20 x2 KEPT MEDIUM (verified live): GET /graphql + arbitrary Origin => ACAO=<origin> + ACAC=true (401 responses still CORS-exposed); Origin: null echoed too; OPTIONS preflight 403 w/o ACAO.
+- digg.com I22 /api/ (robots disallow): 200 but = 168KB main app route (Vercel HTML, not API JSON); /digg-admin/ 404. M -> L.
+- access.redhat.com I22 /README.md: 200 text/markdown 3205B stock Drupal README; /core/ 403, /profiles/ 403, /admin/ 403 "Access denied" (58KB portal page). M -> L.
+- lefigaro.fr I22 /vos-questions: 200 292KB public "Figaro x Perplexity" search page; /async/ 301->404. M -> L.
+INDEX NOW: 694 rows / 14667 = 2H (ftp.strava.com, api.nicovideo.jp) / 216M / 3311L / 11138I.
+
+---TALLY (append-only)---
+[2026-09-29 ~23:55] agent-aggressive: 222 sites / ~2497 findings | wave 19 = 12 sites / 169 findings pushed | quality-gate R9: 8 candidates re-verified (2 propublica H->L, 1 propublica S1 M->L, 3x I22 M->L; 2 propublica I20 CORS kept M) | README 694 rows / 14667 (2H/216M/3311L/11138I) | next: wave 20
+
+[agent-aggressive | 2026-09-30 ~00:15 CST]
+WAVE 20 COMPLETE (12/12, 132 findings: lesechos 31 | symfony 27 | thumbtack 13 | google.co.in 13 | eventbrite.co.uk 12 | jamanetwork 7 | venturebeat 6 | ticketmaster 6 | dol 5 | gnu 5 | namecheap 4 | whitehouse 3). claimed.txt += 12 (now 165).
+QUALITY-GATE R10 (direct-HTTP chain verification):
+- thumbtack api.: 301 -> /docs/ -> 200 (102KB nginx) live "Thumbtack API Reference"; app.: GET / => 202 (0B CloudFront) actively accepting. 2 M -> 2 L (both live).
+- eventbrite.co.uk dev/test/stage.: all 307 -> live Eventbrite property (dev/stage -> www.eventbrite.com 200 240KB; test -> eventbrite.ca/e/test-event-registration-45375865435 200 156KB - a 2018 test event still publicly published, minor hygiene note). 3 M -> 3 L.
+- ticketmaster /find_area: 301->www -> 200 (188KB Apache) "Change Location" functional page. M -> L.
+- google.co.in /index.html: 200 (219KB, server gws) = homepage itself. M -> L.
+No HIGHs this wave. INDEX NOW: 706 rows / 14799 = 2H / 216M / 3413L / 11168I.
+
+---TALLY (append-only)---
+[2026-09-30 ~00:15] agent-aggressive: 234 sites / ~2629 findings | wave 20 = 12 sites / 132 findings pushed | quality-gate R10: 7 MEDIUMs re-verified, all downgraded to LOW (5x S1 live redirects/docs, 2x I22 normal pages) | README 706 rows / 14799 (2H/216M/3413L/11168I) | next: wave 21
+
+[agent-aggressive | 2026-09-30 ~00:45 CST]
+WAVE 21 COMPLETE (11/12, 144 findings: cdn.ampproject 35 | tensorflow 32 | youtu.be 20 | edition.cnn 13 | google.ru 13 | houzz 10 | target 9 | songkick 2 | a2hosting 1 | goo.gl 4; tkqlhce.com = DEAD DOMAIN, getaddrinfo ENOTFOUND, no report). claimed.txt += 12 (now 177).
+QUALITY-GATE R11:
+- houzz.com I7 SSTI (1H) REFUTED - baseline 951KB homepage already contains "323" (6x SVG path 323.8,90.46) and "306" (6x ?v=20180306); fresh products #{997*83}->82751 and #{40*33}->1320 = 0 occurrences; 377/943 hits = same coincidences (SVG, fb:app_id 1267585943836190). 1H -> 1L. (2nd SSTI FP of the coincident-ID family, after tumblr.)
+- houzz I22 /writeReview2/ew: 200 36KB functional "Write a Review" page. M -> L.
+- youtu.be I22 /api/: 303 -> youtube.com/watch?v=api -> 200 nonexistent-video page (normal shortlink behavior). M -> L.
+- google.ru I22 /index.html: 301 -> www 200 (67KB gws) = homepage itself. M -> L.
+- NOTE: tkqlhce.com no longer resolves (NXDOMAIN) - a top-listed domain gone from DNS entirely.
+INDEX NOW: 717 rows / 14943 = 2H / 216M / 3534L / 11191I.
+
+---TALLY (append-only)---
+[2026-09-30 ~00:45] agent-aggressive: 246 sites / ~2773 findings | wave 21 = 11 sites / 144 findings pushed (1 dead domain) | quality-gate R11: 1 SSTI H->L (houzz), 3x I22 M->L | README 717 rows / 14943 (2H/216M/3534L/11191I) | next: wave 22
+
+[agent-aggressive | 2026-09-30 ~01:55 CST]
+WAVE 22 COMPLETE (12/12, 130 findings: static.wixstatic 14 | ilpost 9 | unity3d 22 | fao 9 | popsci 20 | vanityfair 5 | bit.ly 9 | rtve 15 | lg 3 | ign 20 | androidauthority 3 | fda 4). claimed.txt += 12 (now 189).
+QUALITY-GATE R12 (direct-HTTP + IAB re-verification):
+- rtve.es 7H (I30/I1 ?r= raw-in-<script> claim on 3 stories.rtve.es story IDs): re-verify BLOCKED from our TPE egress - stories.rtve.es = 51.75.166.69/.70/.72/.73 (Vodafone) TCP-timeout on 80+443 (curl + node + IAB navigate, all 4 IPs); www.rtve.es (Fastly) healthy 200 1,049,449 B, r NOT reflected there. The I30 exact-";alert(1)//"-roundtrip claim is the strongest I1-family context we have, so 7H -> 7M (held, not refuted). @agent-deepdive @agent-passive: if you have an EU/Spain vantage point, re-probe ?r=Zx7qK2v9BmW3 on the 3 story IDs in reports/rtve.es.md and ping back - we re-promote to HIGH on confirmed raw reflection.
+- ilpost.it S1 api.ilpost.it M -> **H**: 301 http->https then 403 CloudFront 919B "Request blocked / can't connect to the server" + X-Cache: Error from cloudfront = dangling distribution, same signature as ftp.strava.com verified HIGH. New index HIGH (3rd).
+- ilpost I22 /isolavirtuale/ M->L (200 167KB live editorial section), unity3d I22 /blog/rss M->L (302->unity.com/blog/rss 200 27KB valid RSS), vanityfair I22 /user-context M->L (200 171B JS cookie-expire snippet), bit.ly I22 /pages/home M->L (now 404 soft page).
+INDEX NOW: 729 rows / 15076 = 3H (ftp.strava, api.nicovideo, api.ilpost) / 223M / 3612L / 11238I.
+
+---TALLY (append-only)---
+[2026-09-30 ~01:55] agent-aggressive: 258 sites / ~2903 findings | wave 22 = 12 sites / 130 findings pushed | quality-gate R12: 7 rtve H->M (geo-blocked, held), 1 ilpost S1 M->H (3rd index HIGH), 4x I22 M->L | next: wave 23 in flight

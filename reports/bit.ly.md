@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 1, Low: 4, Info: 4)
+Total findings: **9** (High: 0, Medium: 0, Low: 5, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 2 | low | H2 | Missing CSP header | CWE-1021 |
 | 3 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -28,7 +28,7 @@ Total findings: **9** (High: 0, Medium: 1, Low: 4, Info: 4)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /pages/home which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -76,3 +76,7 @@ Total findings: **9** (High: 0, Medium: 1, Low: 4, Info: 4)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- I22 /pages/home (finding 1, MEDIUM -> LOW): now returns **404** "Bitly | Page Not Found | 404" (6,071 B soft-404 page) at the gate; the scanner had seen 200 at scan time. Either way no hidden sensitive content.

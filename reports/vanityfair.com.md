@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **5** (High: 0, Medium: 1, Low: 3, Info: 1)
+Total findings: **5** (High: 0, Medium: 0, Low: 4, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -24,7 +24,7 @@ Total findings: **5** (High: 0, Medium: 1, Low: 3, Info: 1)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /user-context which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -52,3 +52,7 @@ Total findings: **5** (High: 0, Medium: 1, Low: 3, Info: 1)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- I22 /user-context (finding 1, MEDIUM -> LOW): 200 `application/javascript` 171 B — a tiny snippet that expires the `CN_segments` cookie (`document.cookie = "CN_segments=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure"`). Trivial client-side helper, not hidden sensitive content.

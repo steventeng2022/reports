@@ -5,7 +5,7 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 14943** (High: 2, Medium: 216, Low: 3534, Info: 11191)
+**Total findings across all sites: 15076** (High: 3, Medium: 223, Low: 3612, Info: 11238)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -13,13 +13,13 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | androidauthority.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | ign.com | 20 | 0 | 0 | 9 | 11 | top-websites gist (no active program match) |
 | lg.com | 3 | 0 | 0 | 1 | 2 | top-websites gist (no active program match) |
-| rtve.es | 15 | 7 | 0 | 5 | 3 | top-websites gist (no active program match) |
-| bit.ly | 9 | 0 | 1 | 4 | 4 | Bitly |
-| vanityfair.com | 5 | 0 | 1 | 3 | 1 | top-websites gist (no active program match) |
+| rtve.es | 15 | 0 | 7 | 5 | 3 | top-websites gist (no active program match) |
+| bit.ly | 9 | 0 | 0 | 5 | 4 | Bitly |
+| vanityfair.com | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | popsci.com | 20 | 0 | 0 | 16 | 4 | top-websites gist (no active program match) |
 | fao.org | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
-| unity3d.com | 22 | 0 | 1 | 19 | 2 | top-websites gist (no active program match) |
-| ilpost.it | 9 | 0 | 2 | 5 | 2 | top-websites gist (no active program match) |
+| unity3d.com | 22 | 0 | 0 | 20 | 2 | top-websites gist (no active program match) |
+| ilpost.it | 9 | 1 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | static.wixstatic.com | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
 | sony.net | 5 | 0 | 0 | 2 | 3 | top-websites gist (no active program match) |
 | cdn.ampproject.org | 35 | 0 | 0 | 34 | 1 | top-websites gist (no active program match) |
