@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 2, Low: 13, Info: 2)
+Total findings: **17** (High: 0, Medium: 1, Low: 14, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 2 | medium | I26 | WordPress user enumeration via REST API (wp-json/wp/v2/users) | CWE-200 |
 | 3 | low | H1 | Missing HSTS header | CWE-319 |
 | 4 | low | H2 | Missing CSP header | CWE-1021 |
@@ -36,7 +36,7 @@ Total findings: **17** (High: 0, Medium: 2, Low: 13, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /jobs/?p=t which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -124,3 +124,8 @@ Total findings: **17** (High: 0, Medium: 2, Low: 13, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- Finding 1 (I22): robots-disallowed paths /wp-admin/ and /search/ both 301 -> **problogger.com** (the site has moved domains); the .com targets are the stock WP admin/search area. MEDIUM -> LOW.
+- Finding 2 (I26): KEPT MEDIUM - /wp-json/wp/v2/users returns 200 application/json (84,042 B) enumerating 10 users (ids 10-181, incl. "Aaron Wall", "Brian Clark", "Ali Luke" x2) on problogger.net pre-redirect.

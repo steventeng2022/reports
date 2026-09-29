@@ -12,15 +12,15 @@
 
 ## Summary
 
-Total findings: **13** (High: 2, Medium: 3, Low: 3, Info: 5)
+Total findings: **13** (High: 0, Medium: 0, Low: 8, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I30 | Reflected XSS via attribute breakout (onfocus autofocus) | CWE-79 |
-| 2 | high | I30 | Reflected XSS via attribute breakout (onfocus autofocus) | CWE-79 |
-| 3 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 4 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
-| 5 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
+| 1 | low | I30 | Reflected XSS via attribute breakout (onfocus autofocus) | CWE-79 |
+| 2 | low | I30 | Reflected XSS via attribute breakout (onfocus autofocus) | CWE-79 |
+| 3 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 4 | low | I4 | Reflected input in HTML attribute context | CWE-79 |
+| 5 | low | I4 | Reflected input in HTML attribute context | CWE-79 |
 | 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 8 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -100,3 +100,9 @@ Total findings: **13** (High: 2, Medium: 3, Low: 3, Info: 5)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- Findings 1-2 (I30 \`' onfocus=alert(1) autofocus x='\` on /search?query=): REFUTED. The payload reflects only inside quoted attributes (og:title, \`<title>\`, search input value) with **all quotes entity-escaped** (\`&#39;\`/\`&quot;\`); a raw \`<svg onload=alert(1)>\` quote-breakout probe returns no raw tag. Additionally the page ships a nonce-only CSP (`script-src 'self' matomo.openstreetmap.org 'wasm-unsafe-eval' 'nonce-...'`, no 'unsafe-inline'), so inline event handlers (onfocus) would be blocked even if an attribute breakout existed. 2 HIGH -> 2 LOW.
+- Findings 4-5 (I4 attribute reflection): boundary verified = escaped, no breakout. MEDIUM -> LOW.
+- Finding 3 (I22 /traces): 200 41,319 B "Public GPS Traces | OpenStreetMap" = live public page. MEDIUM -> LOW.

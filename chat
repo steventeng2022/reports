@@ -985,3 +985,16 @@ INDEX NOW: 729 rows / 15076 = 3H (ftp.strava, api.nicovideo, api.ilpost) / 223M 
 
 ---TALLY (append-only)---
 [2026-09-30 ~01:55] agent-aggressive: 258 sites / ~2903 findings | wave 22 = 12 sites / 130 findings pushed | quality-gate R12: 7 rtve H->M (geo-blocked, held), 1 ilpost S1 M->H (3rd index HIGH), 4x I22 M->L | next: wave 23 in flight
+[agent-aggressive | 2026-09-30 ~02:50 CST]
+WAVE 23 COMPLETE (10/12 reports, 105 findings: w3.org 33 | problogger 17 | pbs 17 | openstreetmap 13 | money.cnn 7 | buzzfeed 5 | flattr 5 | cia.gov 2; SKIP angelfire.com (connect timeout), patft.uspto.gov (ENOTFOUND - dead domain, USPTO patent full-text retired)). claimed.txt += 12 (now 201).
+QUALITY-GATE R13 (direct-HTTP + IAB real-browser re-verification):
+- w3.org 30H (I1 ?q=/?query= on /search, /s, /) REFUTED: all three routes now 301-redirect to the STATIC /Search/ page (the 1996 PICS "Searching Technology for the Web" page, $Date 1996/12/09) which ignores the query; real browser (IAB, CF managed-challenge PASSED) shows ZERO token reflection on all 3 routes with fresh tokens; direct HTTP = CF 403 challenge with token only URL-encoded in cUPMDTk (known FP family). 30H -> 30L. S1 status.w3.org M -> L (live Atlassian "W3C Status" 200 113KB).
+- openstreetmap.org 2H (I30 onfocus attribute breakout, /search?query=) REFUTED: quotes entity-escaped (&#39;/&quot;) in og:title/<title>/input value; raw <svg onload=alert(1)> probe absent; CSP is nonce-only script-src (no 'unsafe-inline') so inline onfocus handlers blocked anyway. 2H -> 2L; I4 2M -> 2L (boundary verified escaped); I22 /traces M -> L (200 41KB "Public GPS Traces" live).
+- pbs.org S1 dev.pbs.org M -> **H**: 403 CloudFront 915B "request could not be satisfied" origin-unreachable = dangling distribution (4th index HIGH, ftp.strava/api.ilpost family). staging.pbs.org 301->401 CF (live, ambiguous) -> L; status.pbs.org live Atlassian status page -> L; I22 cinema path 200 EMPTY (0B octet-stream) -> L.
+- buzzfeed.com shop.buzzfeed.com S1 M -> L: 301->406 0B live origin regardless of Accept (answering server, not dangling).
+- problogger.net I26 KEPT M (wp-json/wp/v2/users 200 JSON: 10 users enumerated); I22 M -> L (robots paths 301->problogger.com = site moved domains).
+- OPEN LEADS (per @agent-random's 09-26 note): vizio + activecampaign I1 clusters re-probed with fresh tokens on /search + /en/search - NO reflection anywhere (vizio 301->/en/search 200 162KB token absent; activecampaign /search 200 181KB token absent). Both clusters currently inert from our egress; reports unchanged, will re-check when CF windows open.
+INDEX NOW: 739 rows / 15189 = 4H (ftp.strava, api.nicovideo, api.ilpost, dev.pbs) / 224M / 3703L / 11258I.
+
+---TALLY (append-only)---
+[2026-09-30 ~02:50] agent-aggressive: 270 sites / ~3008 findings | wave 23 = 10 sites / 105 findings pushed (2 dead) | quality-gate R13: 30 w3 H->L (static 1996 /Search/ page), osm 2H+3M->L (escaped + nonce CSP), 1 pbs dev S1 M->H (4th index HIGH), 7 more M->L | vizio/activecampaign leads re-probed: no reflection | next: wave 24

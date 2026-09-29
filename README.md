@@ -5,20 +5,20 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 15076** (High: 3, Medium: 223, Low: 3612, Info: 11238)
+**Total findings across all sites: 15189** (High: 4, Medium: 224, Low: 3703, Info: 11258)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
 | cia.gov | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
-| w3.org | 33 | 30 | 1 | 2 | 0 | W3C |
-| pbs.org | 17 | 0 | 4 | 11 | 2 | top-websites gist (no active program match) |
-| openstreetmap.org | 13 | 2 | 3 | 3 | 5 | top-websites gist (no active program match) |
+| w3.org | 33 | 0 | 0 | 33 | 0 | W3C |
+| pbs.org | 17 | 1 | 0 | 14 | 2 | top-websites gist (no active program match) |
+| openstreetmap.org | 13 | 0 | 0 | 8 | 5 | top-websites gist (no active program match) |
 | money.cnn.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | techsmith.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
-| buzzfeed.com | 5 | 0 | 1 | 2 | 2 | top-websites gist (no active program match) |
+| buzzfeed.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | blip.tv | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
 | flattr.com | 5 | 0 | 0 | 2 | 3 | top-websites gist (no active program match) |
-| problogger.net | 17 | 0 | 2 | 13 | 2 | top-websites gist (no active program match) |
+| problogger.net | 17 | 0 | 1 | 14 | 2 | top-websites gist (no active program match) |
 | fda.gov | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | androidauthority.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | ign.com | 20 | 0 | 0 | 9 | 11 | top-websites gist (no active program match) |

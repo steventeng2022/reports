@@ -12,14 +12,14 @@
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 4, Low: 11, Info: 2)
+Total findings: **17** (High: 1, Medium: 0, Low: 14, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 3 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 4 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 2 | high | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 3 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 4 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 5 | low | T3 | HTTP redirect does not go to HTTPS | CWE-319 |
 | 6 | low | H1 | Missing HSTS header | CWE-319 |
 | 7 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -36,22 +36,22 @@ Total findings: **17** (High: 0, Medium: 4, Low: 11, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /independentlens/getinvolved/cinema/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [HIGH] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain dev.pbs.org resolves to 18.164.154.43 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 403
 
-### 3. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 3. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain staging.pbs.org resolves to 3.169.252.75 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 4. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 4. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.pbs.org resolves to 65.9.180.73 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -124,3 +124,11 @@ Total findings: **17** (High: 0, Medium: 4, Low: 11, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- Finding 2 (S1 dev.pbs.org): http://dev.pbs.org/ -> **403 CloudFront 915 B** "ERROR: The request could not be satisfied / Request blocked" with X-Amz-Cf-Id = **dangling CloudFront distribution** (origin unreachable), same signature as the verified ftp.strava.com / api.ilpost.it takeovers. MEDIUM -> **HIGH**.
+- Finding 3 (S1 staging.pbs.org): 301 -> 401 CloudFront (0 B body, X-Amz-Cf-Id present) = live distribution answering with auth-required, not the classic origin-miss 403 915 B signature. MEDIUM -> LOW (ambiguous, ownership check needed).
+- Finding 4 (S1 status.pbs.org): 301 -> 200 187,174 B **AtlassianEdge** "PBS Public Status Status" = live Atlassian status page. MEDIUM -> LOW.
+- Finding 1 (I22 /independentlens/getinvolved/cinema/): 200 but **0 B** body, content-type application/octet-stream (parent /independentlens/ is live) - no discoverable content. MEDIUM -> LOW.
+- Note: the scanner's "q reflects verbatim in body context" LOW items on /search were re-probed - \`<title>&quot;TOKEN&quot; Search Results\` (quotes escaped) and a raw \`<img src=x onerror=alert(1)>\` probe returns no raw tag; stays LOW.
