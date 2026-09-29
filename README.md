@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| problogger.net | 17 | 0 | 2 | 13 | 2 | top-websites gist (no active program match) |
 | fda.gov | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | androidauthority.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | ign.com | 20 | 0 | 0 | 9 | 11 | top-websites gist (no active program match) |
