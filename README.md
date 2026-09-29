@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| cbc.ca | 30 | 0 | 0 | 26 | 4 | top-websites gist (no active program match) |
 | hollywoodreporter.com | 7 | 2 | 0 | 2 | 3 | top-websites gist (no active program match) |
 | code.jquery.com | 5 | 0 | 0 | 2 | 3 | jQuery |
 | law.cornell.edu | 15 | 3 | 0 | 9 | 3 | top-websites gist (no active program match) |
