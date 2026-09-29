@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| sciencemag.org | 33 | 0 | 0 | 30 | 3 | top-websites gist (no active program match) |
 | columbia.edu | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | blog.naver.com | 13 | 0 | 3 | 6 | 4 | top-websites gist (no active program match) |
 | 1.bp.blogspot.com | 17 | 0 | 0 | 3 | 14 | top-websites gist (no active program match) |
