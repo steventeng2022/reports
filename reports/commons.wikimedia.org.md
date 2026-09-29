@@ -16,8 +16,8 @@ Total findings: **24** (High: 1, Medium: 1, Low: 20, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I2 | Reflected XSS via attribute injection | CWE-79 |
-| 2 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | medium | I2 | Reflected XSS via attribute injection | CWE-79 |
+| 2 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -43,12 +43,12 @@ Total findings: **24** (High: 1, Medium: 1, Low: 20, Info: 2)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS via attribute injection (`I2`)
+### 1. [MEDIUM] Reflected XSS via attribute injection (`I2`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter title on https://commons.wikimedia.org/w/index.php: injecting "\"' onerror=\"alert(1)//" yields an unquoted onerror handler. Event fires on render.
 
-### 2. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 2. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /api/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -166,3 +166,7 @@ Total findings: **24** (High: 1, Medium: 1, Low: 20, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **I2 #1 (HIGH -> MEDIUM):** re-probed /w/index.php?title="' onerror="'alert(1)// (301 -> /wiki/%22%27_onerror%3D%22%27alert(1)//). The payload reflects RAW (unescaped quotes) in exactly 3 places: <title>, <h1 id="firstHeading"> mw-page-title-main, and the sticky-header span. It is NOT present in any of the 4 <script> blocks on the page (all occurrences verified outside script ranges). Breakout requires closing the element: </title>, </TITLE>, </Title>, </title >, </title\t> and </h1>, </H1>, </h1 > were all tested - every variant is rejected by MediaWiki as "Bad title" (404 page, document title becomes "Bad title - Wikimedia Commons"; payload survives only URL-encoded in rel=canonical). Verdict: raw unescaped reflection in element-content contexts, breakout constrained by the bad-title filter - not exploitable as full DOM XSS; held MEDIUM as a sanitization-boundary finding on a high-value Wikimedia property.
+- **I22 #2 (MEDIUM -> LOW):** /api/ = 200, 944B, content-type text/html, <title>APIs</title> - the public Wikimedia Commons APIs landing page (intentional public content, not a hidden app).

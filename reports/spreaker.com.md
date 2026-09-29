@@ -16,7 +16,7 @@ Total findings: **15** (High: 0, Medium: 1, Low: 12, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
@@ -34,7 +34,7 @@ Total findings: **15** (High: 0, Medium: 1, Low: 12, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain api.spreaker.com resolves to 13.249.182.117 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -112,3 +112,6 @@ Total findings: **15** (High: 0, Medium: 1, Low: 12, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **S1 #1 (MEDIUM -> LOW):** http://api.spreaker.com = 301 -> https://api.spreaker.com (CloudFront x-cache: Redirect, http->https normalization only). https endpoint = 200, 141B, x-cache: Miss: live first-party page "<h1>Spreaker API</h1><p>For more information, please visit: developers.spreaker.com</p>" - live answering origin, not the CF 915/919B dangling-distribution signature.

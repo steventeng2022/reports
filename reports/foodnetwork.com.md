@@ -16,7 +16,7 @@ Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -25,7 +25,7 @@ Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain api.foodnetwork.com resolves to 65.9.180.58 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -58,3 +58,6 @@ Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **S1 #1 (MEDIUM -> LOW):** http://api.foodnetwork.com = 301 -> https (CloudFront redirect); https = 403, 23B, content-type application/json, body {"message":"Forbidden"} - live origin answering with a JSON 403 (X-Amz-Cf-Id present) - not the CF 915/919B "request could not be satisfied" dangling signature.

@@ -5,7 +5,7 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 15512** (High: 5, Medium: 226, Low: 3922, Info: 11359)
+**Total findings across all sites: 15606** (High: 5, Medium: 227, Low: 3987, Info: 11387)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -13,11 +13,11 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | copyblogger.com | 5 | 0 | 0 | 5 | 0 | top-websites gist (no active program match) |
 | pagead2.googlesyndication.com | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | cnn.com | 16 | 0 | 0 | 5 | 11 | CNN |
-| foodnetwork.com | 6 | 0 | 1 | 3 | 2 | top-websites gist (no active program match) |
-| bitbucket.org | 12 | 0 | 2 | 3 | 7 | Atlassian |
-| commons.wikimedia.org | 24 | 1 | 1 | 20 | 2 | top-websites gist (no active program match) |
+| foodnetwork.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
+| bitbucket.org | 12 | 0 | 0 | 5 | 7 | Atlassian |
+| commons.wikimedia.org | 24 | 0 | 1 | 21 | 2 | top-websites gist (no active program match) |
 | vanmiubeauty.com | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
-| spreaker.com | 15 | 0 | 1 | 12 | 2 | top-websites gist (no active program match) |
+| spreaker.com | 15 | 0 | 0 | 13 | 2 | top-websites gist (no active program match) |
 | mixi.jp | 17 | 0 | 0 | 15 | 2 | top-websites gist (no active program match) |
 | billboard.com | 5 | 0 | 0 | 2 | 3 | top-websites gist (no active program match) |
 | refinery29.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |

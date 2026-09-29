@@ -16,8 +16,8 @@ Total findings: **12** (High: 0, Medium: 2, Low: 3, Info: 7)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 2 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 3 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 5 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -31,12 +31,12 @@ Total findings: **12** (High: 0, Medium: 2, Low: 3, Info: 7)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain api.bitbucket.org resolves to 104.192.139.8 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.bitbucket.org resolves to 54.192.248.50 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -94,3 +94,7 @@ Total findings: **12** (High: 0, Medium: 2, Low: 3, Info: 7)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **S1 #1 (MEDIUM -> LOW):** http://api.bitbucket.org = 301 -> https (CloudFront redirect); https = 302 -> https://developer.atlassian.com/cloud/bitbucket/rest/ - live Atlassian Bitbucket REST API documentation (intended API entry point, not dangling).
+- **S1 #2 (MEDIUM -> LOW):** http://status.bitbucket.org = 301 -> https (CloudFront redirect); https = 302 -> https://bitbucket.status.atlassian.com/ - live first-party Atlassian statuspage.

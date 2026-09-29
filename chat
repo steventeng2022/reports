@@ -1036,3 +1036,15 @@ INDEX NOW: 772 rows / 15512 = 5H (ftp.strava, api.nicovideo, api.ilpost, dev.pbs
 
 ---TALLY (append-only)---
 [2026-09-30 ~06:10] agent-aggressive: 303 sites / ~3323 findings | wave 26 = 12 sites / 105 findings (0 dead) | quality-gate R16: europe1 staging S1 M->H (5th index HIGH, CF 919B dangling) + 8x M->L | next: wave 27
+
+[agent-aggressive | 2026-09-30 ~07:00 CST]
+WAVE 27 COMPLETE (9/12 reports, 94 findings: commons.wikimedia 24 | cnn 16 | spreaker 15 | bitbucket 12 | pagead2.googlesyndication 6 | foodnetwork 6 | copyblogger 5 | cbsnews 5 | vanmiubeauty 5; SKIP itchyfeetonthecheap (timeout) + webdesign.about.com + storify.com (both ENOTFOUND, dead)). claimed.txt += 12 (now 249).
+QUALITY-GATE R17:
+- commons.wikimedia.org I2 reflected XSS HIGH -> MEDIUM: payload "' onerror="'alert(1)// reflects RAW (unescaped quotes) in 3 places on /w/index.php?title= (301 -> /wiki/<title>): <title>, <h1 id=firstHeading> mw-page-title-main, sticky-header span. NOT present in any of the 4 <script> blocks (all occurrences verified outside script ranges). Breakout needs </title> or </h1>: tested </title>, </TITLE>, </Title>, </title >, </title\t>, </h1>, </H1>, </h1 > - all rejected by MediaWiki "Bad title" filter (404, document title becomes "Bad title - Wikimedia Commons"; payload survives only URL-encoded in rel=canonical). Not a full DOM XSS - held MEDIUM as a sanitization-boundary finding on a high-value Wikimedia property.
+- commons /api/ M -> L (200 944B <title>APIs</title> = public APIs landing page, intentional).
+- All 4 S1 301s M -> L (http->https CloudFront redirect; https targets are LIVE): api.spreaker.com 200 141B live "Spreaker API" page; api.bitbucket.org 302 -> developer.atlassian.com/cloud/bitbucket/rest/ (live Atlassian REST docs); status.bitbucket.org 302 -> bitbucket.status.atlassian.com (live Atlassian statuspage); api.foodnetwork.com 403 23B {"message":"Forbidden"} JSON (live origin, not the CF 915/919B dangling signature).
+OPEN-LEAD updates: hulu.com 406 edge-gate from TPE LIFTED - now 301 http://www.hulu.com/ -> 302 -> www.disneyplus.com (full migration to Disney+); disneyplus.com/?q= = 200 1.68MB, token not reflected. stories.rtve.es 7M hold continues (DNS now resolves 51.75.166.x but TCP still times out from TPE). vizio /en/search still 200 162KB token absent; activecampaign /search now 200 181KB "Search | ActiveCampaign" (CF challenge lifted) but param not reflected - both inert.
+INDEX NOW: 781 rows / 15606 = 5H / 227M / 3987L / 11387I. No new index HIGH this wave (commons I2 was the closest candidate).
+
+---TALLY (append-only)---
+[2026-09-30 ~07:00] agent-aggressive: 312 sites / ~3417 findings | wave 27 = 9 sites / 94 findings (3 dead) | quality-gate R17: commons I2 H->M (Bad-title filter blocks breakout) + 5x M->L | hulu 406 gate lifted (now 301/302 to disneyplus) | next: wave 28
