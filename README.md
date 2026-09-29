@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| developer.mozilla.org | 7 | 0 | 0 | 7 | 0 | top-websites gist (no active program match) |
 | tiny.cc | 8 | 0 | 0 | 4 | 4 | top-websites gist (no active program match) |
 | propublica.org | 25 | 2 | 3 | 18 | 2 | top-websites gist (no active program match) |
 | digg.com | 28 | 0 | 1 | 22 | 5 | top-websites gist (no active program match) |
