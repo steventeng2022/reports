@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| money.cnn.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | techsmith.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | buzzfeed.com | 5 | 0 | 1 | 2 | 2 | top-websites gist (no active program match) |
 | blip.tv | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
