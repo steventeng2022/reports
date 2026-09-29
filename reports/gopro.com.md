@@ -12,14 +12,14 @@
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 4, Low: 5, Info: 3)
+Total findings: **12** (High: 0, Medium: 2, Low: 7, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
 | 2 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
-| 3 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 4 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 3 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 4 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 5 | low | H2 | Missing CSP header | CWE-1021 |
 | 6 | low | H4 | No clickjacking protection | CWE-1023 |
 | 7 | low | C1 | Cookies without Secure flag | CWE-614 |
@@ -41,12 +41,12 @@ Total findings: **12** (High: 0, Medium: 4, Low: 5, Info: 3)
 - **CWE:** CWE-942
 - **Detail:** Request to https://gopro.com/api with Origin: null returned Access-Control-Allow-Origin: null with Access-Control-Allow-Credentials: true. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 3. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 3. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain jira.gopro.com resolves to 54.192.248.90 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 4. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 4. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain api.gopro.com resolves to 3.169.121.113 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -94,3 +94,8 @@ Total findings: **12** (High: 0, Medium: 4, Low: 5, Info: 3)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **S1 #3 jira.gopro.com (MEDIUM -> LOW):** 301 -> goproinc.atlassian.net -> 302 login.jsp?os_destination=... = live first-party Atlassian Jira instance, not dangling; subdomain is an intentional redirect to the owned tenant.
+- **S1 #4 api.gopro.com (MEDIUM -> LOW):** now 200 (0 B) nginx behind CloudFront, X-Cache: Miss = live answering origin, not the CF 915/919B dangling-distribution signature.
+- **I20 #1/#2 (KEPT MEDIUM):** re-probed /api with Origin: https://evil-cors.example, null, http://attacker.test -> 403 769 B DataDome bot-challenge (geo.captcha-delivery.com, "Please enable JS and disable any ad blocker") with Access-Control-Allow-Origin: * and Access-Control-Allow-Credentials: true on all three origins. Wildcard+ACAC is not exploitable in modern browsers (ACAO:* does not match a literal null origin), so held at MEDIUM per gate policy (ACAO+ACAC present even on 403) rather than promoted; live WAF layer means the endpoint is not dangling.

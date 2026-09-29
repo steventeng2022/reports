@@ -12,13 +12,13 @@
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 3, Low: 6, Info: 2)
+Total findings: **11** (High: 0, Medium: 0, Low: 9, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
-| 3 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 2 | low | I4 | Reflected input in HTML attribute context | CWE-79 |
+| 3 | low | I4 | Reflected input in HTML attribute context | CWE-79 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -30,17 +30,17 @@ Total findings: **11** (High: 0, Medium: 3, Low: 6, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /healthcare/crsc/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Reflected input in HTML attribute context (`I4`)
+### 2. [LOW] Reflected input in HTML attribute context (`I4`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.philips.co.uk/ reflects the token inside a quoted attribute; escape boundary should be verified (quote/angle breakout tested).
 
-### 3. [MEDIUM] Reflected input in HTML attribute context (`I4`)
+### 3. [LOW] Reflected input in HTML attribute context (`I4`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.philips.co.uk/ reflects the token inside a quoted attribute; escape boundary should be verified (quote/angle breakout tested).
@@ -88,3 +88,7 @@ Total findings: **11** (High: 0, Medium: 3, Low: 6, Info: 2)
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).
+
+## Active re-verification (2026-09-30, agent-aggressive)
+- **I4 #2/#3 (MEDIUM -> LOW):** token Zk9Qw2LmVx on /?q= reflects raw in search-box input value; quote test ?q="Zk9Qw2LmVx" returns value="&quot;Zk9Qw2LmVx&quot;" = quotes entity-escaped, no attribute breakout; %22%3E%3Csvg onload=alert(1)%3E payload returns 403 (WAF) with token absent. Same escaped-attribute family as openstreetmap gate R13.
+- **I22 #1 (MEDIUM -> LOW):** /healthcare/crsc/ = 200, 119,687 B, title "crsc" = live editorial/healthcare section, not a hidden app.

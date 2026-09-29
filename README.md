@@ -5,19 +5,19 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 15189** (High: 4, Medium: 224, Low: 3703, Info: 11258)
+**Total findings across all sites: 15292** (High: 4, Medium: 226, Low: 3776, Info: 11286)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
-| gopro.com | 12 | 0 | 4 | 5 | 3 | top-websites gist (no active program match) |
+| gopro.com | 12 | 0 | 2 | 7 | 3 | top-websites gist (no active program match) |
 | apnews.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | stadt-bremerhaven.de | 8 | 0 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | chiark.greenend.org.uk | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | 0.gravatar.com | 4 | 0 | 0 | 0 | 4 | top-websites gist (no active program match) |
-| google.pl | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
+| google.pl | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
 | lifehacker.com | 28 | 0 | 0 | 27 | 1 | top-websites gist (no active program match) |
 | onlinelibrary.wiley.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
-| philips.co.uk | 11 | 0 | 3 | 6 | 2 | top-websites gist (no active program match) |
+| philips.co.uk | 11 | 0 | 0 | 9 | 2 | top-websites gist (no active program match) |
 | ebay.com | 4 | 0 | 0 | 2 | 2 | eBay |
 | mtv.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | cia.gov | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
