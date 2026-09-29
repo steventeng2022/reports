@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| journals.plos.org | 14 | 0 | 0 | 4 | 10 | top-websites gist (no active program match) |
 | mailchi.mp | 33 | 0 | 0 | 31 | 2 | top-websites gist (no active program match) |
 | scratch.mit.edu | 30 | 0 | 1 | 21 | 8 | top-websites gist (no active program match) |
 | smithsonianmag.com | 33 | 28 | 0 | 3 | 2 | top-websites gist (no active program match) |
