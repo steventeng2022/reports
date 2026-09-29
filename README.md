@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| docs.wixstatic.com | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
 | mozilla.org | 5 | 0 | 0 | 2 | 3 | Mozilla |
 | indiegogo.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | cdn.jsdelivr.net | 5 | 0 | 0 | 3 | 2 | jsDelivr |
