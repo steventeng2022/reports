@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| law.cornell.edu | 15 | 3 | 0 | 9 | 3 | top-websites gist (no active program match) |
 | thehill.com | 7 | 0 | 1 | 3 | 3 | The Hill |
 | huffingtonpost.com | 6 | 0 | 2 | 3 | 1 | HuffPost |
 | google.co.jp | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
