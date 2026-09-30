@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| s.w.org | 10 | 0 | 1 | 6 | 3 | WordPress |
 | agoda.com | 9 | 0 | 3 | 4 | 2 | top-websites gist (no active program match) |
 | usatoday.com | 5 | 0 | 0 | 1 | 4 | USA Today |
 | presseportal.de | 6 | 0 | 1 | 3 | 2 | top-websites gist (no active program match) |
