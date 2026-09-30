@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
+Total findings: **6** (High: 0, Medium: 0, Low: 4, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -25,7 +25,7 @@ Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.godaddy.com resolves to 65.9.180.115 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -54,6 +54,10 @@ Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://godaddy.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 (MEDIUM -> LOW):** status.godaddy.com re-probed = 200 (110,007 B) Atlassian Statuspage served via CloudFront (server: AtlassianEdge) - live first-party status page, not dangling.
 
 ## Reproduction notes
 

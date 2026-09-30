@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **39** (High: 0, Medium: 1, Low: 35, Info: 3)
+Total findings: **39** (High: 0, Medium: 0, Low: 36, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -58,7 +58,7 @@ Total findings: **39** (High: 0, Medium: 1, Low: 35, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /docs/search_results.html which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -252,6 +252,10 @@ Total findings: **39** (High: 0, Medium: 1, Low: 35, Info: 3)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://schema.org/sitemap.xml returns a sitemap with 3038 URLs, aiding enumeration of the site surface.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** https://schema.org/docs/search_results.html re-probed = 200 (8,125 B) "Search Results - schema.org" public documentation page; public static docs with no hidden or sensitive data.
 
 ## Reproduction notes
 

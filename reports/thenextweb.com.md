@@ -55,6 +55,10 @@ Total findings: **6** (High: 0, Medium: 2, Low: 3, Info: 1)
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://thenextweb.com/
 
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I20 x2 (kept MEDIUM):** re-verified 2026-09-30 - requests to https://thenextweb.com/ with Origin: https://evil-cors.example, http://evil-cors.example, and null all return 200 with the exact same origin reflected in Access-Control-Allow-Origin plus Access-Control-Allow-Credentials: true. Arbitrary-origin reflection with credentials confirmed; impact bounded to credentialed cross-origin GETs of exposed resources.
+
 ## Reproduction notes
 
 - Scanned 2026-09-29 from Asia/Taipei (UTC+8); single pass per endpoint; parameters taken from live GET URLs discovered on the target (no authenticated sessions).

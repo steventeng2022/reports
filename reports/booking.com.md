@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 2, Low: 5, Info: 5)
+Total findings: **12** (High: 0, Medium: 0, Low: 7, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 2 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
 | 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -31,12 +31,12 @@ Total findings: **12** (High: 0, Medium: 2, Low: 5, Info: 5)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain admin.booking.com resolves to 54.192.248.74 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain api.booking.com resolves to 65.9.180.88 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -90,6 +90,11 @@ Total findings: **12** (High: 0, Medium: 2, Low: 5, Info: 5)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://www.booking.com/.well-known/security.txt returned 200 (139 bytes) with a matching signature.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 #1 admin.booking.com (MEDIUM -> LOW):** re-probed = 302 -> https://account.booking.com/oauth2/authorize (first-party OAuth authorization flow, live).
+- **S1 #2 api.booking.com (MEDIUM -> LOW):** re-probed = 404 (248 B) branded "Booking.com: 404 Not Found" page from the live origin (envoy, x-cache: Error) - not the CloudFront dangling signature.
 
 ## Reproduction notes
 

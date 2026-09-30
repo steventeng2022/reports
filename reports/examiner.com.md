@@ -12,18 +12,18 @@
 
 ## Summary
 
-Total findings: **4** (High: 0, Medium: 1, Low: 3, Info: 0)
+Total findings: **4** (High: 0, Medium: 0, Low: 4, Info: 0)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /comments/feed/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -42,6 +42,10 @@ Total findings: **4** (High: 0, Medium: 1, Low: 3, Info: 0)
 
 - **CWE:** CWE-918
 - **Detail:** Requesting the origin with Host: examiner.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** https://www.examiner.com/comments/feed/ re-probed = 301 -> https://examiner.com/ (200, 163,103 B homepage) - the robots.txt-disallowed path now redirects to the first-party apex; no hidden content.
 
 ## Reproduction notes
 

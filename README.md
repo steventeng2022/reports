@@ -5,22 +5,22 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 16008** (High: 5, Medium: 232, Low: 4284, Info: 11487)
+**Total findings across all sites: 16221** (High: 6, Medium: 234, Low: 4467, Info: 11514)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
-| examiner.com | 4 | 0 | 1 | 3 | 0 | top-websites gist (no active program match) |
-| kickstarter.com | 7 | 0 | 1 | 3 | 3 | top-websites gist (no active program match) |
-| booking.com | 12 | 0 | 2 | 5 | 5 | top-websites gist (no active program match) |
+| examiner.com | 4 | 0 | 0 | 4 | 0 | top-websites gist (no active program match) |
+| kickstarter.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
+| booking.com | 12 | 0 | 0 | 7 | 5 | top-websites gist (no active program match) |
 | thenextweb.com | 6 | 0 | 2 | 3 | 1 | top-websites gist (no active program match) |
-| godaddy.com | 6 | 0 | 1 | 3 | 2 | top-websites gist (no active program match) |
-| schema.org | 39 | 0 | 1 | 35 | 3 | top-websites gist (no active program match) |
-| science.sciencemag.org | 32 | 30 | 0 | 1 | 1 | top-websites gist (no active program match) |
+| godaddy.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
+| schema.org | 39 | 0 | 0 | 36 | 3 | top-websites gist (no active program match) |
+| science.sciencemag.org | 32 | 0 | 0 | 31 | 1 | top-websites gist (no active program match) |
 | pastebin.com | 26 | 0 | 0 | 25 | 1 | top-websites gist (no active program match) |
 | i1.wp.com | 7 | 0 | 0 | 3 | 4 | top-websites gist (no active program match) |
-| patreon.com | 21 | 0 | 2 | 15 | 4 | top-websites gist (no active program match) |
-| whc.unesco.org | 33 | 30 | 0 | 3 | 0 | top-websites gist (no active program match) |
-| adweek.com | 20 | 10 | 0 | 7 | 3 | top-websites gist (no active program match) |
+| patreon.com | 21 | 1 | 0 | 16 | 4 | top-websites gist (no active program match) |
+| whc.unesco.org | 33 | 0 | 0 | 33 | 0 | top-websites gist (no active program match) |
+| adweek.com | 20 | 0 | 0 | 17 | 3 | top-websites gist (no active program match) |
 | francetvinfo.fr | 30 | 0 | 0 | 27 | 3 | top-websites gist (no active program match) |
 | newyorker.com | 7 | 0 | 0 | 6 | 1 | top-websites gist (no active program match) |
 | spectrum.ieee.org | 5 | 0 | 1 | 2 | 2 | top-websites gist (no active program match) |

@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 2, Low: 15, Info: 4)
+Total findings: **21** (High: 1, Medium: 1, Low: 16, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | high | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 2 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
 | 5 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
@@ -40,12 +40,12 @@ Total findings: **21** (High: 0, Medium: 2, Low: 15, Info: 4)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [HIGH] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
-- **Detail:** Subdomain mail.patreon.com resolves to 54.192.248.25 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 403
+- **Detail:** Subdomain mail.patreon.com (54.192.248.25) re-probed via HTTP = 403, exactly 915 B, server: CloudFront, x-cache: Error, body "ERROR: The request could not be satisfied" - the CloudFront dangling signature; the HTTPS handshake also fails for this SNI (TLS alert 40, no matching certificate), consistent with the CloudFront distribution no longer serving mail.patreon.com while the DNS record persists - takeover candidate if the CloudFront distribution/origin is claimed.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.patreon.com resolves to 54.192.248.89 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -144,6 +144,11 @@ Total findings: **21** (High: 0, Medium: 2, Low: 15, Info: 4)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://www.patreon.com/.well-known/security.txt returned 200 (198 bytes) with a matching signature.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 #1 mail.patreon.com (MEDIUM -> HIGH):** re-verified 2026-09-30 - HTTP 403, exactly 915 B, CloudFront, x-cache: Error, "The request could not be satisfied"; TLS handshake failure for the SNI. Matches the confirmed dangling-CloudFront signature (ftp.strava, api.nicovideo, api.ilpost, dev.pbs, staging.europe1).
+- **S1 #2 status.patreon.com (MEDIUM -> LOW):** re-probed = 200 (121,018 B) Atlassian Statuspage served via CloudFront (server: AtlassianEdge) - live first-party status page, not dangling.
 
 ## Reproduction notes
 

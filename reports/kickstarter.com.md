@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 1, Low: 3, Info: 3)
+Total findings: **7** (High: 0, Medium: 0, Low: 4, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | Dangling subdomain served by third-party platform | CWE-916 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -26,7 +26,7 @@ Total findings: **7** (High: 0, Medium: 1, Low: 3, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] Dangling subdomain served by third-party platform (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.kickstarter.com resolves to 65.9.180.43 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -60,6 +60,10 @@ Total findings: **7** (High: 0, Medium: 1, Low: 3, Info: 3)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://kickstarter.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 (MEDIUM -> LOW):** status.kickstarter.com re-probed = 200 (54,327 B) Atlassian Statuspage served via CloudFront (server: AtlassianEdge) - live first-party status page, not dangling.
 
 ## Reproduction notes
 
