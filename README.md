@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| springer.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | arxiv.org | 4 | 0 | 0 | 1 | 3 | arXiv |
 | variety.com | 4 | 0 | 0 | 1 | 3 | Variety |
 | unsplash.com | 7 | 0 | 2 | 2 | 3 | Unsplash |
