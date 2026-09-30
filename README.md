@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| statista.com | 35 | 0 | 3 | 32 | 0 | top-websites gist (no active program match) |
 | rebrand.ly | 31 | 30 | 0 | 1 | 0 | top-websites gist (no active program match) |
 | ssl.gstatic.com | 34 | 0 | 0 | 33 | 1 | top-websites gist (no active program match) |
 | repubblica.it | 8 | 0 | 2 | 5 | 1 | top-websites gist (no active program match) |
