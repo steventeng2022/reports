@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
+Total findings: **28** (High: 0, Medium: 0, Low: 4, Info: 24)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -39,6 +39,11 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 | 21 | info | HTML14 | Public root document marked noindex | CWE-200 |
 | 22 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
 | 23 | info | HTML19 | data: URIs present in root document | CWE-200 |
+| 24 | info | S1 | CF challenge wall: home + 45 probed subdomains -> identical 403 (5,381 B "Attention Required!") | CWE-916 |
+| 25 | low | S1 | status.medium.com = 200 (198,567 B, Vercel "Medium Status", live first-party) | CWE-916 |
+| 26 | low | S1 | api.medium.com = 200 (77,370 B, Cloudflare, live first-party API surface) | CWE-916 |
+| 27 | info | S1 | help 302 -> help.medium.com/hc; support 301 -> help.medium.com; blog 301 -> /blog/ | CWE-916 |
+| 28 | info | S1 | download.medium.com = 200 (0 B) | CWE-916 |
 
 ## Detailed findings
 
@@ -181,6 +186,39 @@ Total findings: **23** (High: 0, Medium: 0, Low: 2, Info: 21)
 - **CWE:** CWE-200
 - **Detail:** The root document of medium.com references 1 data: URI payload(s); inline data resources bypass the normal fetch/CORS path and should be inventoried.
 - **Recommendation:** Review inline data payloads (especially scripts/iframes) as part of the asset inventory.
+### 24. [INFO] CF challenge wall: home + 45 probed subdomains -> identical 403 (5,381 B "Attention Required!") (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** The apex and all 45 probed subdomains return the identical Cloudflare managed-challenge 403 (5,381 B) for the probe client - a uniform first-party challenge wall, no dangling hosts.
+- **Recommendation:** Challenge wall hides the subdomain inventory from non-JS clients.
+
+### 25. [LOW] status.medium.com = 200 (198,567 B, Vercel "Medium Status", live first-party) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** The status subdomain serves a live 198,567 B Vercel-hosted "Medium Status" page (not Atlassian) - a real first-party status page.
+- **Recommendation:** Track the Vercel status origin.
+
+### 26. [LOW] api.medium.com = 200 (77,370 B, Cloudflare, live first-party API surface) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** The api subdomain returns 200 (77,370 B, Cloudflare) - a live API surface without authentication for the probe.
+- **Recommendation:** Check API docs for unauthenticated endpoints in the next pass.
+
+### 27. [INFO] help 302 -> help.medium.com/hc; support 301 -> help.medium.com; blog 301 -> /blog/ (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** Help/support 301/302 to the Intercom-hosted help center; blog 301s to /blog/ on the apex.
+- **Recommendation:** All first-party destinations.
+
+### 28. [INFO] download.medium.com = 200 (0 B) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** The download subdomain 200s with a 0 B body - an empty live response.
+- **Recommendation:** Confirm the empty 200 is intentional.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 x5:** home + 45 subs -> identical CF 403 challenge (5,381 B "Attention Required!"); status 200 (198,567 B Vercel "Medium Status"); api 200 (77,370 B CF); help 302 -> help.medium.com/hc; support 301; blog 301; download 200 (0 B) (probe-r35e-subs).
 
 ## Evidence (raw response observations)
 

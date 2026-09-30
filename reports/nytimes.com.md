@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
+Total findings: **23** (High: 0, Medium: 0, Low: 3, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -35,6 +35,10 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 | 17 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
 | 18 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 | 19 | info | CT1 | 88 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 20 | info | S1 | home 403 (774 B) DataDome "Please enable JS and disable any ad blocker" | CWE-916 |
+| 21 | info | S1 | help 200 (66,409 B, Heroku-hosted "NYT Help Center", Miss from cloudfront) | CWE-916 |
+| 22 | info | S1 | store 200 (170,286 B, Cloudflare); mail 301 -> mail.google.com/a/nytimes.com (envoy); account 302 -> myaccount (Varnish HIT) | CWE-916 |
+| 23 | info | S1 | app 301 -> /section/todayspaper; mobile/www2 301 -> www (envoy); static 400 (15,315 B); sso 302 -> apex (Cloudflare); api/oauth 404 (0 B) | CWE-916 |
 
 ## Detailed findings
 
@@ -158,6 +162,33 @@ Total findings: **19** (High: 0, Medium: 0, Low: 3, Info: 16)
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: a.et.dev.nytimes.com, abra.api.nytimes.com, algo.dev.nytimes.com, api.nytimes.com, community.api.nytimes.com, community.api.stg.nytimes.com, cooking-admin.dev.nytimes.com, feast.ml.dev.nytimes.com, lb.a.purr.dev.nytimes.com, lire-ui-preview.auth.dev.nytimes.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+### 20. [INFO] home 403 (774 B) DataDome "Please enable JS and disable any ad blocker" (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** The apex 403s non-JS clients with a DataDome challenge page (774 B, dd JSON cid/hsh present) - bot protection, first-party.
+- **Recommendation:** Expected; document the DataDome fingerprint.
+
+### 21. [INFO] help 200 (66,409 B, Heroku-hosted "NYT Help Center", Miss from cloudfront) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** The help subdomain serves a Heroku-hosted NYT Help Center (66,409 B, cloudfront Miss) - live first-party service on a separate platform.
+- **Recommendation:** The Heroku origin is a distinct platform from the main site; note it.
+
+### 22. [INFO] store 200 (170,286 B, Cloudflare); mail 301 -> mail.google.com/a/nytimes.com (envoy); account 302 -> myaccount (Varnish HIT) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** store serves a 170,286 B storefront from Cloudflare; mail 301s to the Google Workspace host (envoy edge); account 302s to myaccount behind Varnish (x-cache HIT).
+- **Recommendation:** All first-party destinations across three edge platforms.
+
+### 23. [INFO] app 301 -> /section/todayspaper; mobile/www2 301 -> www (envoy); static 400 (15,315 B); sso 302 -> apex (Cloudflare); api/oauth 404 (0 B) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** app 301s to the Today section; mobile/www2 301 to www via envoy; static 400 (15,315 B); sso 302s to the apex; api and oauth 404 with 0 B bodies.
+- **Recommendation:** No dangling subdomains; 0 B 404s on api/oauth are worth tracking.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 x4:** home 403 (774 B DataDome); help 200 (66,409 B Heroku "NYT Help Center"); store 200 (170,286 B CF); mail 301 -> mail.google.com/a/nytimes.com (envoy); account 302 -> myaccount (Varnish HIT); app 301 -> /section/todayspaper; mobile/www2 301 -> www; static 400 (15,315 B); sso 302 -> apex; api/oauth 404 (0 B); no dangling CDN signatures (probe-r35e-subs).
 
 ## Evidence (raw response observations)
 

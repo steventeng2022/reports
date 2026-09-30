@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
+Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -37,6 +37,12 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 | 19 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
 | 20 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 | 21 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 22 | low | S1 | First-party branded Akamai "Access Denied" on staging/portal/beta (not dangling) | CWE-916 |
+| 23 | low | S1 | store.washingtonpost.com = 200 (920,910 B, Cloudflare storefront, first-party) | CWE-916 |
+| 24 | info | S1 | sso.washingtonpost.com = 302 -> /app/UserHome?iss=...&session_hint=AUTHENTICATED (SAML handoff, first-party) | CWE-916 |
+| 25 | info | S1 | Subdomain error/redirect surface (login tombstone, images/proxy 503, static 400, api/account 301, help 301, blog 302, mobile 301 awselb) | CWE-916 |
+| 26 | info | S1 | ssl.washingtonpost.com = 301 -> http://www.washingtonpost.com/ (scheme downgrade to plain HTTP) | CWE-916 |
+| 27 | info | S1 | www TLS ECONNRESET for Node.js client (JA3 fingerprinting); apex 301 -> www (AmazonS3) | CWE-916 |
 
 ## Detailed findings
 
@@ -173,6 +179,45 @@ Total findings: **21** (High: 0, Medium: 0, Low: 4, Info: 17)
 - **CWE:** CWE-200
 - **Detail:** The root document of washingtonpost.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
 - **Recommendation:** Add lang to the <html> element.
+### 22. [LOW] First-party branded Akamai "Access Denied" on staging/portal/beta (not dangling) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** staging/portal/beta.washingtonpost.com = 403 (375-378 B) with the first-party branded Akamai "Access Denied" page referencing errors.edgesuite.net; the body is not the 915 B dangling CloudFront 403 signature (probe-r35e-subs).
+- **Recommendation:** Treat as first-party protected; watch for ownership changes.
+
+### 23. [LOW] store.washingtonpost.com = 200 (920,910 B, Cloudflare storefront, first-party) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** The bookstore subdomain serves a 920,910 B storefront document from Cloudflare - live first-party commerce origin.
+- **Recommendation:** Monitor the storefront origin for platform changes.
+
+### 24. [INFO] sso.washingtonpost.com = 302 -> /app/UserHome?iss=...&session_hint=AUTHENTICATED (SAML handoff, first-party) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** The SSO subdomain issues a first-party SAML-style handoff with session_hint=AUTHENTICATED in the query.
+- **Recommendation:** Keep the handoff query parameters minimal.
+
+### 25. [INFO] Subdomain error/redirect surface (login tombstone, images/proxy 503, static 400, api/account 301, help 301, blog 302, mobile 301 awselb) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** login 302 -> /wp-stat/paywall/tombstone/index.html; images 503 (375 B); proxy 503 (371 B); static 400 (310 B); api/account 301; help 301 -> helpcenter:443; blog 302 -> www; mobile 301 -> www:443 (awselb).
+- **Recommendation:** The login tombstone path is a useful fingerprint; track it.
+
+### 26. [INFO] ssl.washingtonpost.com = 301 -> http://www.washingtonpost.com/ (scheme downgrade to plain HTTP) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** The ssl subdomain 301s to the plain-HTTP www URL - a scheme downgrade on a subdomain named ssl.
+- **Recommendation:** Fix the Location to https://www.washingtonpost.com/.
+
+### 27. [INFO] www TLS ECONNRESET for Node.js client (JA3 fingerprinting); apex 301 -> www (AmazonS3) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** The Node.js TLS client receives ECONNRESET on www (JA3-based client filtering at the edge) while browsers succeed; apex 301 -> www served via AmazonS3.
+- **Recommendation:** Expected edge filtering; document for future audits.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 x6:** staging/portal/beta 403 (375-378 B first-party branded Akamai "Access Denied", not the 915 B dangling signature); store 200 (920,910 B CF); sso 302 SAML (session_hint=AUTHENTICATED); login 302 paywall tombstone; images/proxy 503; static 400; ssl 301 -> http://www (downgrade); www ECONNRESET for Node TLS (JA3 filtering); apex 301 -> www (AmazonS3) (probe-r35e-subs).
 
 ## Evidence (raw response observations)
 

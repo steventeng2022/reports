@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **28** (High: 0, Medium: 0, Low: 3, Info: 25)
+Total findings: **32** (High: 0, Medium: 0, Low: 6, Info: 26)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -44,6 +44,10 @@ Total findings: **28** (High: 0, Medium: 0, Low: 3, Info: 25)
 | 26 | info | H13 | Cross-origin isolation only partially configured | CWE-693 |
 | 27 | info | WK5 | RFC 9449 DPoP JWKS published | CWE-200 |
 | 28 | info | WK6 | W3C Origin RSA Keys published | CWE-200 |
+| 29 | low | I4 | Reflected input in HTML attribute context | CWE-79 |
+| 30 | low | I2 | Redirect endpoint decodes and displays URL in error page (brackets escaped) | CWE-79 |
+| 31 | low | S1 | Locale subdomains serve full country-locale pages (first-party) | CWE-916 |
+| 32 | info | S1 | Subdomain surface (news/mobile live, api/app 404, help 401, blog 301, download 200 0 B) | CWE-916 |
 
 ## Detailed findings
 
@@ -218,6 +222,35 @@ Total findings: **28** (High: 0, Medium: 0, Low: 3, Info: 25)
 - **CWE:** CWE-200
 - **Detail:** /.well-known/origin-rsa-keys.json on linkedin.com answers 200; W3C Origin RSA Keys (origin-binding key publication) are disclosed.
 - **Recommendation:** Confirm the publication is intended and kept current.
+### 29. [LOW] Reflected input in HTML attribute context (`I4`)
+
+- **CWE:** CWE-79
+- **Detail:** GET /?src=Zx7qK2v9Bm (200, 143,226 B, Cloudflare) reflects the token at index 103540 inside an HTML attribute: href="https://learning.linkedin.com/?src=...&amp;trk=homepage-basic_directory_learningMicrositeUrl" (&amp; escaped). Quote probes return %22/%27 (no attribute breakout) (probe-r35leads).
+- **Recommendation:** Keep the src parameter encoded in the href attribute; watch the learning.linkedin.com cross-link template.
+
+### 30. [LOW] Redirect endpoint decodes and displays URL in error page (brackets escaped) (`I2`)
+
+- **CWE:** CWE-79
+- **Detail:** /redirect?url=Zx7qK2v9Bm -> 200 (3,749 B, "Link Error | LinkedIn"); the URL is decoded and rendered inside <span class="t-bold">. Angle-bracket probe reflects as &lt;img src=x&gt; (HTML-escaped) - no raw breakout (probe-r35leads).
+- **Recommendation:** Keep HTML-escaping the decoded URL on the link-error page.
+
+### 31. [LOW] Locale subdomains serve full country-locale pages (first-party) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** mx.linkedin.com = 200 (543,150 B, first-party country-locale page); qa.linkedin.com = 200 (142,645 B, Qatar locale); ws.linkedin.com = 200 (138,016 B, Samoa locale). Live first-party locale vhosts, not dangling (probe-r35dsubs).
+- **Recommendation:** Document the locale vhosts; mx being a full web vhost is unusual but first-party.
+
+### 32. [INFO] Subdomain surface (news/mobile live, api/app 404, help 401, blog 301, download 200 0 B) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** news.linkedin.com = 200 (125,813 B); mobile.linkedin.com = 200 (95,444 B, CONFIG_NOCACHE); api.linkedin.com = 404 (364,780 B, Cloudflare); app.linkedin.com = 404 (5,530 B); help.linkedin.com = 401 (39 B); blog 301 -> /blog/member; download.linkedin.com = 200 (0 B).
+- **Recommendation:** Track the 0 B download host and the 401 help host.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I4 x1:** /?src= = 200 (143,226 B); token at idx 103540 in a learning.linkedin.com href attribute (&amp; escaped); " and ' -> %22/%27, no attribute breakout (probe-r35leads).
+- **I2 x1:** /redirect?url= = 200 (3,749 B "Link Error"); URL decoded in t-bold span; <img src=x> -> &lt;img src=x&gt; (escaped).
+- **S1 x2:** mx 200 (543,150 B), qa 200 (Qatar, 142,645 B), ws 200 (Samoa, 138,016 B); news/mobile 200, api 404 (364,780 B), app 404, help 401, blog 301, download 200 (0 B) (probe-r35dsubs).
 
 ## Evidence (raw response observations)
 

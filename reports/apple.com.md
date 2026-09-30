@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
+Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -36,6 +36,11 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 | 18 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 | 19 | info | H12 | Proxy/edge hop chain disclosed via Via | CWE-200 |
 | 20 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 21 | low | I22 | Hidden redirect parameter surface (canonical 404 retains parameter) (no open redirect) | CWE-538 |
+| 22 | low | S1 | First-party branded subdomain surface (live beta/news/support/help origins) (not dangling) | CWE-916 |
+| 23 | info | S1 | OAuth handoff discloses client_id, redirect_uri and broad scope | CWE-200 |
+| 24 | info | S1 | Erroring first-party subdomains (account 500, mobile/oauth 400 AkamaiGHost) | CWE-200 |
+| 25 | info | S1 | images.apple.com serves the full homepage (Akamai TCP_REFRESH_MISS, 254,242 B) | CWE-200 |
 
 ## Detailed findings
 
@@ -166,6 +171,40 @@ Total findings: **20** (High: 0, Medium: 0, Low: 5, Info: 15)
 - **CWE:** CWE-200
 - **Detail:** The root document of apple.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
 - **Recommendation:** Add lang to the <html> element.
+### 21. [LOW] Hidden redirect parameter surface (canonical 404 retains parameter) (no open redirect) (`I22`)
+
+- **CWE:** CWE-538
+- **Detail:** /r?url=, /r?u=, /go?url=, /go?u= -> 301 to canonical /r/?url= and /go/?url= (param retained in Location, 267-270 B) then 404 (111,090 B Apple 404 page). The token survives the redirect chain but no handler consumes it - no open redirect (probe-r35redirects).
+- **Recommendation:** Document or consume the retained parameter on the canonical 404.
+
+### 22. [LOW] First-party branded subdomain surface (live beta/news/support/help origins) (not dangling) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** beta.apple.com = 200 (15,318 B, Apple origin); news.apple.com = 200 (7,426 B, AppleHttpServer/<sha> origin); help.apple.com = 200 (178 B); support.apple.com = 200 (130,088 B); files/portal.apple.com = 403 (207/548 B); shop/store 301 -> /store. All first-party, no dangling CDN signature (probe-r35dsubs).
+- **Recommendation:** Keep these first-party origins documented; watch the news AppleHttpServer origin.
+
+### 23. [INFO] OAuth handoff discloses client_id, redirect_uri and broad scope (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** upload.apple.com = 302 -> idmsac.apple.com OAuth authorize with client_id=9lhahlaflt4a4nlce2fuhsiix8wlfr, redirect_uri=upload.apple.com/__login, scope=openid profile email phone dsid adsid accountname roles groups extended_profile offline_access. Standard first-party IdP, but the scope list is broad (phone, offline_access).
+- **Recommendation:** Consider trimming the disclosed scope on public handoffs.
+
+### 24. [INFO] Erroring first-party subdomains (account 500, mobile/oauth 400 AkamaiGHost) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** account.apple.com = 500 (0 B); mobile.apple.com = 400 (650 B); oauth.apple.com = 400 (312 B, AkamaiGHost). Transient edge errors observed once each during the sweep; first-party hosts.
+- **Recommendation:** Recheck at next audit; treat as transient unless repeated.
+
+### 25. [INFO] images.apple.com serves the full homepage (Akamai TCP_REFRESH_MISS, 254,242 B) (`S1`)
+
+- **CWE:** CWE-200
+- **Detail:** images.apple.com = 200 (254,242 B, AkamaiGHost TCP_REFRESH_MISS from a23-46-63-159) - the asset host returns the full www homepage document, suggesting a vhost fallback configuration.
+- **Recommendation:** Confirm the images host vhost mapping with the origin team.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 x1:** /r?{url,u}, /go?{url,u} -> 301 canonical /r/ /go/ -> 404 (111,090 B), param retained, no handler (probe-r35redirects).
+- **S1 x4:** beta 200 (15,318 B), news 200 (7,426 B AppleHttpServer), help 200 (178 B), support 200 (130,088 B), files/portal 403, shop/store 301 -> /store; upload 302 -> idmsac OAuth (client_id disclosed); account 500, mobile/oauth 400 (AkamaiGHost); images 200 (254,242 B full homepage) (probe-r35dsubs).
 
 ## Evidence (raw response observations)
 

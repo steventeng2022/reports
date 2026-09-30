@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
+Total findings: **29** (High: 0, Medium: 0, Low: 11, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -41,6 +41,10 @@ Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
 | 23 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 | 24 | info | CT1 | 2 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
 | 25 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 26 | low | I1 | Reflected token in JavaScript context (challenge/sanitization boundary) | CWE-79 |
+| 27 | low | I1 | Reflected token in JavaScript context across the /link endpoint family | CWE-79 |
+| 28 | low | I22 | Hidden redirect parameter surface (/go url parameter ignored, fixed target) (no open redirect) | CWE-538 |
+| 29 | low | S1 | First-party branded subdomain surface (telegram.org handoff, catch-all) (not dangling) | CWE-916 |
 
 ## Detailed findings
 
@@ -201,6 +205,35 @@ Total findings: **25** (High: 0, Medium: 0, Low: 7, Info: 18)
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: rtmp.t.me; content may still be served via virtual-host fallback.
 - **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
+### 26. [LOW] Reflected token in JavaScript context (challenge/sanitization boundary) (`I1`)
+
+- **CWE:** CWE-79
+- **Detail:** GET /redirect?url=Zx7qK2v9Bm (200, 11,171 B, nginx/1.30.1) reflects the token URL-encoded inside inline JS (path_full at index 391). Breakout probes: " -> %22, ' -> %27, LF -> %0A, CRLF -> %0D%0A, </script> -> %3C%2Fscript%3E, backslash -> %5C; script tags remain 5/5 balanced (probe-r35tme, probe-r35b-tme).
+- **Recommendation:** Keep strict URL encoding of the reflected path_full token; verify no future template renders it raw.
+
+### 27. [LOW] Reflected token in JavaScript context across the /link endpoint family (`I1`)
+
+- **CWE:** CWE-79
+- **Detail:** GET /link, /jump, /target, /callback, /continue, /redir, /next, /return, /follow with ?url=Zx7qK2v9Bm all 200 (9,562-10,845 B); the token reflects URL-encoded inside inline JS path_full (idx 386-391). Quote, newline, angle-bracket and backslash probes are all re-encoded; no breakout (probe-r35tme family).
+- **Recommendation:** Treat the whole /link endpoint family as a single reflected-token surface with strict encoding.
+
+### 28. [LOW] Hidden redirect parameter surface (/go url parameter ignored, fixed target) (no open redirect) (`I22`)
+
+- **CWE:** CWE-538
+- **Detail:** /go?url=Zx7qK2v9Bm in all four token forms (https://, //, https:, /) -> 302 fixed Location //telegram.org/; the parameter is accepted but ignored - no open redirect, hidden endpoint worth documenting (probe-r35redirects).
+- **Recommendation:** Either consume the parameter or strip it before issuing the fixed 302.
+
+### 29. [LOW] First-party branded subdomain surface (telegram.org handoff, catch-all) (not dangling) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** www.t.me = 302 -> //telegram.org/ (first-party handoff); admin/staging/dev/status/mail/git/docs/portal.t.me = 302 -> t.me/<sub> catch-all (200); api.t.me -> core.telegram.org (first-party API host). No 915 B dangling CloudFront signature (probe-r35e-subs).
+- **Recommendation:** Monitor the telegram.org handoff and the catch-all route.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I1 x2:** /redirect (11,171 B) and the /link family (9,562-10,845 B) re-probed; token reflected URL-encoded in inline JS path_full; " / ' / LF / CRLF / </script> / backslash all re-encoded (%22 %27 %0A %0D%0A %3C%2Fscript%3E %5C), script tags balanced 5/5 (probe-r35tme, probe-r35b-tme, probe-r35c-tme).
+- **I22 x1:** /go?url= in all four token forms -> 302 fixed //telegram.org/ (parameter ignored, no open redirect).
+- **S1 x1:** www 302 -> //telegram.org/; admin/staging/dev/status/mail/git/docs/portal 302 catch-all; api -> core.telegram.org (probe-r35e-subs).
 
 ## Evidence (raw response observations)
 

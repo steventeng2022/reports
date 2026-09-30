@@ -5,7 +5,7 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 18062** (High: 7, Medium: 239, Low: 5932, Info: 11884)
+**Total findings across all sites: 17956** (High: 8, Medium: 135, Low: 5759, Info: 12054)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -98,7 +98,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | news.nationalgeographic.com | 41 | 0 | 0 | 36 | 5 | top-websites gist (no active program match) |
 | s.w.org | 10 | 0 | 0 | 7 | 3 | WordPress |
 | agoda.com | 9 | 0 | 2 | 5 | 2 | top-websites gist (no active program match) |
-| usatoday.com | 5 | 0 | 0 | 1 | 4 | USA Today |
+| usatoday.com | 9 | 0 | 0 | 2 | 7 | USA Today |
 | presseportal.de | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | upload.wikimedia.org | 36 | 0 | 0 | 34 | 2 | top-websites gist (no active program match) |
 | uk.linkedin.com | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
@@ -106,7 +106,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | brookings.edu | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
 | theatlantic.com | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | squarespace.com | 13 | 0 | 0 | 11 | 2 | top-websites gist (no active program match) |
-| 9to5mac.com | 14 | 0 | 0 | 11 | 3 | top-websites gist (no active program match) |
+| 9to5mac.com | 18 | 0 | 0 | 14 | 4 | top-websites gist (no active program match) |
 | ft.com | 11 | 0 | 0 | 3 | 8 | Financial Times |
 | elegantthemes.com | 33 | 0 | 0 | 31 | 2 | top-websites gist (no active program match) |
 | google.ie | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
@@ -177,7 +177,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | git-scm.com | 12 | 0 | 0 | 3 | 9 | top-websites gist (no active program match) |
 | bitcointalk.org | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | google.pt | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
-| de.wikipedia.org | 19 | 0 | 2 | 15 | 2 | top-websites gist (no active program match) |
+| de.wikipedia.org | 19 | 0 | 1 | 16 | 2 | top-websites gist (no active program match) |
 | pwc.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | i.ytimg.com | 4 | 0 | 0 | 3 | 1 | top-websites gist (no active program match) |
 | tunein.com | 32 | 0 | 0 | 31 | 1 | top-websites gist (no active program match) |
@@ -264,13 +264,13 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | popsci.com | 20 | 0 | 0 | 16 | 4 | top-websites gist (no active program match) |
 | fao.org | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
 | unity3d.com | 22 | 0 | 0 | 20 | 2 | top-websites gist (no active program match) |
-| ilpost.it | 9 | 1 | 0 | 5 | 3 | top-websites gist (no active program match) |
+| ilpost.it | 9 | 1 | 0 | 6 | 2 | top-websites gist (no active program match) |
 | static.wixstatic.com | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
 | sony.net | 5 | 0 | 0 | 2 | 3 | top-websites gist (no active program match) |
 | cdn.ampproject.org | 35 | 0 | 0 | 34 | 1 | top-websites gist (no active program match) |
-| google.ru | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
-| youtu.be | 20 | 0 | 0 | 18 | 2 | Google |
-| houzz.com | 10 | 0 | 0 | 9 | 1 | top-websites gist (no active program match) |
+| google.ru | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
+| youtu.be | 20 | 0 | 1 | 17 | 2 | Google |
+| houzz.com | 10 | 1 | 1 | 7 | 1 | top-websites gist (no active program match) |
 | a2hosting.com | 1 | 0 | 0 | 1 | 0 | top-websites gist (no active program match) |
 | target.com | 9 | 0 | 0 | 9 | 0 | Target |
 | tensorflow.org | 32 | 0 | 0 | 31 | 1 | top-websites gist (no active program match) |
@@ -278,7 +278,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | edition.cnn.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
 | goo.gl | 4 | 0 | 0 | 3 | 1 | Google |
 | google.co.in | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
-| venturebeat.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
+| venturebeat.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | lesechos.fr | 31 | 0 | 0 | 30 | 1 | top-websites gist (no active program match) |
 | gnu.org | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | namecheap.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
@@ -290,17 +290,17 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | jamanetwork.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | dol.gov | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | docs.wixstatic.com | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
-| mozilla.org | 5 | 0 | 0 | 2 | 3 | Mozilla |
+| mozilla.org | 10 | 0 | 0 | 3 | 7 | Mozilla |
 | indiegogo.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | cdn.jsdelivr.net | 5 | 0 | 0 | 3 | 2 | jsDelivr |
 | siteground.com | 38 | 0 | 0 | 35 | 3 | top-websites gist (no active program match) |
-| lefigaro.fr | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
+| lefigaro.fr | 9 | 0 | 1 | 6 | 2 | top-websites gist (no active program match) |
 | developer.mozilla.org | 7 | 0 | 0 | 7 | 0 | top-websites gist (no active program match) |
 | tiny.cc | 8 | 0 | 0 | 4 | 4 | top-websites gist (no active program match) |
-| propublica.org | 25 | 0 | 2 | 20 | 3 | top-websites gist (no active program match) |
-| digg.com | 28 | 0 | 0 | 23 | 5 | top-websites gist (no active program match) |
+| propublica.org | 25 | 0 | 3 | 20 | 2 | top-websites gist (no active program match) |
+| digg.com | 28 | 0 | 1 | 22 | 5 | top-websites gist (no active program match) |
 | technorati.com | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
-| access.redhat.com | 15 | 0 | 0 | 12 | 3 | top-websites gist (no active program match) |
+| access.redhat.com | 15 | 0 | 1 | 11 | 3 | top-websites gist (no active program match) |
 | wsj.com | 6 | 0 | 0 | 4 | 2 | The Wall Street Journal |
 | gstatic.com | 35 | 0 | 0 | 34 | 1 | Google |
 | gplus.to | 11 | 0 | 1 | 8 | 2 | top-websites gist (no active program match) |
@@ -327,7 +327,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | chromium.org | 4 | 0 | 0 | 1 | 3 | top-websites gist (no active program match) |
 | stumbleupon.com | 19 | 0 | 4 | 13 | 2 | top-websites gist (no active program match) |
 | mediafire.com | 14 | 0 | 0 | 3 | 11 | top-websites gist (no active program match) |
-| politico.com | 5 | 0 | 0 | 3 | 2 | Politico |
+| politico.com | 7 | 0 | 0 | 4 | 3 | Politico |
 | bloglovin.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | ssl.google-analytics.com | 13 | 0 | 3 | 7 | 3 | top-websites gist (no active program match) |
 | fr.linkedin.com | 11 | 0 | 1 | 9 | 1 | top-websites gist (no active program match) |
@@ -364,7 +364,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | about.me | 31 | 0 | 0 | 7 | 24 | top-websites gist (no active program match) |
 | aboutads.info | 21 | 0 | 0 | 5 | 16 | top-websites gist (no active program match) |
 | accenture.com | 17 | 0 | 0 | 1 | 16 | top-websites gist (no active program match) |
-| accessdata.fda.gov | 7 | 0 | 1 | 4 | 2 | top-websites gist (no active program match) |
+| accessdata.fda.gov | 5 | 0 | 1 | 0 | 4 | top-websites gist (no active program match) |
 | accessify.com | 26 | 0 | 0 | 6 | 20 | top-websites gist (no active program match) |
 | accounts.google.com | 25 | 0 | 0 | 2 | 23 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | acm.org | 23 | 0 | 0 | 4 | 19 | top-websites gist (no active program match) |
@@ -389,7 +389,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | amazon.ca | 25 | 0 | 0 | 5 | 20 | [Amazon](https://hackerone.com/amazonvrp) |
 | amazon.co.jp | 24 | 0 | 0 | 5 | 19 | [Amazon](https://hackerone.com/amazonvrp) |
 | amazon.co.uk | 24 | 0 | 0 | 5 | 19 | [Amazon](https://hackerone.com/amazonvrp) |
-| amazon.com | 22 | 0 | 0 | 4 | 18 | [Amazon](https://hackerone.com/amazonvrp) |
+| amazon.com | 29 | 0 | 0 | 9 | 20 | [Amazon](https://hackerone.com/amazonvrp) |
 | amazon.com.au | 23 | 0 | 0 | 4 | 19 | [Amazon](https://hackerone.com/amazonvrp) |
 | amazon.com.br | 25 | 0 | 0 | 5 | 20 | [Amazon](https://hackerone.com/amazonvrp) |
 | amazon.de | 24 | 0 | 0 | 5 | 19 | [Amazon](https://hackerone.com/amazonvrp) |
@@ -407,7 +407,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | api.whatsapp.com | 15 | 0 | 0 | 2 | 13 | [Facebook](https://www.facebook.com/whitehat) |
 | apis.google.com | 20 | 0 | 0 | 6 | 14 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | app.box.com | 24 | 0 | 0 | 6 | 18 | top-websites gist (no active program match) |
-| apple.com | 20 | 0 | 0 | 5 | 15 | [Apple](https://security.apple.com) |
+| apple.com | 25 | 0 | 0 | 7 | 18 | [Apple](https://security.apple.com) |
 | apps.apple.com | 24 | 0 | 0 | 2 | 22 | [Apple](https://security.apple.com) |
 | apps.facebook.com | 20 | 0 | 0 | 7 | 13 | [Facebook](https://www.facebook.com/whitehat) |
 | archives.gov | 15 | 0 | 0 | 1 | 14 | top-websites gist (no active program match) |
@@ -418,7 +418,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | automattic.com | 29 | 0 | 0 | 6 | 23 | top-websites gist (no active program match) |
 | aws.amazon.com | 23 | 0 | 0 | 2 | 21 | [Amazon](https://hackerone.com/amazonvrp) |
 | axios.com | 23 | 0 | 0 | 4 | 19 | top-websites gist (no active program match) |
-| azure.microsoft.com | 13 | 0 | 0 | 5 | 8 | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
+| azure.microsoft.com | 9 | 0 | 0 | 2 | 7 | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
 | baidu.com | 19 | 0 | 0 | 4 | 15 | [Baidu](https://bsrc.baidu.com/v2/#/en) |
 | bandcamp.com | 27 | 0 | 0 | 5 | 22 | [Epic Games](https://hackerone.com/epicgames) |
 | bandsintown.com | 22 | 0 | 0 | 4 | 18 | top-websites gist (no active program match) |
@@ -461,7 +461,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | calendar.google.com | 23 | 0 | 0 | 4 | 19 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | calendly.com | 34 | 0 | 0 | 5 | 29 | top-websites gist (no active program match) |
 | cambridge.org | 26 | 0 | 0 | 6 | 20 | top-websites gist (no active program match) |
-| canada.ca | 43 | 0 | 8 | 5 | 30 | top-websites gist (no active program match) |
+| canada.ca | 24 | 0 | 0 | 5 | 19 | top-websites gist (no active program match) |
 | cancerresearchuk.org | 26 | 0 | 0 | 5 | 21 | top-websites gist (no active program match) |
 | canva.com | 23 | 0 | 0 | 5 | 18 | [Canva](https://bugcrowd.com/canva) |
 | cargocollective.com | 27 | 0 | 0 | 7 | 20 | top-websites gist (no active program match) |
@@ -475,7 +475,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | checkpoint.com | 14 | 0 | 0 | 1 | 13 | [Check Point](https://www.checkpoint.com/white-hat/) |
 | chicagotribune.com | 22 | 0 | 0 | 6 | 16 | top-websites gist (no active program match) |
 | chris.pirillo.com | 25 | 0 | 0 | 1 | 24 | top-websites gist (no active program match) |
-| chrisjdavis.org | 36 | 0 | 8 | 25 | 3 | top-websites gist (no active program match) |
+| chrisjdavis.org | 23 | 0 | 0 | 6 | 17 | top-websites gist (no active program match) |
 | chrome.google.com | 19 | 0 | 0 | 4 | 15 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | chronicle.com | 22 | 0 | 0 | 4 | 18 | top-websites gist (no active program match) |
 | cisco.com | 19 | 0 | 0 | 5 | 14 | [Cisco Meraki](https://bugcrowd.com/ciscomeraki) |
@@ -494,7 +494,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | connect.facebook.net | 15 | 0 | 0 | 5 | 10 | top-websites gist (no active program match) |
 | constantcontact.com | 25 | 0 | 0 | 5 | 20 | [Constant Contact](https://bugcrowd.com/constantcontact) |
 | copyright.gov | 23 | 0 | 0 | 1 | 22 | top-websites gist (no active program match) |
-| coursera.org | 22 | 0 | 4 | 9 | 9 | [Coursera](https://hackerone.com/coursera) |
+| coursera.org | 21 | 0 | 0 | 3 | 18 | [Coursera](https://hackerone.com/coursera) |
 | createspace.com | 21 | 0 | 0 | 5 | 16 | top-websites gist (no active program match) |
 | creativecommons.org | 28 | 0 | 0 | 4 | 24 | top-websites gist (no active program match) |
 | creativemarket.com | 23 | 0 | 0 | 2 | 21 | top-websites gist (no active program match) |
@@ -541,7 +541,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | ec.europa.eu | 22 | 0 | 0 | 5 | 17 | [European Central Bank](https://www.ecb.europa.eu/services/responsible-disclosure/html/index.nl.html) |
 | economictimes.indiatimes.com | 23 | 0 | 0 | 4 | 19 | top-websites gist (no active program match) |
 | economist.com | 23 | 0 | 0 | 4 | 19 | top-websites gist (no active program match) |
-| edx.org | 24 | 0 | 4 | 13 | 7 | top-websites gist (no active program match) |
+| edx.org | 21 | 0 | 0 | 4 | 17 | top-websites gist (no active program match) |
 | eepurl.com | 21 | 0 | 0 | 5 | 16 | top-websites gist (no active program match) |
 | eff.org | 19 | 0 | 0 | 3 | 16 | [EFF](https://www.eff.org/security/) |
 | elmundo.es | 23 | 0 | 0 | 6 | 17 | top-websites gist (no active program match) |
@@ -555,7 +555,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | es.wikipedia.org | 19 | 0 | 0 | 2 | 17 | top-websites gist (no active program match) |
 | espn.com | 26 | 0 | 0 | 5 | 21 | [The Walt Disney Company](https://hackerone.com/disney) |
 | etsy.com | 25 | 0 | 0 | 8 | 17 | [Etsy](https://bugcrowd.com/etsy) |
-| eur-lex.europa.eu | 25 | 0 | 0 | 7 | 18 | [European Central Bank](https://www.ecb.europa.eu/services/responsible-disclosure/html/index.nl.html) |
+| eur-lex.europa.eu | 6 | 0 | 0 | 0 | 6 | [European Central Bank](https://www.ecb.europa.eu/services/responsible-disclosure/html/index.nl.html) |
 | europa.eu | 20 | 0 | 0 | 5 | 15 | [European Central Bank](https://www.ecb.europa.eu/services/responsible-disclosure/html/index.nl.html) |
 | europarl.europa.eu | 21 | 0 | 0 | 4 | 17 | [European Central Bank](https://www.ecb.europa.eu/services/responsible-disclosure/html/index.nl.html) |
 | event.on24.com | 13 | 0 | 0 | 1 | 12 | top-websites gist (no active program match) |
@@ -585,7 +585,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | fonts.googleapis.com | 15 | 0 | 0 | 3 | 12 | top-websites gist (no active program match) |
 | forbes.com | 20 | 0 | 0 | 3 | 17 | Forbes |
 | forms.gle | 17 | 0 | 0 | 4 | 13 | Google |
-| forms.office.com | 18 | 0 | 0 | 5 | 13 | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
+| forms.office.com | 17 | 0 | 0 | 5 | 12 | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
 | foxnews.com | 20 | 0 | 0 | 4 | 16 | top-websites gist (no active program match) |
 | fr.wikipedia.org | 19 | 0 | 0 | 2 | 17 | top-websites gist (no active program match) |
 | france24.com | 21 | 0 | 0 | 5 | 16 | top-websites gist (no active program match) |
@@ -598,7 +598,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | g.page | 18 | 0 | 0 | 5 | 13 | top-websites gist (no active program match) |
 | g1.globo.com | 23 | 0 | 0 | 3 | 20 | top-websites gist (no active program match) |
 | gartner.com | 24 | 0 | 0 | 6 | 18 | top-websites gist (no active program match) |
-| geni.us | 34 | 0 | 27 | 4 | 3 | top-websites gist (no active program match) |
+| geni.us | 19 | 0 | 0 | 4 | 15 | top-websites gist (no active program match) |
 | get.adobe.com | 15 | 0 | 0 | 5 | 10 | [Adobe](https://hackerone.com/adobe) |
 | get.google.com | 19 | 0 | 0 | 4 | 15 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | getpocket.com | 22 | 0 | 0 | 4 | 18 | top-websites gist (no active program match) |
@@ -610,7 +610,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | gitter.im | 19 | 0 | 0 | 5 | 14 | [GitLab](https://hackerone.com/gitlab) |
 | gleam.io | 24 | 0 | 0 | 4 | 20 | top-websites gist (no active program match) |
 | globalnews.ca | 25 | 0 | 0 | 3 | 22 | top-websites gist (no active program match) |
-| gmpg.org | 22 | 0 | 0 | 5 | 17 | top-websites gist (no active program match) |
+| gmpg.org | 6 | 0 | 0 | 1 | 5 | top-websites gist (no active program match) |
 | gofundme.com | 26 | 0 | 0 | 6 | 20 | top-websites gist (no active program match) |
 | golang.org | 20 | 0 | 0 | 5 | 15 | top-websites gist (no active program match) |
 | goo.gle | 19 | 0 | 0 | 5 | 14 | top-websites gist (no active program match) |
@@ -646,7 +646,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | homedepot.com | 24 | 0 | 0 | 5 | 19 | top-websites gist (no active program match) |
 | hostgator.com | 26 | 0 | 0 | 6 | 20 | [Host Gator](https://bugcrowd.com/hostgator) |
 | hostinger.com | 25 | 0 | 0 | 4 | 21 | top-websites gist (no active program match) |
-| hp.com | 19 | 0 | 0 | 6 | 13 | top-websites gist (no active program match) |
+| hp.com | 18 | 0 | 0 | 3 | 15 | top-websites gist (no active program match) |
 | humblebundle.com | 23 | 0 | 0 | 4 | 19 | [Humble Bundle](https://bugcrowd.com/humblebundle) |
 | i.imgur.com | 23 | 0 | 0 | 5 | 18 | [Imgur](https://hackerone.com/imgur) |
 | i.redd.it | 18 | 0 | 0 | 4 | 14 | [Reddit](https://hackerone.com/reddit) |
@@ -678,7 +678,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | itunes.apple.com | 23 | 0 | 0 | 3 | 20 | [Apple](https://security.apple.com) |
 | j.mp | 22 | 0 | 0 | 5 | 17 | top-websites gist (no active program match) |
 | ja-jp.facebook.com | 21 | 0 | 0 | 6 | 15 | [Facebook](https://www.facebook.com/whitehat) |
-| ja.wikipedia.org | 25 | 0 | 2 | 21 | 2 | top-websites gist (no active program match) |
+| ja.wikipedia.org | 19 | 0 | 0 | 2 | 17 | top-websites gist (no active program match) |
 | japantimes.co.jp | 22 | 0 | 0 | 3 | 19 | top-websites gist (no active program match) |
 | jetbrains.com | 24 | 0 | 0 | 5 | 19 | top-websites gist (no active program match) |
 | join.slack.com | 25 | 0 | 0 | 6 | 19 | [Slack](https://hackerone.com/slack) |
@@ -686,7 +686,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | jstor.org | 21 | 0 | 0 | 4 | 17 | top-websites gist (no active program match) |
 | justgiving.com | 24 | 0 | 0 | 1 | 23 | top-websites gist (no active program match) |
 | keep.google.com | 20 | 0 | 0 | 4 | 16 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
-| khanacademy.org | 27 | 0 | 4 | 13 | 10 | [Khan Academy](https://hackerone.com/khanacademy) |
+| khanacademy.org | 20 | 0 | 0 | 5 | 15 | [Khan Academy](https://hackerone.com/khanacademy) |
 | kiva.org | 27 | 0 | 0 | 6 | 21 | top-websites gist (no active program match) |
 | kobo.com | 23 | 0 | 0 | 5 | 18 | top-websites gist (no active program match) |
 | kraken.com | 19 | 0 | 0 | 3 | 16 | [Kraken](https://www.kraken.com/en-us/features/security/bug-bounty) |
@@ -701,7 +701,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | lifehack.org | 24 | 0 | 0 | 4 | 20 | top-websites gist (no active program match) |
 | line.me | 22 | 0 | 0 | 4 | 18 | [LINE](https://hackerone.com/line) |
 | link.springer.com | 23 | 0 | 0 | 5 | 18 | top-websites gist (no active program match) |
-| linkedin.com | 28 | 0 | 0 | 3 | 25 | top-websites gist (no active program match) |
+| linkedin.com | 32 | 0 | 0 | 6 | 26 | top-websites gist (no active program match) |
 | linktr.ee | 20 | 0 | 0 | 1 | 19 | top-websites gist (no active program match) |
 | livestream.com | 23 | 0 | 0 | 5 | 18 | [Livestream](https://hackerone.com/livestream) |
 | lmgtfy.com | 32 | 0 | 0 | 5 | 27 | top-websites gist (no active program match) |
@@ -725,15 +725,15 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | marketwatch.com | 24 | 0 | 0 | 5 | 19 | top-websites gist (no active program match) |
 | marriott.com | 23 | 0 | 0 | 6 | 17 | [Marriott](https://hackerone.com/marriott) |
 | mashable.com | 30 | 0 | 0 | 4 | 26 | top-websites gist (no active program match) |
-| medium.com | 23 | 0 | 0 | 2 | 21 | top-websites gist (no active program match) |
+| medium.com | 28 | 0 | 0 | 4 | 24 | top-websites gist (no active program match) |
 | meet.google.com | 16 | 0 | 0 | 2 | 14 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | meetup.com | 20 | 0 | 0 | 3 | 17 | top-websites gist (no active program match) |
 | mega.nz | 21 | 0 | 0 | 4 | 17 | top-websites gist (no active program match) |
 | mentalfloss.com | 22 | 0 | 0 | 4 | 18 | top-websites gist (no active program match) |
 | messenger.com | 19 | 0 | 0 | 8 | 11 | [Facebook](https://www.facebook.com/whitehat) |
-| meta.wikimedia.org | 25 | 0 | 3 | 20 | 2 | top-websites gist (no active program match) |
+| meta.wikimedia.org | 19 | 0 | 0 | 2 | 17 | top-websites gist (no active program match) |
 | metmuseum.org | 20 | 0 | 0 | 5 | 15 | top-websites gist (no active program match) |
-| microsoft.com | 16 | 0 | 0 | 5 | 11 | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
+| microsoft.com | 21 | 0 | 0 | 7 | 14 | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
 | mixcloud.com | 24 | 0 | 0 | 4 | 20 | top-websites gist (no active program match) |
 | mlb.com | 20 | 0 | 0 | 4 | 16 | top-websites gist (no active program match) |
 | mobile.twitter.com | 22 | 0 | 0 | 3 | 19 | [Twitter](https://hackerone.com/twitter) |
@@ -747,7 +747,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | music.apple.com | 27 | 0 | 0 | 2 | 25 | [Apple](https://security.apple.com) |
 | myaccount.google.com | 17 | 0 | 0 | 2 | 15 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | myfitnesspal.com | 26 | 0 | 0 | 6 | 20 | [UNDER ARMOUR](https://bugcrowd.com/underarmour) |
-| myspace.com | 33 | 0 | 0 | 11 | 22 | top-websites gist (no active program match) |
+| myspace.com | 18 | 0 | 0 | 5 | 13 | top-websites gist (no active program match) |
 | nasa.gov | 17 | 0 | 0 | 3 | 14 | [Nasa VDP](https://bugcrowd.com/engagements/nasa-vdp) |
 | nature.com | 28 | 0 | 0 | 8 | 20 | top-websites gist (no active program match) |
 | ncbi.nlm.nih.gov | 25 | 0 | 0 | 2 | 23 | [U.S. Dept of Health & Human Services (HHS)](https://www.hhs.gov/vulnerability-disclosure-policy/index.html) |
@@ -766,8 +766,8 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | nvidia.com | 23 | 0 | 0 | 4 | 19 | top-websites gist (no active program match) |
 | nydailynews.com | 21 | 0 | 0 | 5 | 16 | top-websites gist (no active program match) |
 | nypost.com | 27 | 0 | 0 | 2 | 25 | top-websites gist (no active program match) |
-| nytimes.com | 19 | 0 | 0 | 3 | 16 | The New York Times |
-| oecd.org | 31 | 0 | 0 | 29 | 2 | top-websites gist (no active program match) |
+| nytimes.com | 23 | 0 | 0 | 3 | 20 | The New York Times |
+| oecd.org | 22 | 0 | 0 | 5 | 17 | top-websites gist (no active program match) |
 | ok.ru | 33 | 0 | 0 | 5 | 28 | top-websites gist (no active program match) |
 | online.wsj.com | 19 | 0 | 0 | 4 | 15 | top-websites gist (no active program match) |
 | open.spotify.com | 21 | 0 | 0 | 3 | 18 | [Spotify](https://hackerone.com/spotify) |
@@ -780,7 +780,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | ow.ly | 14 | 0 | 0 | 2 | 12 | [Hootsuite](https://www.hootsuite.com/security) |
 | pandora.com | 28 | 0 | 0 | 5 | 23 | top-websites gist (no active program match) |
 | patents.google.com | 13 | 0 | 0 | 2 | 11 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
-| paypal.com | 20 | 0 | 0 | 5 | 15 | [PayPal](https://hackerone.com/paypal) |
+| paypal.com | 22 | 0 | 0 | 8 | 14 | [PayPal](https://hackerone.com/paypal) |
 | paypal.me | 22 | 0 | 0 | 4 | 18 | [PayPal](https://hackerone.com/paypal) |
 | pbs.twimg.com | 14 | 0 | 0 | 2 | 12 | [Twitter](https://hackerone.com/twitter) |
 | pcworld.com | 22 | 0 | 0 | 4 | 18 | top-websites gist (no active program match) |
@@ -794,7 +794,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | picasaweb.google.com | 20 | 0 | 0 | 5 | 15 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | pinterest.co.uk | 18 | 0 | 0 | 6 | 12 | top-websites gist (no active program match) |
 | pinterest.com | 16 | 0 | 0 | 4 | 12 | [Pinterest](https://bugcrowd.com/pinterest) |
-| pipes.yahoo.com | 2 | 0 | 0 | 0 | 2 | [Yahoo!](https://app.intigriti.com/programs/yahoo/yahoobugbounty/detail) |
+| pipes.yahoo.com | 1 | 0 | 0 | 0 | 1 | [Yahoo!](https://app.intigriti.com/programs/yahoo/yahoobugbounty/detail) |
 | pitchfork.com | 26 | 0 | 0 | 2 | 24 | top-websites gist (no active program match) |
 | pixabay.com | 24 | 0 | 0 | 2 | 22 | [Pixabay](https://bugcrowd.com/pixabay) |
 | pixiv.net | 21 | 0 | 0 | 4 | 17 | [Pixiv](https://hackerone.com/pixiv) |
@@ -816,13 +816,13 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | prnewswire.com | 24 | 0 | 0 | 4 | 20 | top-websites gist (no active program match) |
 | prnt.sc | 28 | 0 | 0 | 6 | 22 | top-websites gist (no active program match) |
 | productforums.google.com | 18 | 0 | 0 | 5 | 13 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
-| producthunt.com | 32 | 0 | 26 | 5 | 1 | top-websites gist (no active program match) |
+| producthunt.com | 25 | 0 | 0 | 2 | 23 | top-websites gist (no active program match) |
 | profiles.google.com | 24 | 0 | 0 | 8 | 16 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | psychologytoday.com | 27 | 0 | 0 | 6 | 21 | top-websites gist (no active program match) |
 | pt.slideshare.net | 24 | 0 | 0 | 6 | 18 | top-websites gist (no active program match) |
 | purl.org | 16 | 0 | 0 | 5 | 11 | top-websites gist (no active program match) |
 | puu.sh | 16 | 0 | 0 | 4 | 12 | top-websites gist (no active program match) |
-| python.org | 32 | 0 | 1 | 27 | 4 | PSF |
+| python.org | 24 | 0 | 0 | 4 | 20 | PSF |
 | quora.com | 22 | 0 | 0 | 5 | 17 | [Quora](https://hackerone.com/quora) |
 | ranker.com | 22 | 0 | 0 | 6 | 16 | top-websites gist (no active program match) |
 | ravelry.com | 21 | 0 | 0 | 4 | 17 | top-websites gist (no active program match) |
@@ -839,16 +839,16 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | reverbnation.com | 22 | 0 | 0 | 5 | 17 | top-websites gist (no active program match) |
 | rollingstone.com | 19 | 0 | 0 | 5 | 14 | top-websites gist (no active program match) |
 | rottentomatoes.com | 17 | 0 | 0 | 2 | 15 | top-websites gist (no active program match) |
-| ru.wikipedia.org | 22 | 0 | 2 | 18 | 2 | top-websites gist (no active program match) |
+| ru.wikipedia.org | 19 | 0 | 0 | 2 | 17 | top-websites gist (no active program match) |
 | s-media-cache-ak0.pinimg.com | 15 | 0 | 0 | 6 | 9 | top-websites gist (no active program match) |
 | s0.wp.com | 24 | 0 | 0 | 5 | 19 | top-websites gist (no active program match) |
-| salesforce.com | 19 | 0 | 0 | 6 | 13 | [Salesforce](https://www.salesforce.com/company/disclosure/) |
+| salesforce.com | 18 | 0 | 0 | 3 | 15 | [Salesforce](https://www.salesforce.com/company/disclosure/) |
 | samsung.com | 19 | 0 | 0 | 5 | 14 | [Samsung TV](https://samsungtvbounty.com) |
 | sciencedaily.com | 25 | 0 | 0 | 5 | 20 | top-websites gist (no active program match) |
 | scribd.com | 19 | 0 | 0 | 3 | 16 | top-websites gist (no active program match) |
 | search.google.com | 19 | 0 | 0 | 4 | 15 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | secure.gravatar.com | 22 | 0 | 0 | 1 | 21 | top-websites gist (no active program match) |
-| sellfy.com | 35 | 0 | 0 | 31 | 4 | top-websites gist (no active program match) |
+| sellfy.com | 30 | 0 | 0 | 5 | 25 | top-websites gist (no active program match) |
 | sendspace.com | 22 | 0 | 0 | 4 | 18 | top-websites gist (no active program match) |
 | seroundtable.com | 22 | 0 | 0 | 4 | 18 | top-websites gist (no active program match) |
 | services.google.com | 19 | 0 | 0 | 4 | 15 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
@@ -868,7 +868,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | smile.amazon.com | 21 | 0 | 0 | 5 | 16 | [Amazon](https://hackerone.com/amazonvrp) |
 | smugmug.com | 23 | 0 | 0 | 5 | 18 | top-websites gist (no active program match) |
 | snapchat.com | 23 | 0 | 0 | 5 | 18 | [Snapchat](https://hackerone.com/snapchat) |
-| snip.ly | 28 | 0 | 21 | 5 | 2 | top-websites gist (no active program match) |
+| snip.ly | 21 | 0 | 0 | 4 | 17 | top-websites gist (no active program match) |
 | socialmediatoday.com | 20 | 0 | 0 | 3 | 17 | top-websites gist (no active program match) |
 | sophos.com | 17 | 0 | 0 | 5 | 12 | [Sophos](https://bugcrowd.com/sophos) |
 | soundcloud.com | 31 | 0 | 0 | 5 | 26 | [SoundCloud](https://bugcrowd.com/soundcloud) |
@@ -886,7 +886,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | stats.wp.com | 19 | 0 | 0 | 6 | 13 | top-websites gist (no active program match) |
 | steamcommunity.com | 19 | 0 | 0 | 4 | 15 | [Valve Software](https://hackerone.com/valve) |
 | stock.adobe.com | 20 | 0 | 0 | 4 | 16 | [Adobe](https://hackerone.com/adobe) |
-| storage.googleapis.com | 17 | 0 | 0 | 5 | 12 | top-websites gist (no active program match) |
+| storage.googleapis.com | 16 | 0 | 0 | 5 | 11 | top-websites gist (no active program match) |
 | store.google.com | 20 | 0 | 0 | 2 | 18 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | store.steampowered.com | 16 | 0 | 0 | 4 | 12 | [Valve Software](https://hackerone.com/valve) |
 | strava.com | 24 | 1 | 0 | 4 | 19 | top-websites gist (no active program match) |
@@ -902,7 +902,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | sxsw.com | 30 | 0 | 0 | 5 | 25 | top-websites gist (no active program match) |
 | t.co | 23 | 0 | 0 | 4 | 19 | top-websites gist (no active program match) |
 | t.ly | 27 | 0 | 0 | 2 | 25 | top-websites gist (no active program match) |
-| t.me | 25 | 0 | 0 | 7 | 18 | top-websites gist (no active program match) |
+| t.me | 29 | 0 | 0 | 11 | 18 | top-websites gist (no active program match) |
 | t.qq.com | 2 | 0 | 0 | 0 | 2 | [Tencent](https://en.security.tencent.com) |
 | techcrunch.com | 25 | 0 | 0 | 3 | 22 | [Yahoo!](https://app.intigriti.com/programs/yahoo/yahoobugbounty/detail) |
 | technet.microsoft.com | 15 | 0 | 0 | 4 | 11 | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
@@ -943,12 +943,12 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | vimeo.com | 28 | 0 | 0 | 1 | 27 | [Vimeo](https://hackerone.com/vimeo) |
 | vine.co | 24 | 0 | 0 | 3 | 21 | [Twitter](https://hackerone.com/twitter) |
 | vizio.com | 25 | 0 | 0 | 5 | 20 | top-websites gist (no active program match) |
-| vk.com | 27 | 0 | 0 | 6 | 21 | top-websites gist (no active program match) |
+| vk.com | 29 | 0 | 0 | 8 | 21 | top-websites gist (no active program match) |
 | vogue.com | 24 | 0 | 0 | 4 | 20 | top-websites gist (no active program match) |
 | vr.google.com | 20 | 0 | 0 | 4 | 16 | [Google](https://www.google.com/about/appsecurity/reward-program/) |
 | w3schools.com | 23 | 0 | 0 | 4 | 19 | top-websites gist (no active program match) |
 | walmart.com | 20 | 0 | 0 | 5 | 15 | [Walmart Corporation](https://corporate.walmart.com/article/responsible-disclosure-policy) |
-| washingtonpost.com | 21 | 0 | 0 | 4 | 17 | top-websites gist (no active program match) |
+| washingtonpost.com | 27 | 0 | 0 | 6 | 21 | top-websites gist (no active program match) |
 | waze.com | 23 | 0 | 0 | 5 | 18 | top-websites gist (no active program match) |
 | web.facebook.com | 22 | 0 | 0 | 6 | 16 | [Facebook](https://www.facebook.com/whitehat) |
 | webmd.com | 21 | 0 | 0 | 5 | 16 | top-websites gist (no active program match) |
@@ -962,7 +962,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | windows.microsoft.com | 18 | 0 | 0 | 5 | 13 | [Microsoft Online Services](https://www.microsoft.com/en-us/msrc/bounty-online-services) |
 | wired.com | 23 | 0 | 0 | 4 | 19 | top-websites gist (no active program match) |
 | wix.com | 20 | 0 | 0 | 5 | 15 | top-websites gist (no active program match) |
-| wordpress.com | 24 | 0 | 0 | 7 | 17 | WordPress |
+| wordpress.com | 28 | 0 | 0 | 10 | 18 | WordPress |
 | wordpress.org | 30 | 0 | 0 | 7 | 23 | [WordPress](https://hackerone.com/wordpress) |
 | wp.me | 18 | 0 | 0 | 6 | 12 | top-websites gist (no active program match) |
 | www-01.ibm.com | 17 | 0 | 0 | 5 | 12 | [IBM](https://hackerone.com/ibm) |

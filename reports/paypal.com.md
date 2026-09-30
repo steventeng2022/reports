@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
+Total findings: **22** (High: 0, Medium: 0, Low: 8, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -34,6 +34,10 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 | 16 | info | ROB1 | robots.txt discloses disallowed paths (asset map) | CWE-200 |
 | 17 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 | 18 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 19 | low | I1 | Reflected token in JavaScript context (challenge/sanitization boundary) | CWE-79 |
+| 20 | low | I22 | Hidden redirect parameter surface (301 retains parameter on canonical home) (no open redirect) | CWE-538 |
+| 21 | low | I22 | Legacy CGI jump endpoint and returns-link surface | CWE-538 |
+| 22 | info | S1 | Subdomain handoffs and error surface (status/sandbox/checkout/ssl/shop/api/mail) | CWE-916 |
 
 ## Detailed findings
 
@@ -153,6 +157,35 @@ Total findings: **18** (High: 0, Medium: 0, Low: 5, Info: 13)
 - **CWE:** CWE-200
 - **Detail:** The root document of paypal.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
 - **Recommendation:** Add lang to the <html> element.
+### 19. [LOW] Reflected token in JavaScript context (challenge/sanitization boundary) (`I1`)
+
+- **CWE:** CWE-79
+- **Detail:** GET /go?url=Zx7qK2v9Bm (200, 193,472 B, "PayPal TW") reflects the token inside an escaped JSON queryStringParams.url value; quote probes are re-encoded, no script or attribute breakout (probe-r35leads).
+- **Recommendation:** Keep the token confined to escaped JSON; verify no raw template render of queryStringParams.
+
+### 20. [LOW] Hidden redirect parameter surface (301 retains parameter on canonical home) (no open redirect) (`I22`)
+
+- **CWE:** CWE-538
+- **Detail:** /link?url=Zx7qK2v9Bm -> 301 www.paypal.com/?url= (param retained in query) -> 200 (196,339 B home page); the token stays in the address bar but is not consumed by any redirect handler.
+- **Recommendation:** Consume or strip the retained parameter before serving the canonical home.
+
+### 21. [LOW] Legacy CGI jump endpoint and returns-link surface (`I22`)
+
+- **CWE:** CWE-538
+- **Detail:** /cgi-bin/webscr?cmd=_jump-page-outside&url=Zx7qK2v9Bm -> 404 (16,293 B, legacy CGI no longer routed); /webapps/mpp/returns?url= -> 301 /tw/webapps/mpp/consumer -> 301 /tw/home (param dropped) -> 200 (193,439 B). No open redirect.
+- **Recommendation:** Document the dead legacy CGI surface and the returns-link chain.
+
+### 22. [INFO] Subdomain handoffs and error surface (status/sandbox/checkout/ssl/shop/api/mail) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** status.paypal.com = 301 -> paypal-status.com (nginx, first-party status); sandbox.paypal.com = 301 -> sandbox.paypal.com (Cloudflare, first-party sandbox); checkout.paypal.com = 403 (425 B, Varnish); ssl.paypal.com = 200 (404 B, Varnish); shop.paypal.com = 503 (564 B, awselb); api.paypal.com = 404 (195 B); mail.paypal.com = 400 (3 B).
+- **Recommendation:** Track the paypal-status.com and sandbox handoffs for ownership changes.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I1 x1:** /go?url= = 200 (193,472 B "PayPal TW"); token in escaped JSON queryStringParams.url; quotes re-encoded, no breakout (probe-r35leads).
+- **I22 x2:** /link?url 301 retains param -> 200 (196,339 B); /cgi-bin/webscr?cmd=_jump-page-outside&url 404 (16,293 B); /webapps/mpp/returns?url 301x2 drops param -> 200 (193,439 B).
+- **S1 x1:** status 301 -> paypal-status.com, sandbox 301 (CF), checkout 403 (Varnish), ssl 200 (404 B), shop 503 (awselb), api 404, mail 400 (3 B) (probe-r35e-subs).
 
 ## Evidence (raw response observations)
 

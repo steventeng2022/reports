@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
+Total findings: **28** (High: 0, Medium: 0, Low: 10, Info: 18)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -40,6 +40,10 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
 | 22 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
 | 23 | info | CT1 | 73 hostnames found via Certificate Transparency (crt.sh) | CWE-200 |
 | 24 | low | CT2 | Dangling subdomain(s) from certificate transparency no longer resolve | CWE-200 |
+| 25 | low | I22 | Go WordPress endpoint sanitizes token (scheme stripped) (no open redirect) | CWE-538 |
+| 26 | low | I1 | Reflected token in JavaScript context (challenge/sanitization boundary) | CWE-79 |
+| 27 | low | S1 | 30+ live free-plan WordPress subdomains (first-party nginx origin) | CWE-916 |
+| 28 | info | S1 | Unused subdomains 410 and typo-handler echo (sub in query) | CWE-916 |
 
 ## Detailed findings
 
@@ -196,6 +200,35 @@ Total findings: **24** (High: 0, Medium: 0, Low: 7, Info: 17)
 - **CWE:** CWE-200
 - **Detail:** Historical subdomains no longer have A/AAAA records: dev.dfw.wordpress.com, support.vip.wordpress.com; content may still be served via virtual-host fallback.
 - **Recommendation:** Reclaim or delete dangling subdomains to reduce virtual-hosting attack surface.
+### 25. [LOW] Go WordPress endpoint sanitizes token (scheme stripped) (no open redirect) (`I22`)
+
+- **CWE:** CWE-538
+- **Detail:** /go?url=https://zx7rdtct.example/ -> 301 to canonical /go/?url= -> 200 (189,749 B, "Go WordPress" page); the token is sanitized into JSON as "parameters":"?url=httpszx7rdtct.example" (scheme stripped) - no open redirect (probe-r35c-wpgo).
+- **Recommendation:** Keep the scheme-stripping sanitizer on every /go render path.
+
+### 26. [LOW] Reflected token in JavaScript context (challenge/sanitization boundary) (`I1`)
+
+- **CWE:** CWE-79
+- **Detail:** GET /?ref=Zx7qK2v9Bm (200, 342,552 B on cache-miss; cached hits 301) reflects the token at index 65643 inside an escaped JSON blob; quote probes re-encoded, no breakout (re-verified live 2026-09-30; body was 342,777 B before the re-probe).
+- **Recommendation:** Keep the ref token escaped in JSON; note the cache-miss-only reflection window.
+
+### 27. [LOW] 30+ live free-plan WordPress subdomains (first-party nginx origin) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** staging (59,428 B), docs (56,391 B), mail (57,827 B), oauth (75,408 B), auth (45,141 B), cart (143,631 B), download (88,646 B), www2 (105,425 B), checkout, billing, mobile, images, assets, static, secure, edge, gateway, proxy, upload, chat, smtp, test, sandbox, beta, internal, legacy - all 200 on the first-party free-plan nginx origin (probe-r35e-subs).
+- **Recommendation:** The free-plan catch-all makes most subdomains resolvable; monitor for claims.
+
+### 28. [INFO] Unused subdomains 410 and typo-handler echo (sub in query) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** status/portal/account/media/webmail/push.wordpress.com = 410 (14,908-15,136 B, first-party); unused.wordpress.com = 302 -> /typo/?subdomain=unused (subdomain echoed in query only, not a redirect target); dev 301 -> developer.wordpress.com; login 301 -> /log-in/; support -> en.support; blog/news -> en.blog; store 302 -> /pricing/.
+- **Recommendation:** Keep the typo-handler echo query-only; no redirect target.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 x1:** /go?url= 301 canonical -> 200 (189,749 B); token sanitized to "?url=httpszx7rdtct.example" (scheme stripped), no open redirect (probe-r35c-wpgo).
+- **I1 x1:** /?ref= cache-miss = 200 (342,552 B), token at idx 65643 in escaped JSON; cached hits 301 (re-verified 2026-09-30).
+- **S1 x2:** 30+ live free-plan subs 200 (nginx); status/portal/account/media/webmail/push 410 (14,908-15,136 B); unused 302 -> /typo/?subdomain= (echo in query only) (probe-r35e-subs).
 
 ## Evidence (raw response observations)
 

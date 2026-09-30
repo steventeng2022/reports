@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 0, Low: 4, Info: 2)
+Total findings: **7** (High: 0, Medium: 0, Low: 4, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -22,6 +22,7 @@ Total findings: **6** (High: 0, Medium: 0, Low: 4, Info: 2)
 | 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
 | 5 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
 | 6 | info | H5 | Missing Referrer-Policy | CWE-200 |
+| 7 | info | S1 | Vercel security checkpoint (home/www 429) with mixed first-party subdomain surface | CWE-916 |
 
 ## Detailed findings
 
@@ -54,6 +55,15 @@ Total findings: **6** (High: 0, Medium: 0, Low: 4, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on http://venturebeat.com/
+### 7. [INFO] Vercel security checkpoint (home/www 429) with mixed first-party subdomain surface (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** home/www 429 (33,940-33,953 B, Vercel "Security Checkpoint" - rate-limited); chat 307 -> /login?callbackUrl=chat.venturebeat.com; mobile 200 (1,416 B)/media 200 (1,467 B) AmazonS3; mail 301 -> http://mail.google.com/a/venturebeat.com (ghs, plain HTTP Location); auth 404 (21,265 B); support/download 409 (16 B, CF); old 404 (548 B, nginx).
+- **Recommendation:** The plain-HTTP mail Location is a minor referrer/cookie-hygiene note; otherwise first-party surface.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 x1:** home/www 429 (33,940-33,953 B Vercel "Security Checkpoint"); chat 307 -> /login?callbackUrl=; mobile 200 (1,416 B)/media 200 (1,467 B) AmazonS3; mail 301 -> http://mail.google.com/a/venturebeat.com (ghs, plain HTTP); auth 404 (21,265 B); support/download 409 (16 B CF); old 404 (548 B nginx).
 
 ## Reproduction notes
 

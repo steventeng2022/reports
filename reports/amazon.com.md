@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
+Total findings: **29** (High: 0, Medium: 0, Low: 9, Info: 20)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -38,6 +38,13 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 | 20 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
 | 21 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 | 22 | info | HTML15 | Root document has no <html lang> declaration | CWE-200 |
+| 23 | low | I22 | Hidden redirect parameter surface (5 301 hops retain the url parameter) (no open redirect) | CWE-538 |
+| 24 | low | I22 | jump endpoint renders token in escaped JSON (no breakout) | CWE-538 |
+| 25 | low | S1 | chat.amazon.com = 404 (29 B, x-cache "Error from cloudfront") - CloudFront error page, not the 915 B dangling signature | CWE-916 |
+| 26 | low | S1 | api.amazon.com = 403 (521 B, Cloudflare, first-party) | CWE-916 |
+| 27 | low | I22 | docs.amazon.com = 200 (4,529 B, AmazonS3 "Employee Documents Portal") with cross-brand JS | CWE-538 |
+| 28 | info | S1 | Subdomain surface (pay 200, login 301 developer.amazon.com, images 403, dl 302, s3 301 aws.amazon.com/s3, help/support 301, shop/store 302) | CWE-916 |
+| 29 | info | S1 | /hz/aw/contact-us/c2c-phone?c2cId=...&url= -> 302 /hz/contact-us/foresight/hubgateway-ap?source=cu (url param dropped) | CWE-916 |
 
 ## Detailed findings
 
@@ -181,6 +188,52 @@ Total findings: **22** (High: 0, Medium: 0, Low: 4, Info: 18)
 - **CWE:** CWE-200
 - **Detail:** The root document of amazon.com declares <html> without a lang attribute; language is a baseline accessibility/internationalization signal that assistive tech and tooling rely on.
 - **Recommendation:** Add lang to the <html> element.
+### 23. [LOW] Hidden redirect parameter surface (5 301 hops retain the url parameter) (no open redirect) (`I22`)
+
+- **CWE:** CWE-538
+- **Detail:** /go -> /b?node=16008589011&url=, /out -> /dp/B002PXW0IA?url=, /link -> /s?field-brandtextbin=Schlage&emi=ATVPDKIKX0DER?url=, /continue -> /exec/obidos/subst/home/home.html?url=, /next -> /stores/page/63034EC9-...?ingress=3&url= (all 301, token retained in Location). The parameter is carried but not consumed by an open-redirect handler (probe-r35redirects).
+- **Recommendation:** Document the 5-hop parameter-retaining chain; no open redirect.
+
+### 24. [LOW] jump endpoint renders token in escaped JSON (no breakout) (`I22`)
+
+- **CWE:** CWE-538
+- **Detail:** /jump?url=Zx7qK2v9Bm -> 200 (351,516 B); the token appears at index 138921 inside an escaped JSON blob (re-verified live 2026-09-30). No raw HTML/JS breakout observed.
+- **Recommendation:** Keep the jump-page token in escaped JSON.
+
+### 25. [LOW] chat.amazon.com = 404 (29 B, x-cache "Error from cloudfront") - CloudFront error page, not the 915 B dangling signature (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** The chat subdomain returns a 29 B CloudFront error page with x-cache "Error from cloudfront"; the body is not the 915 B dangling CloudFront 403 signature, so it is a first-party 404.
+- **Recommendation:** Track the chat origin; currently first-party.
+
+### 26. [LOW] api.amazon.com = 403 (521 B, Cloudflare, first-party) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** The api subdomain 403s behind Cloudflare with a first-party 521 B body - live, protected, not dangling.
+- **Recommendation:** Expected; document for future comparison.
+
+### 27. [LOW] docs.amazon.com = 200 (4,529 B, AmazonS3 "Employee Documents Portal") with cross-brand JS (`I22`)
+
+- **CWE:** CWE-538
+- **Detail:** docs.amazon.com serves a 4,529 B AmazonS3 "Employee Documents Portal" page whose JS switches branding for documents.warehousejobs.in and documents.unifiedhiringportal.com - a shared S3-based HR portal surface.
+- **Recommendation:** The shared S3 portal across hiring brands is a useful attack-surface note.
+
+### 28. [INFO] Subdomain surface (pay 200, login 301 developer.amazon.com, images 403, dl 302, s3 301 aws.amazon.com/s3, help/support 301, shop/store 302) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** pay 200 (40,917 B CF); login 301 -> developer.amazon.com login-with-amazon; images 403 (0 B); dl 302 -> www; s3 301 -> aws.amazon.com/s3; help/support 301 -> www:443; shop/store 302 -> /books-used-books-textbooks?node=283155.
+- **Recommendation:** All first-party destinations.
+
+### 29. [INFO] /hz/aw/contact-us/c2c-phone?c2cId=...&url= -> 302 /hz/contact-us/foresight/hubgateway-ap?source=cu (url param dropped) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** The hidden contact-center path 302s to a foresight hubgateway endpoint; the url parameter is dropped in the hop (no open redirect).
+- **Recommendation:** Document the c2c contact-center hop chain.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 x3:** /go,/out,/link,/continue,/next 301 retain the url parameter (5 hops); /jump?url= 200 (351,516 B) token at idx 138921 in escaped JSON (re-verified 2026-09-30); docs 200 (4,529 B S3 Employee Documents Portal, cross-brand JS warehousejobs.in/unifiedhiringportal.com) (probe-r35redirects, probe-r35dsubs).
+- **S1 x4:** chat 404 (29 B x-cache "Error from cloudfront", not the 915 B signature); api 403 (521 B CF); pay 200 (40,917 B CF); login 301 developer.amazon.com; images 403; dl 302; s3 301; help/support 301; shop/store 302; c2c-phone 302 drops url (probe-r35e-subs).
 
 ## Evidence (raw response observations)
 

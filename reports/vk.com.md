@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
+Total findings: **29** (High: 0, Medium: 0, Low: 8, Info: 21)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -43,6 +43,8 @@ Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
 | 25 | info | H25 | server-timing response header exposed | CWE-200 |
 | 26 | info | TLS30 | Wildcard SAN on the leaf certificate | CWE-298 |
 | 27 | info | HTML16 | Inline event handlers in root document | CWE-79 |
+| 28 | low | I1 | Reflected token in JavaScript context (challenge/sanitization boundary) | CWE-79 |
+| 29 | low | S1 | First-party branded subdomain surface (live status origin, mail handoff, catch-all) (not dangling) | CWE-916 |
 
 ## Detailed findings
 
@@ -214,6 +216,22 @@ Total findings: **27** (High: 0, Medium: 0, Low: 6, Info: 21)
 - **CWE:** CWE-79
 - **Detail:** The root document of vk.com contains 20 inline event handler attribute(s); each is a DOM-level execution point that SRI does not constrain.
 - **Recommendation:** Move handlers to external scripts where feasible and keep them covered by CSP.
+### 28. [LOW] Reflected token in JavaScript context (challenge/sanitization boundary) (`I1`)
+
+- **CWE:** CWE-79
+- **Detail:** GET /?ch=Zx7qK2v9Bm (200, 182,320 B) reflects the token inside an inline <script> JSON blob (params.loc at index 176989); /?id= behaves the same. Quote-breakout probes (" and ') are re-encoded to %22/%27 (token index -1) and CRLF/LF probes are re-encoded, so no script or attribute breakout was observed (probe-r35vk, probe-r35c-vk).
+- **Recommendation:** Treat the reflected challenge parameter as untrusted data; keep strict JSON/URL encoding on every render path.
+
+### 29. [LOW] First-party branded subdomain surface (live status origin, mail handoff, catch-all) (not dangling) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** status.vk.com = 200 (2 B "ok", kittenx origin, first-party); mail.vk.com = 302 -> vk.mail.ru; admin/app.vk.com = 403 (550 B first-party); mx/smtp.vk.com = 403 (564 B nginx); ~20 other probed subdomains 301 -> vk.com/ catch-all. No 915 B dangling CloudFront 403 signature found (probe-r35e-subs).
+- **Recommendation:** Keep the status origin first-party; prune or claim catch-all subdomains.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I1 x1:** /?ch= and /?id= re-probed with token Zx7qK2v9Bm = 200 (182,320 B); token only in inline <script> JSON (params.loc); " and ' probes -> %22/%27 with tokenIdx=-1, no breakout (probe-r35vk, probe-r35c-vk).
+- **S1 x1:** status = 200 "ok" (kittenx), mail 302 -> vk.mail.ru, admin/app 403 (550 B), mx/smtp 403 (564 B nginx), ~20 subs 301 -> vk.com/ catch-all; no 915 B dangling CloudFront signature (probe-r35e-subs).
 
 ## Evidence (raw response observations)
 

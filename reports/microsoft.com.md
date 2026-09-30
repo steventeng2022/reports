@@ -12,7 +12,7 @@
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
+Total findings: **21** (High: 0, Medium: 0, Low: 7, Info: 14)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
@@ -32,6 +32,11 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 | 14 | info | H26 | Edge/CDN layer identified from response headers | CWE-200 |
 | 15 | info | TLS31 | OCSP responder URL uses plaintext http:// | CWE-319 |
 | 16 | info | CT1 | 123 hostnames found via Certificate Transparency (certspotter) | CWE-200 |
+| 17 | low | I22 | link endpoint 301s to login.live.com OAuth with parameter retained (no open redirect) | CWE-538 |
+| 18 | low | I22 | next endpoint 301s to blogs.microsoft.com with parameter retained | CWE-538 |
+| 19 | info | S1 | pay.microsoft.com = 200 (543 B); dl.microsoft.com = 403 (1,148 B) - first-party | CWE-916 |
+| 20 | info | S1 | OAuth/admin subdomain handoffs (account -> login.microsoftonline.com with client_id, admin/portal/login -> M365, help/news/store/secure/billing 301s) | CWE-916 |
+| 21 | info | S1 | dev/api/docs 301s (msdn Kestrel), staging 404 (Kestrel), media/uat 404 (266,389 B), edge 400 (198 B) | CWE-916 |
 
 ## Detailed findings
 
@@ -137,6 +142,40 @@ Total findings: **16** (High: 0, Medium: 0, Low: 5, Info: 11)
 - **CWE:** CWE-200
 - **Detail:** Notable hostnames: apply.careers.microsoft.com, careers.microsoft.com, cdn.storeedgefd.dsx.mp.microsoft.com, dgps.support.microsoft.com, distribution.ams.infra.gcc.teams.microsoft.com, emails.infra.gcc.teams.microsoft.com, livesite-rdp-temp.webhook.infra.gcc.teams.microsoft.com, login.clouddamppe.microsoft.com, pti-int.store.microsoft.com, pti.store.microsoft.com
 - **Recommendation:** Review all CT hostnames (including historical ones) for forgotten/stale assets.
+### 17. [LOW] link endpoint 301s to login.live.com OAuth with parameter retained (no open redirect) (`I22`)
+
+- **CWE:** CWE-538
+- **Detail:** /link?url=Zx7qK2v9Bm -> 301 login.live.com/oauth20_remoteconnect.srf?url= -> 200 (16,670 B live login page); the parameter is retained through the first-party OAuth handoff and not consumed as a redirect target (probe-r35redirects).
+- **Recommendation:** Keep the OAuth handoff parameter first-party only.
+
+### 18. [LOW] next endpoint 301s to blogs.microsoft.com with parameter retained (`I22`)
+
+- **CWE:** CWE-538
+- **Detail:** /next?url=Zx7qK2v9Bm -> 301 blogs.microsoft.com/next/category/podcast?url= (parameter retained, first-party blog).
+- **Recommendation:** Consume or strip the retained parameter on the blog hop.
+
+### 19. [INFO] pay.microsoft.com = 200 (543 B); dl.microsoft.com = 403 (1,148 B) - first-party (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** Both hosts respond with small first-party bodies; pay is a live payment entry page, dl a protected download host.
+- **Recommendation:** Document for future comparison.
+
+### 20. [INFO] OAuth/admin subdomain handoffs (account -> login.microsoftonline.com with client_id, admin/portal/login -> M365, help/news/store/secure/billing 301s) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** account 302 -> login.microsoftonline.com/consumers (client_id=81feaced-5ddd-41e7-8bef-3e20a2689bb7, prompt=none); admin 302 -> admin.cloud.microsoft; portal 302 -> microsoft365.com/login?ru=/PortalHome; login 302 -> office.com/login; help 301 -> go.microsoft.com/fwlink/p/?linkid=2146602; news 301 -> news.microsoft.com/source; store 301 -> microsoftstore.com; secure 301 -> events.microsoft.com; billing 301 -> account.microsoft.com/billing.
+- **Recommendation:** All first-party destinations; the consumers client_id is a useful fingerprint.
+
+### 21. [INFO] dev/api/docs 301s (msdn Kestrel), staging 404 (Kestrel), media/uat 404 (266,389 B), edge 400 (198 B) (`S1`)
+
+- **CWE:** CWE-916
+- **Detail:** dev 301 -> developer.microsoft.com; api 301 -> msdn.com (Kestrel); docs 301 -> learn.microsoft.com; staging 404 (2,906 B Kestrel); media/uat 404 (266,389 B); edge 400 (198 B).
+- **Recommendation:** The 266,389 B uat 404 body is unusually large; recheck if it changes.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 x2:** /link?url= 301 -> login.live.com/oauth20_remoteconnect.srf?url= -> 200 (16,670 B live login, param retained, no open redirect); /next?url= 301 -> blogs.microsoft.com/next/category/podcast?url= (probe-r35redirects).
+- **S1 x3:** pay 200 (543 B), dl 403 (1,148 B); account 302 login.microsoftonline.com (client_id 81feaced-...), admin 302 admin.cloud.microsoft, portal 302 microsoft365.com/login, login 302 office.com/login, help/news/store/secure/billing 301; dev 301 developer, api 301 msdn (Kestrel), docs 301 learn, staging 404, media/uat 404 (266,389 B), edge 400 (198 B) (probe-r35e-subs).
 
 ## Evidence (raw response observations)
 
