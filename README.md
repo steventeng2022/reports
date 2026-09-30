@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| use.fontawesome.com | 11 | 0 | 0 | 3 | 8 | top-websites gist (no active program match) |
 | googleblog.blogspot.com | 35 | 0 | 9 | 23 | 3 | top-websites gist (no active program match) |
 | bitpay.com | 3 | 0 | 1 | 1 | 1 | top-websites gist (no active program match) |
 | wa.me | 3 | 0 | 0 | 1 | 2 | top-websites gist (no active program match) |
