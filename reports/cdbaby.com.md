@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **9** (High: 2, Medium: 0, Low: 5, Info: 2)
+Total findings: **9** (High: 0, Medium: 0, Low: 7, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 2 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
+| 1 | low | I1 | 404 page, token not reflected (route removed) | CWE-79 |
+| 2 | low | I1 | 404 page, token not reflected (route removed) | CWE-79 |
 | 3 | low | H1 | Missing HSTS header | CWE-319 |
 | 4 | low | H2 | Missing CSP header | CWE-1021 |
 | 5 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -28,12 +28,12 @@ Total findings: **9** (High: 2, Medium: 0, Low: 5, Info: 2)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 1. [LOW] 404 page, token not reflected (route removed) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://cdbaby.com/view reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 2. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 2. [LOW] 404 page, token not reflected (route removed) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter to on https://cdbaby.com/forward reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
@@ -72,6 +72,10 @@ Total findings: **9** (High: 2, Medium: 0, Low: 5, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://cdbaby.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I1 x2 (HIGH -> LOW):** re-probed /view?url=Zx7qK2v9Bm, /view?url=<plausible product URL>, /view (no param), /view/Zx7qK2v9Bm and /forward?to=Zx7qK2v9Bm = all 404 (69,999 B "Page not found | CD Baby") - token no longer present in any response; the quote-break payload now hits the Cloudflare challenge (403, 5,838-5,865 B) - the /view and /forward routes no longer echo the parameter.
 
 ## Reproduction notes
 

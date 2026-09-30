@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **40** (High: 0, Medium: 1, Low: 36, Info: 3)
+Total findings: **40** (High: 0, Medium: 0, Low: 37, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | 301 to public /messages/compose (no hidden content) | CWE-538 |
 | 2 | low | H2 | Missing CSP header | CWE-1021 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.thingiverse.com/ | CWE-942 |
@@ -59,7 +59,7 @@ Total findings: **40** (High: 0, Medium: 1, Low: 36, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] 301 to public /messages/compose (no hidden content) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /messages/compose which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -258,6 +258,10 @@ Total findings: **40** (High: 0, Medium: 1, Low: 36, Info: 3)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.thingiverse.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /messages/compose re-probed = 301 (Cloudflare) -> https://www.thingiverse.com/messages/compose = 200 (25,174 B, public "Thingiverse - The community for Open Hardware" page) - public messaging page, no hidden data.
 
 ## Reproduction notes
 

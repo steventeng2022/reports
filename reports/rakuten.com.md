@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 1, Low: 4, Info: 2)
+Total findings: **7** (High: 0, Medium: 0, Low: 5, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | 301 to public homepage (no hidden content) | CWE-538 |
 | 2 | low | H2 | Missing CSP header | CWE-1021 |
 | 3 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
@@ -26,7 +26,7 @@ Total findings: **7** (High: 0, Medium: 1, Low: 4, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] 301 to public homepage (no hidden content) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /editUserInfos.do which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -60,6 +60,10 @@ Total findings: **7** (High: 0, Medium: 1, Low: 4, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** Server header: nginx
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /editUserInfos.do re-probed = 301 (nginx) -> https://www.rakuten.com/editUserInfos.do = 200 (674,764 B, Rakuten homepage "Shop. Get Cash Back. Repeat.", set-cookie 9) - generic homepage, no hidden data.
 
 ## Reproduction notes
 

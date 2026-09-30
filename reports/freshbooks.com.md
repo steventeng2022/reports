@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **27** (High: 0, Medium: 1, Low: 25, Info: 1)
+Total findings: **27** (High: 0, Medium: 0, Low: 26, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | Live Atlassian statuspage (not dangling) | CWE-916 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.freshbooks.com/graphql | CWE-942 |
 | 4 | low | I19 | Wildcard CORS (Access-Control-Allow-Origin: *) on https://www.freshbooks.com/graphql | CWE-942 |
@@ -46,7 +46,7 @@ Total findings: **27** (High: 0, Medium: 1, Low: 25, Info: 1)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] Live Atlassian statuspage (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.freshbooks.com resolves to 54.192.248.59 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -180,6 +180,10 @@ Total findings: **27** (High: 0, Medium: 1, Low: 25, Info: 1)
 
 - **CWE:** CWE-200
 - **Detail:** Server header: nginx
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 (MEDIUM -> LOW):** status.freshbooks.com re-probed = 200 (110,356 B) server AtlassianEdge, title "FreshBooks Status" (live Atlassian status page, ACAO=*) - not the 915 B dangling CloudFront signature.
 
 ## Reproduction notes
 

@@ -5,21 +5,21 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 17850** (High: 7, Medium: 239, Low: 5763, Info: 11841)
+**Total findings across all sites: 17995** (High: 7, Medium: 239, Low: 5873, Info: 11876)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
 | vmware.com | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |
-| google.ch | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
+| google.ch | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
 | patheos.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
-| podbean.com | 4 | 0 | 1 | 3 | 0 | top-websites gist (no active program match) |
-| rakuten.com | 7 | 0 | 1 | 4 | 2 | top-websites gist (no active program match) |
+| podbean.com | 4 | 0 | 0 | 4 | 0 | top-websites gist (no active program match) |
+| rakuten.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | ko-fi.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | youcaring.com | 8 | 0 | 0 | 4 | 4 | top-websites gist (no active program match) |
 | aclu.org | 14 | 0 | 0 | 2 | 12 | top-websites gist (no active program match) |
-| freshbooks.com | 27 | 0 | 1 | 25 | 1 | top-websites gist (no active program match) |
-| thingiverse.com | 40 | 0 | 1 | 36 | 3 | top-websites gist (no active program match) |
-| cdbaby.com | 9 | 2 | 0 | 5 | 2 | top-websites gist (no active program match) |
+| freshbooks.com | 27 | 0 | 0 | 26 | 1 | top-websites gist (no active program match) |
+| thingiverse.com | 40 | 0 | 0 | 37 | 3 | top-websites gist (no active program match) |
+| cdbaby.com | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
 | 4shared.com | 10 | 0 | 0 | 8 | 2 | top-websites gist (no active program match) |
 | npr.org | 9 | 0 | 0 | 8 | 1 | NPR |
 | rt.com | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
