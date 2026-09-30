@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| tandfonline.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | wattpad.com | 24 | 0 | 5 | 8 | 11 | top-websites gist (no active program match) |
 | avvo.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | news.discovery.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
