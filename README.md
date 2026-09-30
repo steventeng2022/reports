@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| br.linkedin.com | 12 | 1 | 0 | 10 | 1 | top-websites gist (no active program match) |
 | ubuntu.com | 14 | 0 | 1 | 12 | 1 | top-websites gist (no active program match) |
 | theglobeandmail.com | 9 | 0 | 1 | 4 | 4 | top-websites gist (no active program match) |
 | oprah.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
