@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 2, Low: 2, Info: 3)
+Total findings: **7** (High: 0, Medium: 0, Low: 4, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | I22 | Public autocomplete endpoint from robots.txt (no hidden data) | CWE-538 |
+| 2 | low | S1 | Live Atlassian statuspage (not dangling) | CWE-916 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
 | 5 | info | H3 | Missing X-Content-Type-Options | CWE-1194 |
@@ -26,12 +26,12 @@ Total findings: **7** (High: 0, Medium: 2, Low: 2, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Public autocomplete endpoint from robots.txt (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /nautocomplete which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] Live Atlassian statuspage (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.unsplash.com resolves to 3.169.121.20 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -60,6 +60,11 @@ Total findings: **7** (High: 0, Medium: 2, Low: 2, Info: 3)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://unsplash.com/.well-known/security.txt returned 200 (130 bytes) with a matching signature.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /nautocomplete re-probed = 200 (48 B) JSON {"fuzzy":[],"autocomplete":[],"did_you_mean":[]} - public autocomplete endpoint, no hidden data.
+- **S1 (MEDIUM -> LOW):** status.unsplash.com re-probed = 200 (105,124 B) AtlassianEdge title "Unsplash Status" - live Atlassian statuspage, not dangling.
 
 ## Reproduction notes
 

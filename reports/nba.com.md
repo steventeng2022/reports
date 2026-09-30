@@ -12,13 +12,13 @@
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 3, Low: 12, Info: 1)
+Total findings: **16** (High: 0, Medium: 0, Low: 15, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
-| 3 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
+| 1 | low | I22 | /search public search page from robots.txt (no hidden data) | CWE-538 |
+| 2 | low | I4 | Search-box value echo (quoted attr, specials -> 403, no breakout) | CWE-79 |
+| 3 | low | I4 | Search-box value echo (quoted attr, specials -> 403, no breakout) | CWE-79 |
 | 4 | low | H2 | Missing CSP header | CWE-1021 |
 | 5 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 6 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
@@ -35,17 +35,17 @@ Total findings: **16** (High: 0, Medium: 3, Low: 12, Info: 1)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] /search public search page from robots.txt (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /search which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Reflected input in HTML attribute context (`I4`)
+### 2. [LOW] Search-box value echo (quoted attr, specials -> 403, no breakout) (`I4`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.nba.com/search reflects the token inside a quoted attribute; escape boundary should be verified (quote/angle breakout tested).
 
-### 3. [MEDIUM] Reflected input in HTML attribute context (`I4`)
+### 3. [LOW] Search-box value echo (quoted attr, specials -> 403, no breakout) (`I4`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.nba.com/search reflects the token inside a quoted attribute; escape boundary should be verified (quote/angle breakout tested).
@@ -114,6 +114,11 @@ Total findings: **16** (High: 0, Medium: 3, Low: 12, Info: 1)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.nba.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I4 x2 (MEDIUM -> LOW):** www.nba.com/search?q= re-probed: plain token echoed into the search form input value="..." attribute (200, 263,789 B, quoted attr); quote payload -> 403 (376 B), angle-bracket payload -> 403 (374 B) - specials rejected, no breakout (standard search-box value echo).
+- **I22 (MEDIUM -> LOW):** /search re-probed = 200 (263,763 B) title "Search | NBA.com" - public search page, no hidden data.
 
 ## Reproduction notes
 

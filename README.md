@@ -5,7 +5,7 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 17339** (High: 6, Medium: 239, Low: 5367, Info: 11727)
+**Total findings across all sites: 17453** (High: 6, Medium: 239, Low: 5455, Info: 11753)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -14,12 +14,12 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | springer.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | arxiv.org | 4 | 0 | 0 | 1 | 3 | arXiv |
 | variety.com | 4 | 0 | 0 | 1 | 3 | Variety |
-| unsplash.com | 7 | 0 | 2 | 2 | 3 | Unsplash |
-| 500px.com | 18 | 0 | 8 | 6 | 4 | top-websites gist (no active program match) |
+| unsplash.com | 7 | 0 | 0 | 4 | 3 | Unsplash |
+| 500px.com | 18 | 0 | 0 | 14 | 4 | top-websites gist (no active program match) |
 | obsproject.com | 4 | 0 | 0 | 1 | 3 | top-websites gist (no active program match) |
-| goodreads.com | 9 | 0 | 3 | 5 | 1 | top-websites gist (no active program match) |
+| goodreads.com | 9 | 0 | 0 | 8 | 1 | top-websites gist (no active program match) |
 | marthastewart.com | 5 | 0 | 0 | 2 | 3 | top-websites gist (no active program match) |
-| nba.com | 16 | 0 | 3 | 12 | 1 | top-websites gist (no active program match) |
+| nba.com | 16 | 0 | 0 | 15 | 1 | top-websites gist (no active program match) |
 | fonts.gstatic.com | 34 | 0 | 0 | 33 | 1 | top-websites gist (no active program match) |
 | change.org | 16 | 0 | 0 | 12 | 4 | top-websites gist (no active program match) |
 | 1.gravatar.com | 6 | 0 | 0 | 2 | 4 | top-websites gist (no active program match) |

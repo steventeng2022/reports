@@ -12,13 +12,13 @@
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 3, Low: 5, Info: 1)
+Total findings: **9** (High: 0, Medium: 0, Low: 8, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 3 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | I22 | Public blog RSS feed from robots.txt (no hidden data) | CWE-538 |
+| 2 | low | S1 | First-party AWS Midway SSO / CF origin 403 (not dangling) | CWE-916 |
+| 3 | low | S1 | First-party AWS Midway SSO / CF origin 403 (not dangling) | CWE-916 |
 | 4 | low | H2 | Missing CSP header | CWE-1021 |
 | 5 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 6 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
@@ -28,17 +28,17 @@ Total findings: **9** (High: 0, Medium: 3, Low: 5, Info: 1)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Public blog RSS feed from robots.txt (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /blog/list_rss which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] First-party AWS Midway SSO / CF origin 403 (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain admin.goodreads.com resolves to 65.9.180.80 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 3. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 3. [LOW] First-party AWS Midway SSO / CF origin 403 (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain api.goodreads.com resolves to 65.9.176.214 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -72,6 +72,11 @@ Total findings: **9** (High: 0, Medium: 3, Low: 5, Info: 1)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.goodreads.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /blog/list_rss re-probed = 200 (256,526 B) application/xml - public blog RSS feed, no hidden data.
+- **S1 x2 (MEDIUM -> LOW):** admin.goodreads.com re-probed = http 301 (CloudFront) -> https, then 307 -> https://midway-auth.amazon.com/SSO/redirect?redirect_uri=https://admin.goodreads.com:443/...&scope=openid (live AWS Midway SSO, Amazon first-party); api.goodreads.com = https 403 (521 B) "Website Temporarily Unavailable" (origin error) - none show the 915 B dangling CloudFront signature.
 
 ## Reproduction notes
 
