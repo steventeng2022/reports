@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| oprah.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | louvre.fr | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | googleads.g.doubleclick.net | 6 | 0 | 0 | 5 | 1 | Google |
 | doi.org | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
