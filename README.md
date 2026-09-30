@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| cdbaby.com | 9 | 2 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | 4shared.com | 10 | 0 | 0 | 8 | 2 | top-websites gist (no active program match) |
 | npr.org | 9 | 0 | 0 | 8 | 1 | NPR |
 | rt.com | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
