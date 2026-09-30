@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **5** (High: 0, Medium: 1, Low: 3, Info: 1)
+Total findings: **5** (High: 0, Medium: 0, Low: 4, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 2 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 3 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -24,7 +24,7 @@ Total findings: **5** (High: 0, Medium: 1, Low: 3, Info: 1)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /search which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -48,6 +48,10 @@ Total findings: **5** (High: 0, Medium: 1, Low: 3, Info: 1)
 
 - **CWE:** CWE-200
 - **Detail:** Server header: nginx
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /search re-probed = 200 (270,251 B) "HuffPost | Search" public search page, no hidden data.
 
 ## Reproduction notes
 

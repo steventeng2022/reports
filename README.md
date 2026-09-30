@@ -5,21 +5,21 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 16221** (High: 6, Medium: 234, Low: 4467, Info: 11514)
+**Total findings across all sites: 16425** (High: 6, Medium: 234, Low: 4650, Info: 11535)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
 | form.jotform.com | 15 | 0 | 0 | 15 | 0 | top-websites gist (no active program match) |
 | synology.com | 28 | 0 | 0 | 28 | 0 | top-websites gist (no active program match) |
-| huffpost.com | 5 | 0 | 1 | 3 | 1 | top-websites gist (no active program match) |
+| huffpost.com | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | gmail.com | 32 | 0 | 0 | 31 | 1 | Google |
-| latimes.com | 27 | 21 | 1 | 3 | 2 | top-websites gist (no active program match) |
-| google.com.au | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
-| dailymail.co.uk | 8 | 0 | 1 | 5 | 2 | top-websites gist (no active program match) |
+| latimes.com | 27 | 0 | 0 | 25 | 2 | top-websites gist (no active program match) |
+| google.com.au | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
+| dailymail.co.uk | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
 | thelancet.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
-| news.bbc.co.uk | 2 | 0 | 1 | 1 | 0 | top-websites gist (no active program match) |
+| news.bbc.co.uk | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
 | huffingtonpost.co.uk | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
-| steemit.com | 53 | 0 | 4 | 45 | 4 | top-websites gist (no active program match) |
+| steemit.com | 53 | 0 | 0 | 49 | 4 | top-websites gist (no active program match) |
 | warriorforum.com | 8 | 0 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | examiner.com | 4 | 0 | 0 | 4 | 0 | top-websites gist (no active program match) |
 | kickstarter.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |

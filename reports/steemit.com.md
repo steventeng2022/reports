@@ -12,14 +12,14 @@
 
 ## Summary
 
-Total findings: **53** (High: 0, Medium: 4, Low: 45, Info: 4)
+Total findings: **53** (High: 0, Medium: 0, Low: 49, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I26 | WordPress user enumeration via REST API (wp-json/wp/v2/users) | CWE-200 |
-| 2 | medium | I26 | Backup archive (backup.zip) exposed | CWE-538 |
-| 3 | medium | I26 | Site archive (site.zip) exposed | CWE-538 |
-| 4 | medium | I26 | Website archive exposed | CWE-538 |
+| 1 | low | I26 | WordPress user enumeration via REST API (wp-json/wp/v2/users) | CWE-200 |
+| 2 | low | I26 | Backup archive (backup.zip) exposed | CWE-538 |
+| 3 | low | I26 | Site archive (site.zip) exposed | CWE-538 |
+| 4 | low | I26 | Website archive exposed | CWE-538 |
 | 5 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -72,22 +72,22 @@ Total findings: **53** (High: 0, Medium: 4, Low: 45, Info: 4)
 
 ## Detailed findings
 
-### 1. [MEDIUM] WordPress user enumeration via REST API (wp-json/wp/v2/users) (`I26`)
+### 1. [LOW] WordPress user enumeration via REST API (wp-json/wp/v2/users) (`I26`)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://steemit.com/wp-json/wp/v2/users returned 200 (59342 bytes) with a matching signature.
 
-### 2. [MEDIUM] Backup archive (backup.zip) exposed (`I26`)
+### 2. [LOW] Backup archive (backup.zip) exposed (`I26`)
 
 - **CWE:** CWE-538
 - **Detail:** GET https://steemit.com/backup.zip returned 200 (59314 bytes) with a matching signature.
 
-### 3. [MEDIUM] Site archive (site.zip) exposed (`I26`)
+### 3. [LOW] Site archive (site.zip) exposed (`I26`)
 
 - **CWE:** CWE-538
 - **Detail:** GET https://steemit.com/site.zip returned 200 (59310 bytes) with a matching signature.
 
-### 4. [MEDIUM] Website archive exposed (`I26`)
+### 4. [LOW] Website archive exposed (`I26`)
 
 - **CWE:** CWE-538
 - **Detail:** GET https://steemit.com/website.zip returned 200 (59317 bytes) with a matching signature.
@@ -336,6 +336,10 @@ Total findings: **53** (High: 0, Medium: 4, Low: 45, Info: 4)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://steemit.com/.well-known/security.txt returned 200 (58292 bytes) with a matching signature.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I26 x4 (MEDIUM -> LOW):** wildcard SPA - every path returns 200 with the same ~59 KB React app shell (text/html; data-reactroot, gtag UA-76480270-1), including random paths (e.g. /nonexistent-xyz12345 = 200, 59,343 B). /wp-json/wp/v2/users returns the HTML shell (not a JSON user list); backup.zip, site.zip and website.zip all return the same HTML shell (not zip binaries) - the "exposed archives" are the SPA's soft-200 for any URL.
 
 ## Reproduction notes
 

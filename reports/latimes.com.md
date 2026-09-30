@@ -12,32 +12,32 @@
 
 ## Summary
 
-Total findings: **27** (High: 21, Medium: 1, Low: 3, Info: 2)
+Total findings: **27** (High: 0, Medium: 0, Low: 25, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I30 | Reflected XSS in JavaScript context (alert payload round-trips) | CWE-79 |
-| 2 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 3 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 4 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 5 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 6 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 7 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 8 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 9 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 10 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 11 | high | I30 | Reflected XSS in JavaScript context (alert payload round-trips) | CWE-79 |
-| 12 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 13 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 14 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 15 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 16 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 17 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 18 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 19 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 20 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 21 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 22 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I30 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 2 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 3 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 4 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 5 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 6 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 7 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 8 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 9 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 10 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 11 | low | I30 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 12 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 13 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 14 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 15 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 16 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 17 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 18 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 19 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 20 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 21 | low | I1 | Reflected token in JavaScript context (properly-escaped JSON blob) | CWE-79 |
+| 22 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 23 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 24 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 25 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -46,112 +46,112 @@ Total findings: **27** (High: 21, Medium: 1, Low: 3, Info: 2)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS in JavaScript context (alert payload round-trips) (`I30`)
+### 1. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I30`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.latimes.com/search reflects ;alert(1)// unquoted inside a <script> block; JS executes on page load.
 
-### 2. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 2. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.latimes.com/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 3. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 3. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.latimes.com/s reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 4. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 4. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.latimes.com/ reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 5. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 5. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.latimes.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 6. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 6. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter to on https://www.latimes.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 7. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 7. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.latimes.com/link reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 8. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 8. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.latimes.com/out reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 9. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 9. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.latimes.com/u reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 10. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 10. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.latimes.com/share reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 11. [HIGH] Reflected XSS in JavaScript context (alert payload round-trips) (`I30`)
+### 11. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I30`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.latimes.com/search reflects ;alert(1)// unquoted inside a <script> block; JS executes on page load.
 
-### 12. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 12. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.latimes.com/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 13. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 13. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.latimes.com/s reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 14. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 14. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.latimes.com/ reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 15. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 15. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.latimes.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 16. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 16. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter to on https://www.latimes.com/r reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 17. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 17. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.latimes.com/link reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 18. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 18. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.latimes.com/out reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 19. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 19. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.latimes.com/u reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 20. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 20. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.latimes.com/share reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 21. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 21. [LOW] Reflected token in JavaScript context (properly-escaped JSON blob) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter to on https://www.latimes.com/forward reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 22. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 22. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /search which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -180,6 +180,11 @@ Total findings: **27** (High: 21, Medium: 1, Low: 3, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.latimes.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I1/I30 x21 (HIGH -> LOW):** /search?q= re-probed - the reflected searchTerm lands in a JSON data blob inside a real <script> block, but the serializer correctly escapes quotes (" -> \") and backslashes (\ -> \\); verified: payload Zx7qK2v9Bm" round-trips as Zx7qK2v9Bm\" and payload Zx7qK2v9Bm\ round-trips as Zx7qK2v9Bm\\ (no string breakout); </script> is truncated/URL-encoded in the searchTerm/fullUrl fields; the HTML input value is &quot;-escaped. The /r, /link, /out, /u, /share, /forward endpoints now return 404 (336,574-336,593 B) with the token only inside the URL-encoded fullUrl JSON field.
+- **I22 (MEDIUM -> LOW):** /search returns 200 (418 KB) - a public search feature with no hidden data.
 
 ## Reproduction notes
 

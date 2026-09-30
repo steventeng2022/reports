@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 1, Low: 5, Info: 2)
+Total findings: **8** (High: 0, Medium: 0, Low: 6, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
 | 2 | low | T3 | HTTP redirect does not go to HTTPS | CWE-319 |
 | 3 | low | H1 | Missing HSTS header | CWE-319 |
 | 4 | low | H2 | Missing CSP header | CWE-1021 |
@@ -27,7 +27,7 @@ Total findings: **8** (High: 0, Medium: 1, Low: 5, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /api/infinite-list.html which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -66,6 +66,10 @@ Total findings: **8** (High: 0, Medium: 1, Low: 5, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.dailymail.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /api/infinite-list.html re-probed: dailymail.co.uk 301 -> https://www.dailymail.com/api/infinite-list.html = 200 (40,278 B) article-list HTML fragment (public infinite-scroll feed, no hidden data). Note: the site has migrated from dailymail.co.uk to dailymail.com.
 
 ## Reproduction notes
 
