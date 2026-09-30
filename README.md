@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| warriorforum.com | 8 | 0 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | examiner.com | 4 | 0 | 0 | 4 | 0 | top-websites gist (no active program match) |
 | kickstarter.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | booking.com | 12 | 0 | 0 | 7 | 5 | top-websites gist (no active program match) |
