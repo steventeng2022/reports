@@ -12,14 +12,14 @@
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 4, Low: 7, Info: 2)
+Total findings: **13** (High: 0, Medium: 0, Low: 11, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 3 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 4 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | I22 | Public search page from robots.txt (no hidden data) | CWE-538 |
+| 2 | low | S1 | First-party Squarespace / Atlassian property (not dangling) | CWE-916 |
+| 3 | low | S1 | First-party Squarespace / Atlassian property (not dangling) | CWE-916 |
+| 4 | low | S1 | First-party Squarespace / Atlassian property (not dangling) | CWE-916 |
 | 5 | low | H2 | Missing CSP header | CWE-1021 |
 | 6 | low | H4 | No clickjacking protection | CWE-1023 |
 | 7 | low | C1 | Cookies without Secure flag | CWE-614 |
@@ -32,22 +32,22 @@ Total findings: **13** (High: 0, Medium: 4, Low: 7, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Public search page from robots.txt (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /search which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] First-party Squarespace / Atlassian property (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain dev.squarespace.com resolves to 198.185.159.176 and is served by Squarespace (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 200
 
-### 3. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 3. [LOW] First-party Squarespace / Atlassian property (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain old.squarespace.com resolves to 198.185.159.177 and is served by Squarespace (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 404
 
-### 4. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 4. [LOW] First-party Squarespace / Atlassian property (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.squarespace.com resolves to 3.169.121.91 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -96,6 +96,11 @@ Total findings: **13** (High: 0, Medium: 4, Low: 7, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://www.squarespace.com/sitemap.xml returns a sitemap with 687 URLs, aiding enumeration of the site surface.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 x3 (MEDIUM -> LOW):** dev.squarespace.com re-probed = 200 (51,010 B) "Squarespace Forums" (server Squarespace, first-party); old.squarespace.com = 404 (3,177 B) "Squarespace - Website Expired" (branded first-party Squarespace 404); status.squarespace.com = 200 (129,634 B) "Squarespace Status" server AtlassianEdge = live Atlassian Statuspage. All first-party infrastructure, none show the 915 B dangling CloudFront signature.
+- **I22 (MEDIUM -> LOW):** /search re-probed = 200 (57,288 B) public Squarespace page (server Squarespace), no hidden data.
 
 ## Reproduction notes
 

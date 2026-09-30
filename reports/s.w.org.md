@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **10** (High: 0, Medium: 1, Low: 6, Info: 3)
+Total findings: **10** (High: 0, Medium: 0, Low: 7, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Public WordPress.org dev search (no hidden data) | CWE-538 |
 | 2 | low | H2 | Missing CSP header | CWE-1021 |
 | 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -29,7 +29,7 @@ Total findings: **10** (High: 0, Medium: 1, Low: 6, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Public WordPress.org dev search (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /?s= which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -78,6 +78,10 @@ Total findings: **10** (High: 0, Medium: 1, Low: 6, Info: 3)
 
 - **CWE:** CWE-200
 - **Detail:** Server header: nginx
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /?s= re-probed = 301 (nginx) - public site search on s.w.org (WordPress.org developer site), no hidden data.
 
 ## Reproduction notes
 

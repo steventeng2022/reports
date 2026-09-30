@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **6** (High: 2, Medium: 0, Low: 3, Info: 1)
+Total findings: **6** (High: 0, Medium: 0, Low: 5, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I2 | Reflected XSS via attribute injection | CWE-79 |
-| 2 | high | I2 | Reflected XSS via attribute injection | CWE-79 |
+| 1 | low | I2 | Escaped reflection in /redirect error-page span (no breakout) | CWE-79 |
+| 2 | low | I2 | Escaped reflection in /redirect error-page span (no breakout) | CWE-79 |
 | 3 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 5 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -25,12 +25,12 @@ Total findings: **6** (High: 2, Medium: 0, Low: 3, Info: 1)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS via attribute injection (`I2`)
+### 1. [LOW] Escaped reflection in /redirect error-page span (no breakout) (`I2`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://uk.linkedin.com/redirect: injecting "\"' onerror=\"alert(1)//" yields an unquoted onerror handler. Event fires on render.
 
-### 2. [HIGH] Reflected XSS via attribute injection (`I2`)
+### 2. [LOW] Escaped reflection in /redirect error-page span (no breakout) (`I2`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://uk.linkedin.com/redirect: injecting "\"' onerror=\"alert(1)//" yields an unquoted onerror handler. Event fires on render.
@@ -54,6 +54,10 @@ Total findings: **6** (High: 2, Medium: 0, Low: 3, Info: 1)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://uk.linkedin.com/.well-known/security.txt returned 200 (267 bytes) with a matching signature.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I2 x2 (HIGH -> LOW):** /redirect?url= re-probed: clean token reflects once in the "Link Error" page (3,736 B) inside <span class="t-bold"> ... </span> (TEXT context); attribute-injection payload reflects verbatim inside that same span (3,748 B) - still text content, not an attribute boundary; angle-bracket payload HTML-escaped ("&lt;/span&gt;&lt;img src=x onerror=alert(1)&gt;") = no tag breakout. Same verdict as br.linkedin.com (W35 R25).
 
 ## Reproduction notes
 

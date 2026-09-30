@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **36** (High: 0, Medium: 1, Low: 33, Info: 2)
+Total findings: **36** (High: 0, Medium: 0, Low: 34, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | /api/ now 404 (no hidden data) | CWE-538 |
 | 2 | low | H2 | Missing CSP header | CWE-1021 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
@@ -55,7 +55,7 @@ Total findings: **36** (High: 0, Medium: 1, Low: 33, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] /api/ now 404 (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /api/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -234,6 +234,10 @@ Total findings: **36** (High: 0, Medium: 1, Low: 33, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://commons.wikimedia.org/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /api/ re-probed = 404 (35 B) envoy "Regexp failed to match URI" (the scanner 200 was transient); the real Wikimedia API lives at api.wikimedia.org - no hidden data here.
 
 ## Reproduction notes
 

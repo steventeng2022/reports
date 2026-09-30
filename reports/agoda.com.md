@@ -12,13 +12,13 @@
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 3, Low: 4, Info: 2)
+Total findings: **9** (High: 0, Medium: 2, Low: 5, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
 | 1 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
 | 2 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
-| 3 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 3 | low | I22 | Public booking SPA shell from robots.txt (no hidden data) | CWE-538 |
 | 4 | low | H2 | Missing CSP header | CWE-1021 |
 | 5 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 6 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
@@ -38,7 +38,7 @@ Total findings: **9** (High: 0, Medium: 3, Low: 4, Info: 2)
 - **CWE:** CWE-942
 - **Detail:** Request to https://www.agoda.com/graphql with Origin: null returned Access-Control-Allow-Origin: null with Access-Control-Allow-Credentials: true. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 3. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 3. [LOW] Public booking SPA shell from robots.txt (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /book/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -72,6 +72,11 @@ Total findings: **9** (High: 0, Medium: 3, Low: 4, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://www.agoda.com/.well-known/security.txt returned 200 (326 bytes) with a matching signature.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I20 x2 (MEDIUM KEPT):** /graphql re-probed with Origin "https://evil-cors.example" = 200 (113 B application/json) Access-Control-Allow-Origin: https://evil-cors.example + Access-Control-Allow-Credentials: true; Origin null = ACAO: null + ACAC: true - live arbitrary-origin CORS reflection with credentials (thenextweb W31 precedent).
+- **I22 (MEDIUM -> LOW):** /book/ re-probed = 200 (1,752,103 B) Agoda SPA shell (agoda-spa / agoda-splash divs, server-injected observability config, embedded refund-policy JSON) - public booking app, no hidden data.
 
 ## Reproduction notes
 
