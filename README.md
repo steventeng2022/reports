@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| michigan.gov | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | statista.com | 35 | 0 | 0 | 35 | 0 | top-websites gist (no active program match) |
 | rebrand.ly | 31 | 0 | 0 | 31 | 0 | top-websites gist (no active program match) |
 | ssl.gstatic.com | 34 | 0 | 0 | 33 | 1 | top-websites gist (no active program match) |
