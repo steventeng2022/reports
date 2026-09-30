@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| example.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | es.linkedin.com | 11 | 1 | 0 | 9 | 1 | top-websites gist (no active program match) |
 | esa.int | 7 | 0 | 1 | 3 | 3 | top-websites gist (no active program match) |
 | gum.co | 10 | 0 | 0 | 9 | 1 | top-websites gist (no active program match) |
