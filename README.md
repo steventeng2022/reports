@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| patheos.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | podbean.com | 4 | 0 | 1 | 3 | 0 | top-websites gist (no active program match) |
 | rakuten.com | 7 | 0 | 1 | 4 | 2 | top-websites gist (no active program match) |
 | ko-fi.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
