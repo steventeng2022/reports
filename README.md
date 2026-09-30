@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| upi.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | nhs.uk | 3 | 0 | 0 | 3 | 0 | top-websites gist (no active program match) |
 | prntscr.com | 6 | 0 | 1 | 3 | 2 | top-websites gist (no active program match) |
 | fortune.com | 46 | 0 | 5 | 32 | 9 | Fortune |
