@@ -5,12 +5,12 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 17995** (High: 7, Medium: 239, Low: 5873, Info: 11876)
+**Total findings across all sites: 18062** (High: 7, Medium: 239, Low: 5932, Info: 11884)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
-| audible.com | 16 | 0 | 1 | 14 | 1 | top-websites gist (no active program match) |
-| bitly.com | 12 | 0 | 4 | 4 | 4 | top-websites gist (no active program match) |
+| audible.com | 16 | 0 | 0 | 15 | 1 | top-websites gist (no active program match) |
+| bitly.com | 12 | 0 | 0 | 8 | 4 | top-websites gist (no active program match) |
 | leparisien.fr | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | static.googleusercontent.com | 34 | 0 | 0 | 33 | 1 | top-websites gist (no active program match) |
 | vmware.com | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |

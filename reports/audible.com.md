@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 1, Low: 14, Info: 1)
+Total findings: **16** (High: 0, Medium: 0, Low: 15, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | CF 404 29B (not dangling) | CWE-916 |
 | 2 | low | H2 | Missing CSP header | CWE-1021 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | C1 | Cookies without Secure flag | CWE-614 |
@@ -35,7 +35,7 @@ Total findings: **16** (High: 0, Medium: 1, Low: 14, Info: 1)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] CF 404 29B (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain api.audible.com resolves to 65.9.180.74 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -114,6 +114,10 @@ Total findings: **16** (High: 0, Medium: 1, Low: 14, Info: 1)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.audible.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 (MEDIUM -> LOW):** api.audible.com re-probed = 404 (29 B, body "<UnknownOperationException/>", x-cache:"Error from cloudfront") - CloudFront error page, not the 915 B dangling CloudFront 403 signature.
 
 ## Reproduction notes
 
