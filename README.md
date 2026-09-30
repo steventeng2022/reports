@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| google.com.au | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
 | dailymail.co.uk | 8 | 0 | 1 | 5 | 2 | top-websites gist (no active program match) |
 | thelancet.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | news.bbc.co.uk | 2 | 0 | 1 | 1 | 0 | top-websites gist (no active program match) |
