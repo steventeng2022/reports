@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| worldbank.org | 8 | 0 | 0 | 7 | 1 | top-websites gist (no active program match) |
 | theverge.com | 16 | 0 | 0 | 14 | 2 | top-websites gist (no active program match) |
 | ted.com | 8 | 0 | 0 | 7 | 1 | top-websites gist (no active program match) |
 | upi.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
