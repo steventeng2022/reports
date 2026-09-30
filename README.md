@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| globalsign.com | 39 | 0 | 1 | 33 | 5 | top-websites gist (no active program match) |
 | we.tl | 32 | 0 | 1 | 31 | 0 | top-websites gist (no active program match) |
 | example.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | es.linkedin.com | 11 | 1 | 0 | 9 | 1 | top-websites gist (no active program match) |
