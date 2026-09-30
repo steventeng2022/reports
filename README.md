@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| vmware.com | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |
 | google.ch | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
 | patheos.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | podbean.com | 4 | 0 | 1 | 3 | 0 | top-websites gist (no active program match) |
