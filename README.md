@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| prntscr.com | 6 | 0 | 1 | 3 | 2 | top-websites gist (no active program match) |
 | fortune.com | 46 | 0 | 5 | 32 | 9 | Fortune |
 | ustream.tv | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | fas.org | 1 | 0 | 0 | 0 | 1 | top-websites gist (no active program match) |
