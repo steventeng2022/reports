@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| rebrand.ly | 31 | 30 | 0 | 1 | 0 | top-websites gist (no active program match) |
 | ssl.gstatic.com | 34 | 0 | 0 | 33 | 1 | top-websites gist (no active program match) |
 | repubblica.it | 8 | 0 | 2 | 5 | 1 | top-websites gist (no active program match) |
 | geek.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
