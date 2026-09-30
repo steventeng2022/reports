@@ -5,10 +5,11 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 18044** (High: 8, Medium: 135, Low: 5814, Info: 12087)
+**Total findings across all sites: 18051** (High: 8, Medium: 135, Low: 5817, Info: 12091)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| capitalone.com | 7 | 0 | 0 | 3 | 4 | top-websites gist (no active program match) |
 | aol.com | 14 | 0 | 0 | 12 | 2 | top-websites gist (no active program match) |
 | figma.com | 7 | 0 | 0 | 3 | 4 | top-websites gist (no active program match) |
 | yale.edu | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
@@ -994,6 +995,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | zen.yandex.ru | 25 | 0 | 0 | 7 | 18 | [Yandex](https://yandex.com/bugbounty/index) |
 | zillow.com | 22 | 0 | 0 | 4 | 18 | top-websites gist (no active program match) |
 | zoom.us | 49 | 0 | 9 | 5 | 35 | [Zoom](https://explore.zoom.us/docs/ent/h1.html) |
+
 
 
 
