@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| rockpapershotgun.com | 4 | 0 | 1 | 3 | 0 | top-websites gist (no active program match) |
 | google.es | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
 | unesco.org | 9 | 0 | 0 | 7 | 2 | top-websites gist (no active program match) |
 | bmj.com | 36 | 0 | 0 | 33 | 3 | top-websites gist (no active program match) |
