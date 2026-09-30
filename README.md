@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| foursquare.com | 17 | 10 | 1 | 4 | 2 | top-websites gist (no active program match) |
 | olympic.org | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | discord.me | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | dev.mysql.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
