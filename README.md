@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| huffingtonpost.co.uk | 6 | 0 | 0 | 5 | 1 | top-websites gist (no active program match) |
 | steemit.com | 53 | 0 | 4 | 45 | 4 | top-websites gist (no active program match) |
 | warriorforum.com | 8 | 0 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | examiner.com | 4 | 0 | 0 | 4 | 0 | top-websites gist (no active program match) |
