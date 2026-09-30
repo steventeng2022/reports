@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **12** (High: 0, Medium: 1, Low: 8, Info: 3)
+Total findings: **12** (High: 0, Medium: 0, Low: 9, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Public store cart page from robots.txt (no hidden data) | CWE-538 |
 | 2 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 3 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -31,7 +31,7 @@ Total findings: **12** (High: 0, Medium: 1, Low: 8, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Public store cart page from robots.txt (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /cart/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -90,6 +90,10 @@ Total findings: **12** (High: 0, Medium: 1, Low: 8, Info: 3)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://www.relapse.com/.well-known/openid-configuration returned 200 (1355 bytes) with a matching signature.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /cart/ re-probed = 200 (233,220 B) "Your Shopping Cart – Relapse Records Official Store" - live public e-commerce cart page, no hidden data.
 
 ## Reproduction notes
 

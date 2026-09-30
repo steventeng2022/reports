@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **13** (High: 0, Medium: 1, Low: 8, Info: 4)
+Total findings: **13** (High: 0, Medium: 0, Low: 9, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Google TLD homepage via /index.html (no hidden data) | CWE-538 |
 | 2 | low | T3 | HTTP redirect does not go to HTTPS | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -32,7 +32,7 @@ Total findings: **13** (High: 0, Medium: 1, Low: 8, Info: 4)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Google TLD homepage via /index.html (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /index.html? which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -96,6 +96,10 @@ Total findings: **13** (High: 0, Medium: 1, Low: 8, Info: 4)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://www.google.es/.well-known/security.txt returned 200 (275 bytes) with a matching signature.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /index.html re-probed = 301 -> https://www.google.es/index.html = 200 (210,452 B) standard Google TLD homepage (title "Google") - same verdict as google.gr / google.co.nz / google.pt / google.com.au / google.fr (R19/R20/R22/R23).
 
 ## Reproduction notes
 

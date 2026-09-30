@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
+Total findings: **6** (High: 0, Medium: 0, Low: 4, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | Live S3 static hosting (Hugo site, not dangling) | CWE-916 |
 | 2 | low | H2 | Missing CSP header | CWE-1021 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -25,7 +25,7 @@ Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] Live S3 static hosting - staging.doi.org (Hugo site, not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain staging.doi.org resolves to 52.222.244.129 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -54,6 +54,10 @@ Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.doi.org/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 (MEDIUM -> LOW):** staging.doi.org re-probed = 200, server AmazonS3, serving a gzip-compressed Hugo 0.165.0 static site (24,205 B uncompressed, title "Home Page", Bootstrap 5, ahrefs verification meta) with a gzip-compressed 404 error document for random keys - live first-party static hosting, not a dangling CloudFront signature.
 
 ## Reproduction notes
 

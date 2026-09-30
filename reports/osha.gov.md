@@ -12,53 +12,53 @@
 
 ## Summary
 
-Total findings: **9** (High: 7, Medium: 0, Low: 2, Info: 0)
+Total findings: **9** (High: 0, Medium: 0, Low: 9, Info: 0)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 2 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 3 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 4 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 5 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 6 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 7 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
+| 1 | low | I1 | Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) | CWE-79 |
+| 2 | low | I1 | Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) | CWE-79 |
+| 3 | low | I1 | Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) | CWE-79 |
+| 4 | low | I1 | Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) | CWE-79 |
+| 5 | low | I1 | Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) | CWE-79 |
+| 6 | low | I1 | Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) | CWE-79 |
+| 7 | low | I1 | Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) | CWE-79 |
 | 8 | low | I22 | Protected path listed in robots.txt | CWE-538 |
 | 9 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 1. [LOW] Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.osha.gov/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 2. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 2. [LOW] Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter query on https://www.osha.gov/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 3. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 3. [LOW] Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.osha.gov/s reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 4. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 4. [LOW] Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.osha.gov/ reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 5. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 5. [LOW] Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.osha.gov/results reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 6. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 6. [LOW] Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.osha.gov/redirect reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 7. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 7. [LOW] Reflected token in Drupal settings JSON (sanitized; WAF blocks angle-bracket payloads) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://www.osha.gov/go reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
@@ -72,6 +72,10 @@ Total findings: **9** (High: 7, Medium: 0, Low: 2, Info: 0)
 
 - **CWE:** CWE-918
 - **Detail:** Requesting the origin with Host: osha.gov + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I1 x7 (HIGH -> LOW):** ?q= on /search re-probed - the token is reflected ONLY in the drupal-settings-json block (script type=application/json) currentQuery.q field. Quote and backslash payloads reflect stripped (identical 94,756 B 404-page body, identical context); </script>, "; and ";' payloads are 403-blocked by the CloudFront WAF (919 B "The request could not be satisfied", x-cache:Error from cloudfront) - a WAF on the live distribution (clean token still returns the 94 KB page), not a dangling CloudFront distribution. No raw quote and no raw </script> reach the script context - no string breakout.
 
 ## Reproduction notes
 
