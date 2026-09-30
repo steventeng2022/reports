@@ -5,7 +5,7 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 16425** (High: 6, Medium: 234, Low: 4650, Info: 11535)
+**Total findings across all sites: 16545** (High: 6, Medium: 235, Low: 4742, Info: 11562)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
@@ -14,11 +14,11 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 | ted.com | 8 | 0 | 0 | 7 | 1 | top-websites gist (no active program match) |
 | upi.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | nhs.uk | 3 | 0 | 0 | 3 | 0 | top-websites gist (no active program match) |
-| prntscr.com | 6 | 0 | 1 | 3 | 2 | top-websites gist (no active program match) |
-| fortune.com | 46 | 0 | 5 | 32 | 9 | Fortune |
+| prntscr.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
+| fortune.com | 46 | 0 | 1 | 36 | 9 | Fortune |
 | ustream.tv | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | fas.org | 1 | 0 | 0 | 0 | 1 | top-websites gist (no active program match) |
-| google.fr | 13 | 0 | 1 | 8 | 4 | Google |
+| google.fr | 13 | 0 | 0 | 9 | 4 | Google |
 | autodesk.com | 6 | 0 | 0 | 3 | 3 | top-websites gist (no active program match) |
 | form.jotform.com | 15 | 0 | 0 | 15 | 0 | top-websites gist (no active program match) |
 | synology.com | 28 | 0 | 0 | 28 | 0 | top-websites gist (no active program match) |

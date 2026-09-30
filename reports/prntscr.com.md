@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
+Total findings: **6** (High: 0, Medium: 0, Low: 4, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I10 | Spring Boot actuator environment endpoint exposed | CWE-538 |
+| 1 | low | I10 | Actuator-style path returns the default HTML page (soft-200 catch-all, not JSON) | CWE-538 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -25,7 +25,7 @@ Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Spring Boot actuator environment endpoint exposed (`I10`)
+### 1. [LOW] Actuator-style path returns the default HTML page (soft-200 catch-all, not JSON) (`I10`)
 
 - **CWE:** CWE-538
 - **Detail:** GET https://prnt.sc/actuator/env returned 200 (16347 bytes) with a matching signature.
@@ -54,6 +54,10 @@ Total findings: **6** (High: 0, Medium: 1, Low: 3, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://prnt.sc/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I10 (MEDIUM -> LOW):** /actuator/env re-probed = 200 (16,347 B) but content-type is text/html with the "Screenshot by Lightshot" default page, not application/json; /actuator/health (16,365 B) and /actuator (16,329 B) return the same ~16.3 KB HTML page - the Lightshot app serves its default page for these paths (catch-all), so this is not an exposed Spring Boot actuator environment endpoint.
 
 ## Reproduction notes
 

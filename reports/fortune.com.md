@@ -12,15 +12,15 @@
 
 ## Summary
 
-Total findings: **46** (High: 0, Medium: 5, Low: 32, Info: 9)
+Total findings: **46** (High: 0, Medium: 1, Low: 36, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Public sponsored-content landing page from robots.txt (content discoverable, no hidden data) | CWE-538 |
 | 2 | medium | I26 | WordPress user enumeration via REST API (wp-json/wp/v2/users) | CWE-200 |
-| 3 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 4 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 5 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 3 | low | S1 | Subdomain on first-party CloudFront/AWS infrastructure (no dangling signature) | CWE-916 |
+| 4 | low | S1 | Subdomain on first-party CloudFront/AWS infrastructure (no dangling signature) | CWE-916 |
+| 5 | low | S1 | Subdomain on first-party CloudFront/AWS infrastructure (no dangling signature) | CWE-916 |
 | 6 | low | H1 | Missing HSTS header | CWE-319 |
 | 7 | low | H2 | Missing CSP header | CWE-1021 |
 | 8 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -65,7 +65,7 @@ Total findings: **46** (High: 0, Medium: 5, Low: 32, Info: 9)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Public sponsored-content landing page from robots.txt (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /sponsored/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -75,17 +75,17 @@ Total findings: **46** (High: 0, Medium: 5, Low: 32, Info: 9)
 - **CWE:** CWE-200
 - **Detail:** GET https://fortune.com/wp-json/wp/v2/users returned 200 (5424 bytes) with a matching signature.
 
-### 3. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 3. [LOW] Subdomain on first-party CloudFront/AWS infrastructure - staging.fortune.com 503 awselb (no dangling signature) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain staging.fortune.com resolves to 54.239.180.30 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 4. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 4. [LOW] Subdomain on first-party CloudFront/AWS infrastructure - qa.fortune.com 401 nginx (no dangling signature) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain qa.fortune.com resolves to 65.9.180.15 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 5. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 5. [LOW] Subdomain on first-party CloudFront/AWS infrastructure - shop.fortune.com 200 Fortune Shop (no dangling signature) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain shop.fortune.com resolves to 13.249.182.2 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -294,6 +294,12 @@ Total findings: **46** (High: 0, Medium: 5, Low: 32, Info: 9)
 
 - **CWE:** CWE-942
 - **Detail:** GET https://fortune.com/graphql responds with Access-Control-Allow-Origin: * (Content-Type: none). Any site can read responses cross-origin.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I26 (KEPT MEDIUM):** /wp-json/wp/v2/users re-probed = 200 application/json (5,424 B) - a genuine WordPress REST user list (1 user exposed: id 12222172 / slug takarasmall, external contributor profile). Random path returns 308 (not a wildcard), so this is real user enumeration via WP REST.
+- **S1 x3 (MEDIUM -> LOW):** staging.fortune.com re-probed = 503 (162 B, awselb/2.0 via CloudFront - Fortune's own AWS ELB origin with the staging app down); qa.fortune.com = 401 (172 B, nginx via CloudFront - live origin requiring auth); shop.fortune.com = 200 (273,089 B, "Fortune Shop", AmazonS3 via CloudFront - live first-party storefront). None show the 915 B CloudFront "request could not be satisfied" dangling signature, and all three sit on Fortune's own CloudFront/AWS infrastructure.
+- **I22 (MEDIUM -> LOW):** /sponsored/ re-probed = 200 (226,132 B) public sponsored-content landing page (" | Fortune"), no hidden data.
 
 ## Reproduction notes
 
