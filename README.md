@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| aclu.org | 14 | 0 | 0 | 2 | 12 | top-websites gist (no active program match) |
 | freshbooks.com | 27 | 0 | 1 | 25 | 1 | top-websites gist (no active program match) |
 | thingiverse.com | 40 | 0 | 1 | 36 | 3 | top-websites gist (no active program match) |
 | cdbaby.com | 9 | 2 | 0 | 5 | 2 | top-websites gist (no active program match) |
