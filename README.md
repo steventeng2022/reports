@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| zazzle.com | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |
 | imore.com | 8 | 0 | 3 | 3 | 2 | top-websites gist (no active program match) |
 | last.fm | 20 | 0 | 0 | 17 | 3 | top-websites gist (no active program match) |
 | s.ytimg.com | 4 | 0 | 0 | 3 | 1 | top-websites gist (no active program match) |
