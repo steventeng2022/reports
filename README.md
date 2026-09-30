@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| avvo.com | 7 | 0 | 0 | 5 | 2 | top-websites gist (no active program match) |
 | news.discovery.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | digiday.com | 20 | 0 | 0 | 16 | 4 | top-websites gist (no active program match) |
 | globalsign.com | 39 | 0 | 0 | 34 | 5 | top-websites gist (no active program match) |
