@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| leparisien.fr | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | static.googleusercontent.com | 34 | 0 | 0 | 33 | 1 | top-websites gist (no active program match) |
 | vmware.com | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |
 | google.ch | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
