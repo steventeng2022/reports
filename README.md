@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| change.org | 16 | 0 | 6 | 6 | 4 | top-websites gist (no active program match) |
 | 1.gravatar.com | 6 | 0 | 0 | 2 | 4 | top-websites gist (no active program match) |
 | capterra.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | barnesandnoble.com | 9 | 0 | 1 | 7 | 1 | top-websites gist (no active program match) |
