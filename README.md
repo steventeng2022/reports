@@ -5,19 +5,19 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 16672** (High: 6, Medium: 235, Low: 4847, Info: 11584)
+**Total findings across all sites: 16835** (High: 6, Medium: 235, Low: 4980, Info: 11614)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
-| elegantthemes.com | 33 | 26 | 1 | 4 | 2 | top-websites gist (no active program match) |
-| google.ie | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
+| elegantthemes.com | 33 | 0 | 0 | 31 | 2 | top-websites gist (no active program match) |
+| google.ie | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
 | xinhuanet.com | 8 | 0 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | tinyurl.com | 9 | 0 | 0 | 9 | 0 | TinyURL |
-| stocktwits.com | 32 | 30 | 0 | 2 | 0 | top-websites gist (no active program match) |
-| nfl.com | 17 | 0 | 1 | 6 | 10 | top-websites gist (no active program match) |
-| br.linkedin.com | 12 | 1 | 0 | 10 | 1 | top-websites gist (no active program match) |
-| ubuntu.com | 14 | 0 | 1 | 12 | 1 | top-websites gist (no active program match) |
-| theglobeandmail.com | 9 | 0 | 1 | 4 | 4 | top-websites gist (no active program match) |
+| stocktwits.com | 32 | 0 | 0 | 32 | 0 | top-websites gist (no active program match) |
+| nfl.com | 17 | 0 | 0 | 7 | 10 | top-websites gist (no active program match) |
+| br.linkedin.com | 12 | 0 | 0 | 11 | 1 | top-websites gist (no active program match) |
+| ubuntu.com | 14 | 0 | 0 | 13 | 1 | top-websites gist (no active program match) |
+| theglobeandmail.com | 9 | 0 | 0 | 5 | 4 | top-websites gist (no active program match) |
 | oprah.com | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | louvre.fr | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | googleads.g.doubleclick.net | 6 | 0 | 0 | 5 | 1 | Google |

@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 1, Low: 4, Info: 4)
+Total findings: **9** (High: 0, Medium: 0, Low: 5, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Public partners page from robots.txt (no hidden data) | CWE-538 |
 | 2 | low | H4 | No clickjacking protection | CWE-1023 |
 | 3 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 4 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
@@ -28,7 +28,7 @@ Total findings: **9** (High: 0, Medium: 1, Low: 4, Info: 4)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Public partners page from robots.txt (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /partners/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -72,6 +72,10 @@ Total findings: **9** (High: 0, Medium: 1, Low: 4, Info: 4)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://www.theglobeandmail.com/humans.txt returned 200 (370 bytes) with a matching signature.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /partners/ re-probed = 301 -> https://www.theglobeandmail.com/partners/ = 200 (816,620 B) title "Partners - The Globe and Mail" - live public partner page, no hidden data.
 
 ## Reproduction notes
 

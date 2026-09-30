@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **14** (High: 0, Medium: 1, Low: 12, Info: 1)
+Total findings: **14** (High: 0, Medium: 0, Low: 13, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Public search page from robots.txt (no hidden data) | CWE-538 |
 | 2 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -33,7 +33,7 @@ Total findings: **14** (High: 0, Medium: 1, Low: 12, Info: 1)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Public search page from robots.txt (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /search which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -102,6 +102,10 @@ Total findings: **14** (High: 0, Medium: 1, Low: 12, Info: 1)
 
 - **CWE:** CWE-200
 - **Detail:** Server header: nginx/1.14.0 (Ubuntu)
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /search re-probed = 200 (61,726 B) "Search results | Ubuntu" public search page (nginx/1.14.0); ?q= token reflects in the search-results-for title text - public search, no hidden data.
 
 ## Reproduction notes
 

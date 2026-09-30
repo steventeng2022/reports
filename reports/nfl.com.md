@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 1, Low: 6, Info: 10)
+Total findings: **17** (High: 0, Medium: 0, Low: 7, Info: 10)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Public site page from robots.txt (no hidden data) | CWE-538 |
 | 2 | low | T3 | HTTP redirect does not go to HTTPS | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -36,7 +36,7 @@ Total findings: **17** (High: 0, Medium: 1, Low: 6, Info: 10)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Public site page from robots.txt (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /_libraries/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -120,6 +120,10 @@ Total findings: **17** (High: 0, Medium: 1, Low: 6, Info: 10)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://www.nfl.com/sitemap.xml returns a sitemap with 1624 URLs, aiding enumeration of the site surface.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /_libraries/ re-probed = 200 (203,695 B) istio-envoy full web page with empty title/description/og meta (doubleclick/onesignal/adobedtm preconnects, cookie-consent footer) - public site page, not hidden data.
 
 ## Reproduction notes
 
