@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| goodreads.com | 9 | 0 | 3 | 5 | 1 | top-websites gist (no active program match) |
 | marthastewart.com | 5 | 0 | 0 | 2 | 3 | top-websites gist (no active program match) |
 | nba.com | 16 | 0 | 3 | 12 | 1 | top-websites gist (no active program match) |
 | fonts.gstatic.com | 34 | 0 | 0 | 33 | 1 | top-websites gist (no active program match) |
