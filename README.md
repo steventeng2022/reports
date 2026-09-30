@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| raspberrypi.org | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
 | help.ubuntu.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | pewinternet.org | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
 | maxcdn.bootstrapcdn.com | 13 | 0 | 0 | 3 | 10 | BootstrapCDN |
