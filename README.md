@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| rt.com | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
 | themeforest.net | 28 | 4 | 0 | 23 | 1 | top-websites gist (no active program match) |
 | gizmodo.com | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |
 | 1.envato.market | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
