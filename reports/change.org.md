@@ -12,16 +12,16 @@
 
 ## Summary
 
-Total findings: **16** (High: 0, Medium: 6, Low: 6, Info: 4)
+Total findings: **16** (High: 0, Medium: 0, Low: 12, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
-| 2 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
-| 3 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 4 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 5 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 6 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | I4 | Search-box value echo (quoted attr, CF WAF 403 919B on specials) | CWE-79 |
+| 2 | low | I4 | Search-box value echo (quoted attr, CF WAF 403 919B on specials) | CWE-79 |
+| 3 | low | S1 | First-party nginx redirect to www / CF 403 (not dangling) | CWE-916 |
+| 4 | low | S1 | First-party nginx redirect to www / CF 403 (not dangling) | CWE-916 |
+| 5 | low | S1 | First-party nginx redirect to www / CF 403 (not dangling) | CWE-916 |
+| 6 | low | S1 | First-party nginx redirect to www / CF 403 (not dangling) | CWE-916 |
 | 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 8 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 9 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -35,32 +35,32 @@ Total findings: **16** (High: 0, Medium: 6, Low: 6, Info: 4)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Reflected input in HTML attribute context (`I4`)
+### 1. [LOW] Search-box value echo (quoted attr, CF WAF 403 919B on specials) (`I4`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.change.org/search reflects the token inside a quoted attribute; escape boundary should be verified (quote/angle breakout tested).
 
-### 2. [MEDIUM] Reflected input in HTML attribute context (`I4`)
+### 2. [LOW] Search-box value echo (quoted attr, CF WAF 403 919B on specials) (`I4`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://www.change.org/search reflects the token inside a quoted attribute; escape boundary should be verified (quote/angle breakout tested).
 
-### 3. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 3. [LOW] First-party nginx redirect to www / CF 403 (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain dev.change.org resolves to 65.9.180.101 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 4. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 4. [LOW] First-party nginx redirect to www / CF 403 (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain staging.change.org resolves to 65.9.180.11 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 5. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 5. [LOW] First-party nginx redirect to www / CF 403 (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain old.change.org resolves to 65.9.180.115 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 6. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 6. [LOW] First-party nginx redirect to www / CF 403 (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain api.change.org resolves to 3.169.121.53 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -114,6 +114,11 @@ Total findings: **16** (High: 0, Medium: 6, Low: 6, Info: 4)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://www.change.org/.well-known/security.txt returned 200 (206 bytes) with a matching signature.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I4 x2 (MEDIUM -> LOW):** www.change.org/search?q= re-probed: plain token echoed into the search input value="..." attribute (193,117 B); quote payload -> 403 (919 B) Cloudflare WAF; angle-bracket payload -> 403 (919 B) WAF = specials eaten before the app, no breakout.
+- **S1 x4 (MEDIUM -> LOW):** dev/staging/old.change.org = https 301 (nginx/1.31.3) -> https://www.change.org/ (first-party redirects); api.change.org = 403 (50 B) CloudFront - none show the 915 B dangling CloudFront signature.
 
 ## Reproduction notes
 

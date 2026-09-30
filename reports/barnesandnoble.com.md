@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 1, Low: 7, Info: 1)
+Total findings: **9** (High: 0, Medium: 0, Low: 8, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | Public cart page from robots.txt (no hidden data) | CWE-538 |
 | 2 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -28,7 +28,7 @@ Total findings: **9** (High: 0, Medium: 1, Low: 7, Info: 1)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Public cart page from robots.txt (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /cart which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -72,6 +72,10 @@ Total findings: **9** (High: 0, Medium: 1, Low: 7, Info: 1)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.barnesandnoble.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /cart re-probed = 200 (1,422,588 B) title "Cart | Barnes "&amp;" Noble" (cloudflare) - public cart page, no hidden data.
 
 ## Reproduction notes
 

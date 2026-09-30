@@ -12,13 +12,13 @@
 
 ## Summary
 
-Total findings: **32** (High: 0, Medium: 3, Low: 25, Info: 4)
+Total findings: **32** (High: 0, Medium: 0, Low: 28, Info: 4)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
-| 3 | medium | I4 | Reflected input in HTML attribute context | CWE-79 |
+| 1 | low | I22 | /channels/ now 301 to discord.com (no hidden data) | CWE-538 |
+| 2 | low | I4 | Search-box value echo (quoted attr, quote payload 404s) | CWE-79 |
+| 3 | low | I4 | Search-box value echo (quoted attr, quote payload 404s) | CWE-79 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -51,17 +51,17 @@ Total findings: **32** (High: 0, Medium: 3, Low: 25, Info: 4)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] /channels/ now 301 to discord.com (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /channels/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Reflected input in HTML attribute context (`I4`)
+### 2. [LOW] Search-box value echo (quoted attr, quote payload 404s) (`I4`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter query on https://discord.com/search reflects the token inside a quoted attribute; escape boundary should be verified (quote/angle breakout tested).
 
-### 3. [MEDIUM] Reflected input in HTML attribute context (`I4`)
+### 3. [LOW] Search-box value echo (quoted attr, quote payload 404s) (`I4`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter query on https://discord.com/search reflects the token inside a quoted attribute; escape boundary should be verified (quote/angle breakout tested).
@@ -210,6 +210,11 @@ Total findings: **32** (High: 0, Medium: 3, Low: 25, Info: 4)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://discord.com/.well-known/openid-configuration returned 200 (499 bytes) with a matching signature.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I4 x2 (MEDIUM -> LOW):** discord.com/search?query= re-probed: plain token echoed into the search form input value="..." attribute (80,004 B, quoted attr) + og:url meta (URL-encoded); quote payload -> 404 (45,987 B), angle-bracket payload -> 404 (46,002 B) with the payload only URL-encoded inside og:url = no breakout (standard search-box echo).
+- **I22 (MEDIUM -> LOW):** /channels/ re-probed = 301 (cloudflare) -> https://discord.com (scanner 200 was transient) - no hidden data.
 
 ## Reproduction notes
 

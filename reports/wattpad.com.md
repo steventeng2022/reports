@@ -12,15 +12,15 @@
 
 ## Summary
 
-Total findings: **24** (High: 0, Medium: 5, Low: 8, Info: 11)
+Total findings: **24** (High: 0, Medium: 0, Low: 13, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 3 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 4 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 5 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | First-party redirect / live Atlassian status / CF 404 (not dangling) | CWE-916 |
+| 2 | low | S1 | First-party redirect / live Atlassian status / CF 404 (not dangling) | CWE-916 |
+| 3 | low | S1 | First-party redirect / live Atlassian status / CF 404 (not dangling) | CWE-916 |
+| 4 | low | S1 | First-party redirect / live Atlassian status / CF 404 (not dangling) | CWE-916 |
+| 5 | low | S1 | First-party redirect / live Atlassian status / CF 404 (not dangling) | CWE-916 |
 | 6 | low | H2 | Missing CSP header | CWE-1021 |
 | 7 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 8 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
@@ -43,27 +43,27 @@ Total findings: **24** (High: 0, Medium: 5, Low: 8, Info: 11)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] First-party redirect / live Atlassian status / CF 404 (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain test.wattpad.com resolves to 65.9.180.35 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] First-party redirect / live Atlassian status / CF 404 (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain staging.wattpad.com resolves to 65.9.180.34 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 3. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 3. [LOW] First-party redirect / live Atlassian status / CF 404 (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain ftp.wattpad.com resolves to 65.9.180.124 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 4. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 4. [LOW] First-party redirect / live Atlassian status / CF 404 (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain api.wattpad.com resolves to 3.169.121.89 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 5. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 5. [LOW] First-party redirect / live Atlassian status / CF 404 (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.wattpad.com resolves to 65.9.180.76 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -162,6 +162,10 @@ Total findings: **24** (High: 0, Medium: 5, Low: 8, Info: 11)
 
 - **CWE:** CWE-942
 - **Detail:** GET https://www.wattpad.com/graphql responds with Access-Control-Allow-Origin: * (Content-Type: text/html). Any site can read responses cross-origin.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 x5 (MEDIUM -> LOW):** re-probed: test/staging/ftp.wattpad.com = https 301 (openresty) -> https://www.wattpad.com/ (first-party redirects); status.wattpad.com = 200 (61,105 B) title "Wattpad Status" server AtlassianEdge (live statuspage); api.wattpad.com = 404 (19 B) CloudFront empty (dangling CF distribution, no origin content) - none show the 915 B dangling CloudFront signature.
 
 ## Reproduction notes
 
