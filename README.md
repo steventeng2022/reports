@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| dafont.com | 11 | 0 | 1 | 7 | 3 | top-websites gist (no active program match) |
 | material.io | 8 | 0 | 1 | 4 | 3 | Google |
 | raspberrypi.org | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
 | help.ubuntu.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
