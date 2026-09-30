@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| nba.com | 16 | 0 | 3 | 12 | 1 | top-websites gist (no active program match) |
 | fonts.gstatic.com | 34 | 0 | 0 | 33 | 1 | top-websites gist (no active program match) |
 | change.org | 16 | 0 | 0 | 12 | 4 | top-websites gist (no active program match) |
 | 1.gravatar.com | 6 | 0 | 0 | 2 | 4 | top-websites gist (no active program match) |
