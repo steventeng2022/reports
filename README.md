@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| xinhuanet.com | 8 | 0 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | tinyurl.com | 9 | 0 | 0 | 9 | 0 | TinyURL |
 | stocktwits.com | 32 | 30 | 0 | 2 | 0 | top-websites gist (no active program match) |
 | nfl.com | 17 | 0 | 1 | 6 | 10 | top-websites gist (no active program match) |
