@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 1, Low: 4, Info: 3)
+Total findings: **8** (High: 0, Medium: 0, Low: 5, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | /search.html 301 to m3.material.io public search (no hidden data) | CWE-538 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | I10 | OpenAPI spec exposed | CWE-538 |
@@ -27,7 +27,7 @@ Total findings: **8** (High: 0, Medium: 1, Low: 4, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] /search.html 301 to m3.material.io public search (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /search.html which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -66,6 +66,10 @@ Total findings: **8** (High: 0, Medium: 1, Low: 4, Info: 3)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://m3.material.io/sitemap.xml returns a sitemap with 190 URLs, aiding enumeration of the site surface.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /search.html re-probed = 301 (Google Frontend) -> https://m3.material.io/search.html (public search page) - no hidden data.
 
 ## Reproduction notes
 

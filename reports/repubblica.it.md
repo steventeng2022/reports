@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 2, Low: 5, Info: 1)
+Total findings: **8** (High: 0, Medium: 0, Low: 7, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | CF 403 23B / CF 404 empty (not dangling) | CWE-916 |
+| 2 | low | S1 | CF 403 23B / CF 404 empty (not dangling) | CWE-916 |
 | 3 | low | H1 | Missing HSTS header | CWE-319 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
 | 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -27,12 +27,12 @@ Total findings: **8** (High: 0, Medium: 2, Low: 5, Info: 1)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] CF 403 23B / CF 404 empty (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain api.repubblica.it resolves to 54.192.248.20 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] CF 403 23B / CF 404 empty (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain shop.repubblica.it resolves to 54.192.248.60 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -66,6 +66,10 @@ Total findings: **8** (High: 0, Medium: 2, Low: 5, Info: 1)
 
 - **CWE:** CWE-1194
 - **Detail:** No X-Content-Type-Options on https://www.repubblica.it/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 x2 (MEDIUM -> LOW):** api.repubblica.it re-probed = CF 301 -> https 403 (23 B, CloudFront); shop.repubblica.it = CF 301 -> https 404 (0 B, CloudFront) - both match the CF error/404 fingerprint, none show the 915 B dangling CloudFront signature.
 
 ## Reproduction notes
 

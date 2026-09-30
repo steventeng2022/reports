@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **11** (High: 0, Medium: 1, Low: 7, Info: 3)
+Total findings: **11** (High: 0, Medium: 0, Low: 8, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | /download/ empty 200 page (no hidden data) | CWE-538 |
 | 2 | low | H2 | Missing CSP header | CWE-1021 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | C1 | Cookies without Secure flag | CWE-614 |
@@ -30,7 +30,7 @@ Total findings: **11** (High: 0, Medium: 1, Low: 7, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] /download/ empty 200 page (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /download/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -84,6 +84,10 @@ Total findings: **11** (High: 0, Medium: 1, Low: 7, Info: 3)
 
 - **CWE:** CWE-200
 - **Detail:** Server header: Apache/2.4.68
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /download/ re-probed = 200 (0 B, text/html, Apache/2.4.68) empty page - no hidden data.
 
 ## Reproduction notes
 

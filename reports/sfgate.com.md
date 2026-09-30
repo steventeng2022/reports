@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 1, Low: 5, Info: 2)
+Total findings: **8** (High: 0, Medium: 0, Low: 6, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | /api CF client-challenge page (no hidden data) | CWE-538 |
 | 2 | low | H2 | Missing CSP header | CWE-1021 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | C1 | Cookies without Secure flag | CWE-614 |
@@ -27,7 +27,7 @@ Total findings: **8** (High: 0, Medium: 1, Low: 5, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] /api CF client-challenge page (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /api which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -66,6 +66,10 @@ Total findings: **8** (High: 0, Medium: 1, Low: 5, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.sfgate.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /api re-probed = 200 (3,038 B) title "Client Challenge" (Cloudflare JS challenge) - no hidden data.
 
 ## Reproduction notes
 

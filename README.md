@@ -5,19 +5,19 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 17562** (High: 6, Medium: 239, Low: 5534, Info: 11783)
+**Total findings across all sites: 17717** (High: 6, Medium: 239, Low: 5671, Info: 11801)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
-| statista.com | 35 | 0 | 3 | 32 | 0 | top-websites gist (no active program match) |
-| rebrand.ly | 31 | 30 | 0 | 1 | 0 | top-websites gist (no active program match) |
+| statista.com | 35 | 0 | 0 | 35 | 0 | top-websites gist (no active program match) |
+| rebrand.ly | 31 | 0 | 0 | 31 | 0 | top-websites gist (no active program match) |
 | ssl.gstatic.com | 34 | 0 | 0 | 33 | 1 | top-websites gist (no active program match) |
-| repubblica.it | 8 | 0 | 2 | 5 | 1 | top-websites gist (no active program match) |
+| repubblica.it | 8 | 0 | 0 | 7 | 1 | top-websites gist (no active program match) |
 | geek.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | boardgamegeek.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
-| sfgate.com | 8 | 0 | 1 | 5 | 2 | top-websites gist (no active program match) |
-| dafont.com | 11 | 0 | 1 | 7 | 3 | top-websites gist (no active program match) |
-| material.io | 8 | 0 | 1 | 4 | 3 | Google |
+| sfgate.com | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
+| dafont.com | 11 | 0 | 0 | 8 | 3 | top-websites gist (no active program match) |
+| material.io | 8 | 0 | 0 | 5 | 3 | Google |
 | raspberrypi.org | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
 | help.ubuntu.com | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | pewinternet.org | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |

@@ -12,13 +12,13 @@
 
 ## Summary
 
-Total findings: **35** (High: 0, Medium: 3, Low: 32, Info: 0)
+Total findings: **35** (High: 0, Medium: 0, Low: 35, Info: 0)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
-| 3 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | Live Okta OAuth / Atlassian Jira / first-party redirect (not dangling) | CWE-916 |
+| 2 | low | S1 | Live Okta OAuth / Atlassian Jira / first-party redirect (not dangling) | CWE-916 |
+| 3 | low | S1 | Live Okta OAuth / Atlassian Jira / first-party redirect (not dangling) | CWE-916 |
 | 4 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 5 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 6 | low | I22 | Protected path listed in robots.txt | CWE-538 |
@@ -54,17 +54,17 @@ Total findings: **35** (High: 0, Medium: 3, Low: 32, Info: 0)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] Live Okta OAuth / Atlassian Jira / first-party redirect (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain stage.statista.com resolves to 65.9.180.94 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] Live Okta OAuth / Atlassian Jira / first-party redirect (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain jira.statista.com resolves to 65.9.180.21 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
 
-### 3. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 3. [LOW] Live Okta OAuth / Atlassian Jira / first-party redirect (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain api.statista.com resolves to 65.9.180.20 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -228,6 +228,10 @@ Total findings: **35** (High: 0, Medium: 3, Low: 32, Info: 0)
 
 - **CWE:** CWE-918
 - **Detail:** Requesting the origin with Host: statista.com + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 x3 (MEDIUM -> LOW):** stage.statista.com re-probed = CF 301 -> https, then AWS lambda-url 302 -> https://apps.statista.com/oauth2/v1/authorize?client_id=0oamgj6a2g0PLvBU6417&...&scope=openid%20okta.users.read (LIVE Okta OAuth, state encodes issuerDomain stage.statista.com - first-party); jira.statista.com = CF 301 -> https 301 (AmazonS3) -> https://statista.atlassian.net// (first-party Atlassian); api.statista.com = CF 301 -> https 301 -> https://www.statista.com/ (first-party) - none show the 915 B dangling CloudFront signature.
 
 ## Reproduction notes
 
