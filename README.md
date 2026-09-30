@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| ko-fi.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | youcaring.com | 8 | 0 | 0 | 4 | 4 | top-websites gist (no active program match) |
 | aclu.org | 14 | 0 | 0 | 2 | 12 | top-websites gist (no active program match) |
 | freshbooks.com | 27 | 0 | 1 | 25 | 1 | top-websites gist (no active program match) |
