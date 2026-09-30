@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| bol.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
 | news.nationalgeographic.com | 41 | 0 | 1 | 35 | 5 | top-websites gist (no active program match) |
 | s.w.org | 10 | 0 | 0 | 7 | 3 | WordPress |
 | agoda.com | 9 | 0 | 2 | 5 | 2 | top-websites gist (no active program match) |
