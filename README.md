@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| audible.com | 16 | 0 | 1 | 14 | 1 | top-websites gist (no active program match) |
 | bitly.com | 12 | 0 | 4 | 4 | 4 | top-websites gist (no active program match) |
 | leparisien.fr | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | static.googleusercontent.com | 34 | 0 | 0 | 33 | 1 | top-websites gist (no active program match) |
