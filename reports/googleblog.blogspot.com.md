@@ -12,19 +12,19 @@
 
 ## Summary
 
-Total findings: **35** (High: 0, Medium: 9, Low: 23, Info: 3)
+Total findings: **35** (High: 0, Medium: 0, Low: 32, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
-| 2 | medium | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
-| 3 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
-| 4 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
-| 5 | medium | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
-| 6 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
-| 7 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
-| 8 | medium | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
-| 9 | medium | I20 | CORS reflects attacker-controlled Origin | CWE-942 |
+| 1 | low | I20 | ACAO reflects Origin on GET, no ACAC, public content | CWE-942 |
+| 2 | low | I20 | Preflight ACAO reflection (no ACAC) | CWE-942 |
+| 3 | low | I20 | ACAO reflects Origin on GET, no ACAC, public content | CWE-942 |
+| 4 | low | I20 | ACAO reflects Origin on GET, no ACAC, public content | CWE-942 |
+| 5 | low | I20 | Preflight ACAO reflection (no ACAC) | CWE-942 |
+| 6 | low | I20 | ACAO reflects Origin on GET, no ACAC, public content | CWE-942 |
+| 7 | low | I20 | ACAO reflects Origin on GET, no ACAC, public content | CWE-942 |
+| 8 | low | I20 | Preflight ACAO reflection (no ACAC) | CWE-942 |
+| 9 | low | I20 | ACAO reflects Origin on GET, no ACAC, public content | CWE-942 |
 | 10 | low | H1 | Missing HSTS header | CWE-319 |
 | 11 | low | H4 | No clickjacking protection | CWE-1023 |
 | 12 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -54,47 +54,47 @@ Total findings: **35** (High: 0, Medium: 9, Low: 23, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] CORS reflects attacker-controlled Origin (`I20`)
+### 1. [LOW] ACAO reflects Origin on GET, no ACAC, public content (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://blog.google/ with Origin: https://evil-cors.example returned Access-Control-Allow-Origin: https://evil-cors.example. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 2. [MEDIUM] CORS reflects attacker-controlled Origin (preflight) (`I20`)
+### 2. [LOW] Preflight ACAO reflection (no ACAC) (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://blog.google/ with Origin: https://evil-cors.example (OPTIONS preflight) returned Access-Control-Allow-Origin: https://evil-cors.example. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 3. [MEDIUM] CORS reflects attacker-controlled Origin (`I20`)
+### 3. [LOW] ACAO reflects Origin on GET, no ACAC, public content (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://blog.google/ with Origin: null returned Access-Control-Allow-Origin: null. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 4. [MEDIUM] CORS reflects attacker-controlled Origin (`I20`)
+### 4. [LOW] ACAO reflects Origin on GET, no ACAC, public content (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://blog.google/api with Origin: https://evil-cors.example returned Access-Control-Allow-Origin: https://evil-cors.example. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 5. [MEDIUM] CORS reflects attacker-controlled Origin (preflight) (`I20`)
+### 5. [LOW] Preflight ACAO reflection (no ACAC) (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://blog.google/api with Origin: https://evil-cors.example (OPTIONS preflight) returned Access-Control-Allow-Origin: https://evil-cors.example. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 6. [MEDIUM] CORS reflects attacker-controlled Origin (`I20`)
+### 6. [LOW] ACAO reflects Origin on GET, no ACAC, public content (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://blog.google/api with Origin: null returned Access-Control-Allow-Origin: null. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 7. [MEDIUM] CORS reflects attacker-controlled Origin (`I20`)
+### 7. [LOW] ACAO reflects Origin on GET, no ACAC, public content (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://blog.google/graphql with Origin: https://evil-cors.example returned Access-Control-Allow-Origin: https://evil-cors.example. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 8. [MEDIUM] CORS reflects attacker-controlled Origin (preflight) (`I20`)
+### 8. [LOW] Preflight ACAO reflection (no ACAC) (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://blog.google/graphql with Origin: https://evil-cors.example (OPTIONS preflight) returned Access-Control-Allow-Origin: https://evil-cors.example. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 9. [MEDIUM] CORS reflects attacker-controlled Origin (`I20`)
+### 9. [LOW] ACAO reflects Origin on GET, no ACAC, public content (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://blog.google/graphql with Origin: null returned Access-Control-Allow-Origin: null. Browsers will expose cross-origin responses to any origin the attacker chooses.
@@ -228,6 +228,10 @@ Total findings: **35** (High: 0, Medium: 9, Low: 23, Info: 3)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://blog.google/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I20 x9 (MEDIUM -> LOW):** re-probed blog.google (the host actually tested by the report): GET / with evil Origin returns 200 (364,792 B, Google Frontend, public news page) with ACAO reflecting the Origin but NO Access-Control-Allow-Credentials on any variant (evil / null / no-origin all 364,792 B); without Origin the default is ACAO=*; /api and /graphql return 308 -> trailing-slash redirects (ACAO reflected on the redirect hop only). No ACAC on the actual response and content is public -> no exploitable CORS misconfiguration.
 
 ## Reproduction notes
 

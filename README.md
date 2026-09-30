@@ -5,20 +5,20 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 17717** (High: 6, Medium: 239, Low: 5671, Info: 11801)
+**Total findings across all sites: 17850** (High: 7, Medium: 239, Low: 5763, Info: 11841)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
 | npr.org | 9 | 0 | 0 | 8 | 1 | NPR |
 | rt.com | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
-| themeforest.net | 28 | 4 | 0 | 23 | 1 | top-websites gist (no active program match) |
+| themeforest.net | 28 | 0 | 0 | 27 | 1 | top-websites gist (no active program match) |
 | gizmodo.com | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |
 | 1.envato.market | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
-| cafepress.com | 15 | 0 | 1 | 3 | 11 | top-websites gist (no active program match) |
+| cafepress.com | 15 | 1 | 0 | 3 | 11 | top-websites gist (no active program match) |
 | ocw.mit.edu | 9 | 0 | 0 | 3 | 6 | top-websites gist (no active program match) |
 | use.fontawesome.com | 11 | 0 | 0 | 3 | 8 | top-websites gist (no active program match) |
-| googleblog.blogspot.com | 35 | 0 | 9 | 23 | 3 | top-websites gist (no active program match) |
-| bitpay.com | 3 | 0 | 1 | 1 | 1 | top-websites gist (no active program match) |
+| googleblog.blogspot.com | 35 | 0 | 0 | 32 | 3 | top-websites gist (no active program match) |
+| bitpay.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |
 | wa.me | 3 | 0 | 0 | 1 | 2 | top-websites gist (no active program match) |
 | michigan.gov | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | statista.com | 35 | 0 | 0 | 35 | 0 | top-websites gist (no active program match) |

@@ -12,14 +12,14 @@
 
 ## Summary
 
-Total findings: **28** (High: 4, Medium: 0, Low: 23, Info: 1)
+Total findings: **28** (High: 0, Medium: 0, Low: 27, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 2 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 3 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
-| 4 | high | I1 | Reflected XSS in JavaScript context | CWE-79 |
+| 1 | low | I1 | CF managed challenge (token only in cUPMDTk JSON, no breakout) | CWE-79 |
+| 2 | low | I1 | CF managed challenge (token only in cUPMDTk JSON, no breakout) | CWE-79 |
+| 3 | low | I1 | CF managed challenge (token only in cUPMDTk JSON, no breakout) | CWE-79 |
+| 4 | low | I1 | CF managed challenge (token only in cUPMDTk JSON, no breakout) | CWE-79 |
 | 5 | low | H2 | Missing CSP header | CWE-1021 |
 | 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 7 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -47,22 +47,22 @@ Total findings: **28** (High: 4, Medium: 0, Low: 23, Info: 1)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 1. [LOW] CF managed challenge (token only in cUPMDTk JSON, no breakout) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://themeforest.net/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 2. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 2. [LOW] CF managed challenge (token only in cUPMDTk JSON, no breakout) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter query on https://themeforest.net/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 3. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 3. [LOW] CF managed challenge (token only in cUPMDTk JSON, no breakout) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter q on https://themeforest.net/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
 
-### 4. [HIGH] Reflected XSS in JavaScript context (`I1`)
+### 4. [LOW] CF managed challenge (token only in cUPMDTk JSON, no breakout) (`I1`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter query on https://themeforest.net/search reflects unescaped input inside <script>. Payload: Zx7qK2v9Bm (also "\"' onerror=\"alert(1)//").
@@ -186,6 +186,10 @@ Total findings: **28** (High: 4, Medium: 0, Low: 23, Info: 1)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://themeforest.net/.well-known/security.txt returned 200 (277 bytes) with a matching signature.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I1 x4 (HIGH -> LOW):** re-probed /search?q=Zx7qK2v9Bm and /search?query=Zx7qK2v9Bm = 403 (5,776-5,942 B) Cloudflare "Just a moment..." MANAGED challenge (cType:"managed"); the token appears only inside the challenge JSON cUPMDTk:""/search?q=Zx7qK2v9Bm\u0026__cf_chl_tk=..."" with \u0026 escaping (not raw HTML/JS context); the quote-break payload shows up only URL-encoded (%22%27%3E%3Cscript%3Ealert(1)%3C%2Fscript%3E) inside cUPMDTk (alert(1) at idx 2731, no literal <script> breakout in body) - scanner over-flagged the challenge script.
 
 ## Reproduction notes
 

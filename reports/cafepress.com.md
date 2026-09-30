@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **15** (High: 0, Medium: 1, Low: 3, Info: 11)
+Total findings: **15** (High: 1, Medium: 0, Low: 3, Info: 11)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | high | S1 | Dangling CloudFront 403 (915B signature, takeover candidate) | CWE-916 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -34,7 +34,7 @@ Total findings: **15** (High: 0, Medium: 1, Low: 3, Info: 11)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [HIGH] Dangling CloudFront 403 (915B signature, takeover candidate) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain shop.cafepress.com resolves to 54.192.248.103 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 403
@@ -108,6 +108,10 @@ Total findings: **15** (High: 0, Medium: 1, Low: 3, Info: 11)
 
 - **CWE:** CWE-942
 - **Detail:** GET https://cafepress.com/graphql responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=UTF-8). Any site can read responses cross-origin.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 (MEDIUM -> HIGH, promoted):** shop.cafepress.com re-probed: https = TLS handshake failure (SSL alert 40, dead SNI); http (port 80) = 403 with body exactly 915 B, x-cache:"Error from cloudfront", server CloudFront - byte-identical to the known dangling ftp.strava.com signature except the random Request ID (md5 705844220f90df615184d42c4555f307 vs 8288f3ea630c6f1dc1b6dcfb988fa52b, both 915 B) - dangling CloudFront takeover candidate.
 
 ## Reproduction notes
 

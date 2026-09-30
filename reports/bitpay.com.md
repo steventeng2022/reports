@@ -12,17 +12,17 @@
 
 ## Summary
 
-Total findings: **3** (High: 0, Medium: 1, Low: 1, Info: 1)
+Total findings: **3** (High: 0, Medium: 0, Low: 2, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | Live Atlassian statuspage (not dangling) | CWE-916 |
 | 2 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
 | 3 | info | H5 | Missing Referrer-Policy | CWE-200 |
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] Live Atlassian statuspage (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.bitpay.com resolves to 54.192.248.124 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -36,6 +36,10 @@ Total findings: **3** (High: 0, Medium: 1, Low: 1, Info: 1)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.bitpay.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 (MEDIUM -> LOW):** status.bitpay.com re-probed (http + https) = 200 (132,804 B) server AtlassianEdge, title "BitPay Inc Status" (live Atlassian status page, ACAO=*) - live first-party platform page, not the 915 B dangling CloudFront signature.
 
 ## Reproduction notes
 
