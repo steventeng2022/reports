@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| presseportal.de | 6 | 0 | 1 | 3 | 2 | top-websites gist (no active program match) |
 | upload.wikimedia.org | 36 | 0 | 1 | 33 | 2 | top-websites gist (no active program match) |
 | uk.linkedin.com | 6 | 2 | 0 | 3 | 1 | top-websites gist (no active program match) |
 | lh3.ggpht.com | 13 | 0 | 0 | 3 | 10 | top-websites gist (no active program match) |
