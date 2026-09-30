@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| cafepress.com | 15 | 0 | 1 | 3 | 11 | top-websites gist (no active program match) |
 | ocw.mit.edu | 9 | 0 | 0 | 3 | 6 | top-websites gist (no active program match) |
 | use.fontawesome.com | 11 | 0 | 0 | 3 | 8 | top-websites gist (no active program match) |
 | googleblog.blogspot.com | 35 | 0 | 9 | 23 | 3 | top-websites gist (no active program match) |
