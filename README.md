@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| bitpay.com | 3 | 0 | 1 | 1 | 1 | top-websites gist (no active program match) |
 | wa.me | 3 | 0 | 0 | 1 | 2 | top-websites gist (no active program match) |
 | michigan.gov | 5 | 0 | 0 | 3 | 2 | top-websites gist (no active program match) |
 | statista.com | 35 | 0 | 0 | 35 | 0 | top-websites gist (no active program match) |
