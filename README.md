@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| 4shared.com | 10 | 0 | 0 | 8 | 2 | top-websites gist (no active program match) |
 | npr.org | 9 | 0 | 0 | 8 | 1 | NPR |
 | rt.com | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
 | themeforest.net | 28 | 0 | 0 | 27 | 1 | top-websites gist (no active program match) |
