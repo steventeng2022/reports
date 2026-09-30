@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| 9to5mac.com | 14 | 0 | 0 | 11 | 3 | top-websites gist (no active program match) |
 | ft.com | 11 | 0 | 0 | 3 | 8 | Financial Times |
 | elegantthemes.com | 33 | 0 | 0 | 31 | 2 | top-websites gist (no active program match) |
 | google.ie | 13 | 0 | 0 | 9 | 4 | top-websites gist (no active program match) |
