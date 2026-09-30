@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **7** (High: 0, Medium: 1, Low: 3, Info: 3)
+Total findings: **7** (High: 0, Medium: 0, Low: 4, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | /esatv/layout/set now 301 to www host (no hidden data) | CWE-538 |
 | 2 | low | H2 | Missing CSP header | CWE-1021 |
 | 3 | low | H4 | No clickjacking protection | CWE-1023 |
 | 4 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -26,7 +26,7 @@ Total findings: **7** (High: 0, Medium: 1, Low: 3, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] /esatv/layout/set now 301 to www host (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /esatv/layout/set which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -60,6 +60,10 @@ Total findings: **7** (High: 0, Medium: 1, Low: 3, Info: 3)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.esa.int/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /esatv/layout/set re-probed = 301 -> https://www.esa.int/esatv/layout/set (www host) - no hidden data.
 
 ## Reproduction notes
 

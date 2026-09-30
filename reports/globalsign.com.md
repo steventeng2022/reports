@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **39** (High: 0, Medium: 1, Low: 33, Info: 5)
+Total findings: **39** (High: 0, Medium: 0, Low: 34, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | S1 | Live Atlassian Statuspage (not dangling) | CWE-916 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -58,7 +58,7 @@ Total findings: **39** (High: 0, Medium: 1, Low: 33, Info: 5)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 1. [LOW] Live Atlassian Statuspage (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.globalsign.com resolves to 3.169.121.94 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -252,6 +252,10 @@ Total findings: **39** (High: 0, Medium: 1, Low: 33, Info: 5)
 
 - **CWE:** CWE-200
 - **Detail:** GET https://www.globalsign.com/.well-known/security.txt returned 200 (133 bytes) with a matching signature.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 (MEDIUM -> LOW):** status.globalsign.com re-probed = https 200 (139,555 B) title "GMO GlobalSign Status" server AtlassianEdge = live Atlassian Statuspage (http 301 -> https) - first-party live infra, not dangling.
 
 ## Reproduction notes
 

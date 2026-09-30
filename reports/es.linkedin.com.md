@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **11** (High: 1, Medium: 0, Low: 9, Info: 1)
+Total findings: **11** (High: 0, Medium: 0, Low: 10, Info: 1)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I2 | Reflected XSS via attribute injection | CWE-79 |
+| 1 | low | I2 | Escaped reflection in /redirect link-error span (no breakout) | CWE-79 |
 | 2 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -30,7 +30,7 @@ Total findings: **11** (High: 1, Medium: 0, Low: 9, Info: 1)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS via attribute injection (`I2`)
+### 1. [LOW] Escaped reflection in /redirect link-error span (no breakout) (`I2`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://es.linkedin.com/redirect: injecting "\"' onerror=\"alert(1)//" yields an unquoted onerror handler. Event fires on render.
@@ -84,6 +84,10 @@ Total findings: **11** (High: 1, Medium: 0, Low: 9, Info: 1)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://es.linkedin.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I2 (HIGH -> LOW):** /redirect?url= re-probed = 200 (3,599 B) Spanish link-error page ("problema con el enlace seleccionado"); token reflects once inside <span class="t-bold"> ... </span> (TEXT context); attr payload verbatim inside that same span (3,611 B) - quotes inert in text content; angle-bracket payload HTML-escaped ("&lt;/span&gt;&lt;img src=x onerror=alert(1)&gt;", 3,636 B) = no tag breakout. Same verdict as br.linkedin W35 / uk.linkedin W36.
 
 ## Reproduction notes
 

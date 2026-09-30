@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **41** (High: 0, Medium: 1, Low: 35, Info: 5)
+Total findings: **41** (High: 0, Medium: 0, Low: 36, Info: 5)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | /ads/ now 301 to www.nationalgeographic.com (no hidden data) | CWE-538 |
 | 2 | low | H1 | Missing HSTS header | CWE-319 |
 | 3 | low | H2 | Missing CSP header | CWE-1021 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
@@ -60,7 +60,7 @@ Total findings: **41** (High: 0, Medium: 1, Low: 35, Info: 5)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] /ads/ now 301 to www.nationalgeographic.com (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /ads/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -264,6 +264,10 @@ Total findings: **41** (High: 0, Medium: 1, Low: 35, Info: 5)
 
 - **CWE:** CWE-942
 - **Detail:** GET https://www.nationalgeographic.com/graphql responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=iso-8859-1). Any site can read responses cross-origin.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /ads/ re-probed = 301 (243 B) Apache (CentOS) PHP/5.4.16 -> https://www.nationalgeographic.com/ (TLD home; scanner 200 was transient) - no hidden data.
 
 ## Reproduction notes
 

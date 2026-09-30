@@ -12,12 +12,12 @@
 
 ## Summary
 
-Total findings: **17** (High: 0, Medium: 2, Low: 6, Info: 9)
+Total findings: **17** (High: 0, Medium: 0, Low: 8, Info: 9)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
-| 2 | medium | S1 | Dangling subdomain served by third-party platform | CWE-916 |
+| 1 | low | I22 | Public CSRF-token JSON from robots.txt (low sensitivity) | CWE-538 |
+| 2 | low | S1 | Live Atlassian Statuspage (not dangling) | CWE-916 |
 | 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 5 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -36,12 +36,12 @@ Total findings: **17** (High: 0, Medium: 2, Low: 6, Info: 9)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] Public CSRF-token JSON from robots.txt (low sensitivity) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /async_info/base_data which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
 
-### 2. [MEDIUM] Dangling subdomain served by third-party platform (`S1`)
+### 2. [LOW] Live Atlassian Statuspage (not dangling) (`S1`)
 
 - **CWE:** CWE-916
 - **Detail:** Subdomain status.dev.to resolves to 65.9.180.27 and is served by CloudFront (error/landing page) - takeover candidate if the platform account is claimed. HTTP status 301
@@ -120,6 +120,11 @@ Total findings: **17** (High: 0, Medium: 2, Low: 6, Info: 9)
 
 - **CWE:** CWE-942
 - **Detail:** GET https://dev.to/graphql responds with Access-Control-Allow-Origin: * (Content-Type: text/html; charset=UTF-8). Any site can read responses cross-origin.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **S1 (MEDIUM -> LOW):** status.dev.to re-probed = https 200 (85,925 B) title "DEV Status" server AtlassianEdge = live Atlassian Statuspage (http 301 -> https) - first-party live infra, not dangling.
+- **I22 (MEDIUM -> LOW):** /async_info/base_data re-probed = 200 (144 B) application/json "{"broadcast":null,"param":"authenticity_token","token":"..."}" (Heroku) - public CSRF-token/broadcast config, low sensitivity.
 
 ## Reproduction notes
 

@@ -12,13 +12,13 @@
 
 ## Summary
 
-Total findings: **22** (High: 2, Medium: 1, Low: 17, Info: 2)
+Total findings: **22** (High: 0, Medium: 2, Low: 18, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | high | I2 | Reflected XSS via attribute injection | CWE-79 |
-| 2 | high | I2 | Reflected XSS via attribute injection | CWE-79 |
-| 3 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | medium | I2 | MediaWiki bad-title 404 reflection (escaped, no breakout) | CWE-79 |
+| 2 | medium | I2 | MediaWiki bad-title 404 reflection (escaped, no breakout) | CWE-79 |
+| 3 | low | I22 | Public MediaWiki API index from robots.txt (no hidden data) | CWE-538 |
 | 4 | low | H4 | No clickjacking protection | CWE-1023 |
 | 5 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 6 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -41,17 +41,17 @@ Total findings: **22** (High: 2, Medium: 1, Low: 17, Info: 2)
 
 ## Detailed findings
 
-### 1. [HIGH] Reflected XSS via attribute injection (`I2`)
+### 1. [MEDIUM] MediaWiki bad-title 404 reflection (escaped, no breakout) (`I2`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter url on https://it.wikipedia.org/w/index.php: injecting "\"' onerror=\"alert(1)//" yields an unquoted onerror handler. Event fires on render.
 
-### 2. [HIGH] Reflected XSS via attribute injection (`I2`)
+### 2. [MEDIUM] MediaWiki bad-title 404 reflection (escaped, no breakout) (`I2`)
 
 - **CWE:** CWE-79
 - **Detail:** Parameter title on https://it.wikipedia.org/w/index.php: injecting "\"' onerror=\"alert(1)//" yields an unquoted onerror handler. Event fires on render.
 
-### 3. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 3. [LOW] Public MediaWiki API index from robots.txt (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /api/ which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -150,6 +150,11 @@ Total findings: **22** (High: 2, Medium: 1, Low: 17, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://it.wikipedia.org/wiki/Pagina_principale
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I2 x2 (HIGH -> MEDIUM):** /w/index.php?title= re-probed = 404 (44,778 B) MediaWiki bad-title page; token inside <title>...</title> text + URL-encoded canonical href; attr payload 301 (Location /wiki/%22%27_onerror%3D%22alert(1)//, no body); span payload 404 (34,190 B) angle brackets URL-encoded in canonical href = no DOM breakout. /w/index.php?url= re-probed = 200 (188,171 B), token only double-URL-encoded inside a returntoquery= param of a login link. Classic MediaWiki bad-title reflection (commons W17 / de.wikipedia W20 precedent) = MEDIUM, not live XSS.
+- **I22 (MEDIUM -> LOW):** /api/ re-probed = 200 (944 B) public MediaWiki APIs index page (server mw-web.eqiad.main) - documentation, no hidden data.
 
 ## Reproduction notes
 

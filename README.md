@@ -5,22 +5,22 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 16972** (High: 6, Medium: 237, Low: 5075, Info: 11654)
+**Total findings across all sites: 17212** (High: 6, Medium: 239, Low: 5279, Info: 11688)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
 | digiday.com | 20 | 0 | 0 | 16 | 4 | top-websites gist (no active program match) |
-| globalsign.com | 39 | 0 | 1 | 33 | 5 | top-websites gist (no active program match) |
-| we.tl | 32 | 0 | 1 | 31 | 0 | top-websites gist (no active program match) |
+| globalsign.com | 39 | 0 | 0 | 34 | 5 | top-websites gist (no active program match) |
+| we.tl | 32 | 0 | 0 | 32 | 0 | top-websites gist (no active program match) |
 | example.com | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
-| es.linkedin.com | 11 | 1 | 0 | 9 | 1 | top-websites gist (no active program match) |
-| esa.int | 7 | 0 | 1 | 3 | 3 | top-websites gist (no active program match) |
+| es.linkedin.com | 11 | 0 | 0 | 10 | 1 | top-websites gist (no active program match) |
+| esa.int | 7 | 0 | 0 | 4 | 3 | top-websites gist (no active program match) |
 | gum.co | 10 | 0 | 0 | 9 | 1 | top-websites gist (no active program match) |
-| loc.gov | 31 | 30 | 0 | 1 | 0 | top-websites gist (no active program match) |
-| it.wikipedia.org | 22 | 2 | 1 | 17 | 2 | top-websites gist (no active program match) |
-| dev.to | 17 | 0 | 2 | 6 | 9 | top-websites gist (no active program match) |
+| loc.gov | 31 | 0 | 0 | 31 | 0 | top-websites gist (no active program match) |
+| it.wikipedia.org | 22 | 0 | 2 | 18 | 2 | top-websites gist (no active program match) |
+| dev.to | 17 | 0 | 0 | 8 | 9 | top-websites gist (no active program match) |
 | bol.com | 4 | 0 | 0 | 2 | 2 | top-websites gist (no active program match) |
-| news.nationalgeographic.com | 41 | 0 | 1 | 35 | 5 | top-websites gist (no active program match) |
+| news.nationalgeographic.com | 41 | 0 | 0 | 36 | 5 | top-websites gist (no active program match) |
 | s.w.org | 10 | 0 | 0 | 7 | 3 | WordPress |
 | agoda.com | 9 | 0 | 2 | 5 | 2 | top-websites gist (no active program match) |
 | usatoday.com | 5 | 0 | 0 | 1 | 4 | USA Today |

@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **32** (High: 0, Medium: 1, Low: 31, Info: 0)
+Total findings: **32** (High: 0, Medium: 0, Low: 32, Info: 0)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | /ter-optout now 302 to wetransfer.com error (no hidden data) | CWE-538 |
 | 2 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 3 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -51,7 +51,7 @@ Total findings: **32** (High: 0, Medium: 1, Low: 31, Info: 0)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] /ter-optout now 302 to wetransfer.com error (no hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /ter-optout which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -210,6 +210,10 @@ Total findings: **32** (High: 0, Medium: 1, Low: 31, Info: 0)
 
 - **CWE:** CWE-918
 - **Detail:** Requesting the origin with Host: we.tl + X-Forwarded-Host: 127.0.0.1 returns a different response than the normal homepage.
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /ter-optout re-probed = 302 -> https://www.wetransfer.com/redirect/error (we.tl now redirects to WeTransfer) - no hidden data.
 
 ## Reproduction notes
 
