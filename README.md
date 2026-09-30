@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| web.archive.org | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | smashwords.com | 5 | 0 | 0 | 4 | 1 | top-websites gist (no active program match) |
 | redcross.org | 5 | 0 | 0 | 2 | 3 | top-websites gist (no active program match) |
 | discord.gg | 32 | 0 | 3 | 25 | 4 | top-websites gist (no active program match) |
