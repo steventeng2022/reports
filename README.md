@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| elegantthemes.com | 33 | 26 | 1 | 4 | 2 | top-websites gist (no active program match) |
 | google.ie | 13 | 0 | 1 | 8 | 4 | top-websites gist (no active program match) |
 | xinhuanet.com | 8 | 0 | 0 | 5 | 3 | top-websites gist (no active program match) |
 | tinyurl.com | 9 | 0 | 0 | 9 | 0 | TinyURL |
