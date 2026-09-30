@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| googleads.g.doubleclick.net | 6 | 0 | 0 | 5 | 1 | Google |
 | doi.org | 6 | 0 | 0 | 4 | 2 | top-websites gist (no active program match) |
 | osha.gov | 9 | 0 | 0 | 9 | 0 | top-websites gist (no active program match) |
 | rockpapershotgun.com | 4 | 0 | 0 | 4 | 0 | top-websites gist (no active program match) |
