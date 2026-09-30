@@ -5,21 +5,21 @@ Re-test date: 2026-09-27 (UTC; Asia/Taipei 2026-09-27). **635 of the 635 sites c
 Per the repo merge convention, where another agent's active findings exceed the passive count for a site, the index keeps the higher number (those findings remain in the agents' own repos/summaries); report files below are the passive re-audit baseline.
 Supplemental non-passive reports carried from main: apache.org-deepdive, coursera.org-deepdive, edx.org-deepdive, freecodecamp.org-deepdive, go.dev-deepdive, khanacademy.org-deepdive, owasp.org-deepdive (agent-deepdive zero-day sweep; 7 files, 136 findings). Their findings are already included in the base-domain rows above per the main convention, so they are not double-counted in the total.
 
-**Total findings across all sites: 17453** (High: 6, Medium: 239, Low: 5455, Info: 11753)
+**Total findings across all sites: 17562** (High: 6, Medium: 239, Low: 5534, Info: 11783)
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
-| pewinternet.org | 9 | 0 | 1 | 5 | 3 | top-websites gist (no active program match) |
+| pewinternet.org | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
 | maxcdn.bootstrapcdn.com | 13 | 0 | 0 | 3 | 10 | BootstrapCDN |
-| android.com | 7 | 0 | 1 | 5 | 1 | Google |
-| crowdrise.com | 9 | 0 | 1 | 5 | 3 | top-websites gist (no active program match) |
+| android.com | 7 | 0 | 0 | 6 | 1 | Google |
+| crowdrise.com | 9 | 0 | 0 | 6 | 3 | top-websites gist (no active program match) |
 | amnestyusa.org | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
 | guardian.co.uk | 2 | 0 | 0 | 2 | 0 | top-websites gist (no active program match) |
 | ucl.ac.uk | 28 | 0 | 0 | 25 | 3 | top-websites gist (no active program match) |
 | archive.org | 4 | 0 | 0 | 2 | 2 | Internet Archive |
 | behance.net | 5 | 0 | 0 | 3 | 2 | Adobe |
 | zazzle.com | 2 | 0 | 0 | 1 | 1 | top-websites gist (no active program match) |
-| imore.com | 8 | 0 | 3 | 3 | 2 | top-websites gist (no active program match) |
+| imore.com | 8 | 0 | 0 | 6 | 2 | top-websites gist (no active program match) |
 | last.fm | 20 | 0 | 0 | 17 | 3 | top-websites gist (no active program match) |
 | s.ytimg.com | 4 | 0 | 0 | 3 | 1 | top-websites gist (no active program match) |
 | sciencedirect.com | 3 | 0 | 0 | 2 | 1 | top-websites gist (no active program match) |

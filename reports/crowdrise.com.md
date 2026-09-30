@@ -12,11 +12,11 @@
 
 ## Summary
 
-Total findings: **9** (High: 0, Medium: 1, Low: 5, Info: 3)
+Total findings: **9** (High: 0, Medium: 0, Low: 6, Info: 3)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I22 | Hidden path from robots.txt responds 200 (content discoverable) | CWE-538 |
+| 1 | low | I22 | /track first-party 301 redirect to GoFundMe (not hidden data) | CWE-538 |
 | 2 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 3 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 4 | low | I5 | Unencoded reflected parameter (XSS-adjacent) | CWE-79 |
@@ -28,7 +28,7 @@ Total findings: **9** (High: 0, Medium: 1, Low: 5, Info: 3)
 
 ## Detailed findings
 
-### 1. [MEDIUM] Hidden path from robots.txt responds 200 (content discoverable) (`I22`)
+### 1. [LOW] /track first-party 301 redirect to GoFundMe (not hidden data) (`I22`)
 
 - **CWE:** CWE-538
 - **Detail:** robots.txt disallows /track which returns HTTP 200 (unauthenticated content reachable); robots.txt only hides paths from crawlers, not users.
@@ -72,6 +72,10 @@ Total findings: **9** (High: 0, Medium: 1, Low: 5, Info: 3)
 
 - **CWE:** CWE-200
 - **Detail:** Server header: nginx
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I22 (MEDIUM -> LOW):** /track re-probed = 301 (awselb/2.0) -> https://www.gofundme.com/c/crowdrise (first-party redirect, Crowdrise is operated by GoFundMe) - no hidden data.
 
 ## Reproduction notes
 

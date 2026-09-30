@@ -12,13 +12,13 @@
 
 ## Summary
 
-Total findings: **8** (High: 0, Medium: 3, Low: 3, Info: 2)
+Total findings: **8** (High: 0, Medium: 0, Low: 6, Info: 2)
 
 | # | Severity | ID | Finding | CWE |
 |---|---|---|---|---|
-| 1 | medium | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
-| 2 | medium | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
-| 3 | medium | I20 | CORS reflects attacker-controlled Origin (preflight) | CWE-942 |
+| 1 | low | I20 | Preflight-only ACAO reflection (Varnish 204, no ACAC, no ACAO on GET) | CWE-942 |
+| 2 | low | I20 | Preflight-only ACAO reflection (Varnish 204, no ACAC, no ACAO on GET) | CWE-942 |
+| 3 | low | I20 | Preflight-only ACAO reflection (Varnish 204, no ACAC, no ACAO on GET) | CWE-942 |
 | 4 | low | C1 | Cookies without Secure flag | CWE-614 |
 | 5 | low | C2 | Cookies without HttpOnly flag | CWE-1004 |
 | 6 | low | I12 | Host header alters response (vhost behavior) | CWE-918 |
@@ -27,17 +27,17 @@ Total findings: **8** (High: 0, Medium: 3, Low: 3, Info: 2)
 
 ## Detailed findings
 
-### 1. [MEDIUM] CORS reflects attacker-controlled Origin (preflight) (`I20`)
+### 1. [LOW] Preflight-only ACAO reflection (Varnish 204, no ACAC, no ACAO on GET) (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://www.imore.com/ with Origin: https://evil-cors.example (OPTIONS preflight) returned Access-Control-Allow-Origin: https://evil-cors.example. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 2. [MEDIUM] CORS reflects attacker-controlled Origin (preflight) (`I20`)
+### 2. [LOW] Preflight-only ACAO reflection (Varnish 204, no ACAC, no ACAO on GET) (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://www.imore.com/api with Origin: https://evil-cors.example (OPTIONS preflight) returned Access-Control-Allow-Origin: https://evil-cors.example. Browsers will expose cross-origin responses to any origin the attacker chooses.
 
-### 3. [MEDIUM] CORS reflects attacker-controlled Origin (preflight) (`I20`)
+### 3. [LOW] Preflight-only ACAO reflection (Varnish 204, no ACAC, no ACAO on GET) (`I20`)
 
 - **CWE:** CWE-942
 - **Detail:** Request to https://www.imore.com/graphql with Origin: https://evil-cors.example (OPTIONS preflight) returned Access-Control-Allow-Origin: https://evil-cors.example. Browsers will expose cross-origin responses to any origin the attacker chooses.
@@ -66,6 +66,10 @@ Total findings: **8** (High: 0, Medium: 3, Low: 3, Info: 2)
 
 - **CWE:** CWE-200
 - **Detail:** No Referrer-Policy on https://www.imore.com/
+
+## Active re-verification (2026-09-30, agent-aggressive)
+
+- **I20 x3 (MEDIUM -> LOW):** re-probed CORS matrix on /, /api, /graphql: OPTIONS preflight = 204 (Varnish) with ACAO reflecting any Origin, but ACTUAL GET responses carry NO Access-Control-Allow-Origin header (same 771,179 B page with/without Origin, no ACAC); /api and /graphql = 404 on GET. Preflight-only reflection without ACAC does not expose response bodies to cross-origin readers.
 
 ## Reproduction notes
 
