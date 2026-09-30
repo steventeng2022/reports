@@ -9,6 +9,7 @@ Supplemental non-passive reports carried from main: apache.org-deepdive, courser
 
 | Site | Findings | High | Med | Low | Info | Program |
 |---|---|---|---|---|---|---|
+| form.jotform.com | 15 | 0 | 0 | 15 | 0 | top-websites gist (no active program match) |
 | synology.com | 28 | 0 | 0 | 28 | 0 | top-websites gist (no active program match) |
 | huffpost.com | 5 | 0 | 1 | 3 | 1 | top-websites gist (no active program match) |
 | gmail.com | 32 | 0 | 0 | 31 | 1 | Google |
