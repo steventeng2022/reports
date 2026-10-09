@@ -327,6 +327,39 @@ Gateway leaking build/commit/seal + metric inventory), best pursued via a
 actuator exploit. The **Wells Fargo WLS-WSAT** host remains the single
 strongest *direct* RCE candidate (live WebLogic SOAP behind a keyword WAF).
 
+### 5.2 Wave D sweep (fintech + cloud/SaaS, 2026-10-10)
+
+A second sweep over **19 new high-value parents** (Stripe, Mastercard, Visa,
+Plaid, Robinhood, SoFi, Venmo, Block, Twilio, Vercel, DigitalOcean, Heroku,
+MongoDB, Elastic, Databricks, Snowflake, Workday, ADP, Workato), using the
+tightened scanner. **170 subs probed, 2 new finds:**
+
+- **`staging-website.elastic.co`** (parent elastic.co) — **FALSE POSITIVE**
+  (new class). Every path (panel, random, `/`) returns an identical **200
+  "Sign in – Google Accounts"** page (~923 KB) — a **Google-SSO catch-all**.
+  The scanner's catch-all detector is now updated to flag **any 200-on-random-
+  path host** (not just title-matching) so this class is auto-filtered going
+  forward.
+- **`api.adp.com`** (parent adp.com, 2,033 CT subs) — **auth-gated 401-wall
+  candidate**. Uniform **401** (no title) on all panel paths *and* a random
+  path, but **404** on `/` — i.e. the API gateway returns 401 everywhere it
+  recognizes a route, 404 on `/`. Same class as `partnerportal.atlassian.com`:
+  an auth-gated host, not a confirmed panel/RCE. Worth a credential/session
+  angle.
+
+**Scanner fixes from wave D:** (1) Cert Spotter keyless API was rate-limiting
+(429) under the volume of all waves, so the CT cache now **throttles**
+requests and treats **empty** entries as a 30-min-TTL retry (previously an
+empty 429 was cached forever, silently missing 10 of 19 parents); (2) a
+5-attempt CT→crt.sh backoff **re-discovery** recovered the 10 parents the
+first wave-D pass missed (mongodb 547 / snowflake 560 / databricks 380 /
+elastic 322 / heroku 148 subs). (3) Catch-all detector now treats a
+title-less-but-200 random path as a catch-all (catches the Google-SSO class).
+
+Net new real surface from wave D: **`api.adp.com` 401-wall** (candidate); the
+Elastic demo/website hosts are SSO catch-all FPs. **Wells Fargo WLS-WSAT**
+remains the top *direct* RCE candidate.
+
 ---
 
 ## 6. Reproduce
