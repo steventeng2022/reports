@@ -360,6 +360,23 @@ Net new real surface from wave D: **`api.adp.com` 401-wall** (candidate); the
 Elastic demo/website hosts are SSO catch-all FPs. **Wells Fargo WLS-WSAT**
 remains the top *direct* RCE candidate.
 
+### 5.3 Wave E sweep (major vendor domains, 2026-10-10)
+
+A sweep over **10 major software-vendor domains** (Cisco, Oracle, SAP, Adobe,
+Shopify, Slack, Zoom, Atlassian, Airbnb, IBM). ~5,200 CT subs discovered
+(slack.com alone returned 4,082), 158 survived live + server filtering.
+**1 hit** — a re-confirmation of the wave-C find:
+
+- **`partnerportal.atlassian.com`** — re-verified **401-wall candidate**:
+  `/` → 301, random path → 404, panel paths (`/jenkins/login`,
+  `/kibana/api/status`, `/wls-wsat/...`) → **401** (no title). An
+  auth-gated app that recognizes its routes; worth a credential/session
+  angle, not a confirmed panel.
+
+Net: vendor apex/subdomain surfaces are overwhelmingly CDN- or
+SPA-fronted; the two best *direct* candidates remain **Wells Fargo WLS-WSAT**
+(WAF-gated) and the **Chase/ADP/Atlassian 401-walls**.
+
 ---
 
 ## 6. Reproduce
