@@ -204,12 +204,95 @@ endpoints, plus re-test the Wells Fargo WLS-WSAT host on any WAF drift.
 
 ---
 
-## 5. Reproduce
+## 5. Wave C sweep (20 bank / crypto / SaaS / AI parents) — 5 real finds, 4 new FP classes
 
-Scanner: `scan/subscan3.py` (CT discovery via Cert Spotter, cached per parent in
-`results/ct_cache/`). Full raw output: `results/subscan.json` + `results/subscan.md`.
-WLS-WSAT manual probe: `scan/probe_wlswsat.py`.
+A third sweep (2026-10-10) re-scanned the high-value parents — PayPal, Chase,
+Salesforce, BofA, Wells Fargo, Citi, HSBC (banks); Slack, HubSpot, Atlassian,
+Notion, Figma, Midjourney (SaaS); OpenAI, Anthropic, Hugging Face, Coinbase,
+Binance, Kraken, MetaMask (AI/crypto) — with the **expanded v4 endpoint set**
+(34 endpoints: Jenkins, Gitea/GitLab, Grafana, n8n, Solr, SonarQube, Kibana,
+Jolokia, full Spring actuator, WLS-WSAT, phpMyAdmin, JBoss, Druid, Swagger,
+openapi.json) over both ports 80+443, parallelized at the (sub, port,
+endpoint) grain with crash-safe per-parent flush. ~296 subs probed across the
+three batches.
 
-*All confirmed entries were re-verified by direct request; the WAF-echo
-false-positive class was identified by observing that the same 3–4 "markers"
-reappear identically across unrelated hosts — a WAF signature, not a panel.*
+**Confirmed real findings (re-verified by direct request):**
+
+1. **`gwmuiportal.chase.com`** — unauth Spring actuator. `/actuator/info` → 200
+   JSON: git branch `release/Aug_06_2026`, commit `c1c3954` (2026-08-06),
+   `monetaBoot 4.0.9`, artifact `cp-gateway`. `/actuator/health` → 200 JSON.
+   **Info-disclosure → RCE-relevant** (configprops/heapdump/gateway routes are
+   the escalation path; see §1).
+2. **`gwmportal.chase.com`** — unauth Spring actuator. `/actuator/health` → 200
+   JSON `status:UP` (intermittent — a re-probe during triage returned a 403
+   WAF "Access Denied", so it is partly WAF-gated, but the 200 JSON is genuine).
+3. **`ccasalerts-gateway.wellsfargo.com`** — live WebLogic **WLS-WSAT**
+   (CVE-2019-2725 XXE→RCE surface). Re-confirmed by the v4 sweep on both
+   ports: `/wls-wsat/{Coordinator,Registration}PortType?wsdl` → 200 SOAP.
+   Still gated by the edge keyword WAF (see §1 + the WLS-WSAT exploit-test
+   note); remaining bypasses = HTTP smuggling / HTTP2.
+4. **`buildingsassessment.business.hsbc.com`** — unauth Spring actuator
+   `/actuator/health` → 200 JSON (index is 403).
+5. **`api.endpoints.huggingface.co`** — **new**: `/openapi.json` → 200 with the
+   full **OpenAPI 3.1.0 spec** for the "HF Inference Endpoints API" (the
+   deploy/manage-inference-endpoints control plane). API-spec info-disclosure —
+   maps the complete management surface (deploy, scale, delete endpoints) but
+   is moderate, not a direct RCE panel.
+
+**One auth-gated candidate:**
+
+- **`partnerportal.atlassian.com`** (server `sfdcedge`) — a **uniform 401
+  wall**: *every* probed path (Jenkins, Solr, CFIDE, WLS-WSAT, phpMyAdmin,
+  JBoss, SonarQube, Gitea, GitLab, Kibana, Druid, Swagger) → `401` with no
+  title, while a random path → `404`. This is an auth-fronted app that masks
+  per-path responses with a blanket 401 — not a panel leak, but a real
+  **auth-gated surface** worth a credentials/SSO angle.
+
+**Four new false-positive classes (added to the scanner's catch-all detector):**
+
+- **`uat1.mymortgage.citi.com`** — **Radware Captcha Page**: `200` + title
+  `Radware Captcha Page` on *every* path (panel path and a random one identical)
+  → marker "hits" are the bot-captcha page, not panels.
+- **`dev.app.metamask.io`** — **Consensys SSO**: `200` + title `Consensys -
+  Sign In` on every path (SSO catch-all echoing nothing path-specific).
+- **`uat.csmsuppliers.citi.com`** — **ServiceNow SPA**: `200` + title
+  `ServiceNow` on every path (the single-page app shell, already noted in §1
+  as a UAT environment).
+- **title-less 401 walls** (the `partnerportal.atlassian.com` class) — blanket
+  `401` on all paths with an empty `<title>`; distinguished from the real
+  WLS-WSAT 200-SOAP hit and from the 403-WAF-echo class.
+
+**Scanner lesson (implemented in `subscan4.py` v4):** a marker-only hit is a
+false positive when the host returns the **same `<title>` on a random path as
+on the panel path** (catch-all: captcha / SSO / SPA shell). The v4 post-probe
+pass probes `/totally-random-xyz-9482` per hit-sub and drops marker hits whose
+title matches; the 401-wall class is flagged (not auto-dropped) because it
+represents an auth-gated surface rather than a pure echo.
+
+**Conclusion:** wave C **re-confirmed all four wave-A bank findings** (Chase
+`gwmuiportal` + `gwmportal`, Wells Fargo WLS-WSAT, HSBC `buildingsassessment`)
+and added **two** new ones (Hugging Face OpenAPI spec, Atlassian 401-wall
+candidate). The bank/SaaS/AI vein remains the richest; mega-corp consumer
+domains (wave B) stay 0. **No direct confirmed RCE panel yet** — the Wells
+Fargo WLS-WSAT host remains the strongest single RCE candidate (WAF-gated),
+and the three unauth Spring actuator endpoints (2 Chase + 1 HSBC) are the best
+info-disclosure → RCE-escalation targets for a deeper follow-up (actuator
+`env`/`configprops`/`heapdump`/`gateway` route enumeration).
+
+---
+
+## 6. Reproduce
+
+Scanner: `scan/subscan4.py` (v4 — expanded 34-endpoint set, parallelized
+per-endpoint probe, crash-safe per-parent flush, catch-all title detector;
+CT discovery via Cert Spotter, cached per parent in `results/ct_cache/`).
+Raw output: `results/wavec1.{json,md}` (banks), `results/wavec2.{json,md}`
+(SaaS), `results/wavec3.{json,md}` (AI/crypto), plus the prior
+`results/subscan.{json,md}` (wave A) and `results/waveb1.md` / `waveb2.md`
+(wave B). WLS-WSAT manual probes: `scan/probe_wlswsat*.py`. Wave-C triage:
+`scan/triage_wavec.py`.
+
+*All confirmed entries were re-verified by direct request; the catch-all
+false-positive classes were identified by observing that the same title
+appears identically on a panel path and a random path — a catch-all page,
+not a panel.*
