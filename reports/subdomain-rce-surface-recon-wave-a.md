@@ -281,6 +281,54 @@ info-disclosure → RCE-escalation targets for a deeper follow-up (actuator
 
 ---
 
+### 5.1 Actuator deep-probe (RCE-escalation check)
+
+Each of the three unauth Spring-actuator hosts was re-probed across 25
+actuator endpoints (`env`, `configprops`, `beans`, `mappings`, `threaddump`,
+`loggers`, `prometheus`, `heapdump`, `gateway/routes`, `refresh`, `restart`,
+`jdbc`, `jolokia`, `shutdown`, …) plus path-encoding variants, to see which
+exposures survive the WAF and could chain into RCE:
+
+- **`gwmuiportal.chase.com`** — richest, but **not a live router**.
+  `/actuator` (200 HATEOAS index) enumerates the **exact** registered
+  endpoints: `health`, `health-path` (`/actuator/health/{*path}`), `info`,
+  `keepalive`, `metrics`, `metrics/{requiredMetricName}`, `self` — a standard
+  Spring Boot management surface; `keepalive` → 200 `{"status":"Alive"}`.
+  `/actuator/info` (200) identifies it as **`com.jpmorgan.connectinvestortools`
+  `cp-gateway` v1.3.0-SNAPSHOT** (JPMorgan "Connect Investor Tools" gateway,
+  `monetaBoot 4.0.9`, seal `102169`, git `release/Aug_06_2026` commit
+  `c1c3954` 2026-08-06, `startTime` 2026-10-08). `/metrics` (200) exposes 51
+  metric names incl. `spring.cloud.gateway.requests` / `spring.cloud.gateway.
+  routes.count` and `http.client.requests` — a **Spring Cloud Gateway**
+  management surface. **But** `spring.cloud.gateway.routes.count` = **0** and
+  `http.client.requests` returns **no measurements** — the gateway currently
+  has **zero active routes / no upstream traffic**, so it is a dormant
+  management endpoint, not an active routing proxy. `env`/`configprops`/`beans`/
+  `mappings`/`threaddump` → **404** (unregistered per the HATEOAS index);
+  `heapdump` → **WAF 403** "Access Denied" on **every** path variant tested
+  (`/`, `//`, `..`, case, `;.js`, `%00`, `%68`, `;jsessionid`, query-string —
+  the edge WAF keyword-blocks "heapdump" itself). **Net: unauth info-
+  disclosure of a JPM internal gateway's build metadata + metric inventory; no
+  live RCE chain (no env/heapdump/routes).**
+- **`gwmportal.chase.com`** — IIS-fronted (HTML 4.01 500 error pages). Only
+  `/health` (200) survives; every other actuator endpoint → **500** HTML, and
+  `heapdump` → **WAF 403**. **Net: health-only; the app is IIS-wrapped so the
+  actuator surface is mostly error-paged.**
+- **`buildingsassessment.business.hsbc.com`** — Apache-fronted. Only
+  `/health` (200) survives; all others → **403** "403 Forbidden" (Apache
+  directory/auth rule), `heapdump` → 403. **Net: health-only, Apache-gated.**
+
+**Verdict:** all three are **unauth actuator info-disclosures, not RCE chains**
+today — `heapdump` (the classic RCE escalation) is WAF/403-blocked on all
+three, and `env`/`configprops`/`gateway/routes` are unregistered/absent. The
+most valuable is **`gwmuiportal.chase.com`** (a named JPM internal Spring Cloud
+Gateway leaking build/commit/seal + metric inventory), best pursued via a
+**WAF drift / `heapdump` path-bypass** or an auth/session angle, not a direct
+actuator exploit. The **Wells Fargo WLS-WSAT** host remains the single
+strongest *direct* RCE candidate (live WebLogic SOAP behind a keyword WAF).
+
+---
+
 ## 6. Reproduce
 
 Scanner: `scan/subscan4.py` (v4 — expanded 34-endpoint set, parallelized
