@@ -385,6 +385,29 @@ survived live + server filtering, **0 hits** — as expected, these are
 fully managed SaaS front-ends (CDN + SPA, no self-hosted panel exposure).
 No new candidate surface.
 
+### 5.5 Wave G sweep (healthcare + mega-tech, 2026-10-10)
+
+Sweep of **10 healthcare + mega-tech domains** (Johnson & Johnson,
+UnitedHealth, Anthem, Cigna, CVS, Amazon, Google, Apple, Microsoft): 324 CT
+subs, 32 probed, **0 real hits**. Every flagged host was
+`*.cloud.google.com` (GCP console `console.<region>.cloud.google.com` +
+project subdomains like `backupdr-dev/sandbox`, `dataproc-staging`) — all
+the same **Angular SPA catch-all** (any path → 200 "Google Cloud Platform"
+shell, ~945 KB) → filtered as false positives. 7 of 10 parents returned 0
+CT subs (Cert Spotter keyless quota under the cumulative volume).
+Healthcare apexes (J&J, Anthem, Cigna, CVS) expose little self-hosted
+subdomain surface; UnitedHealth (80 CT subs) was clean.
+
+**Scan-coverage tally to date (waves C–G):** **64 parent domains** swept,
+~13,500 CT subs discovered (deduped), ~1,500 retained after live +
+server filtering, 677 hosts × 36 endpoints ≈ **24,000 endpoint probes**.
+Distinct real candidates:
+`ccasalerts-gateway.wellsfargo.com` (WLS-WSAT, WAF-gated, top RCE),
+`gwmuiportal.chase.com` (Spring actuator gateway, dormant),
+`partnerportal.atlassian.com` + `api.adp.com` (401-walls), plus
+`api.endpoints.huggingface.co` (OpenAPI info-disclosure). Everything else
+across ~3,500 probed endpoints was CDN/SPA/SSO catch-all or 401/403 walls.
+
 ---
 
 ## 6. Reproduce
