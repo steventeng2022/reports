@@ -60,6 +60,27 @@ worth a targeted CVE-2019-2725 / WLS-WSAT RCE test (version fingerprinting,
 alternate encodings, and the 403/edge bypasses the WAF applies to specific
 paths). **Highest-priority follow-up target of this sweep.**
 
+**Exploit test performed 2026-10-10 (CVE-2019-2725-style XXE, read-only, local
+file targets + local OOB listener):**
+- Baseline: `GET ?wsdl` (plain) → reaches WebLogic (SOAP fault). Any payload
+  containing a literal `<!DOCTYPE` / `<!ENTITY` / `file://` — in the **query
+  string, the POST body, via PUT, chunked-encoding, lowercase `<!doctype`, or
+  double-encoded** — is rejected by the edge WAF with its "Request Rejected"
+  page. A minimal body with no DOCTYPE (`<f xmlns=.../>`) passes the WAF and
+  reaches the app (SOAP fault), confirming the WAF is a **pattern/keyword
+  filter on the request**, not a blanket POST block, and that the WLS-WSAT
+  backend is genuinely live behind it.
+- Splitting `<!DOCTYPE` across a chunked-encoding boundary still gets caught
+  (the WAF reassembles before scanning) → no OOB callback or file leak
+  observed in ~15 payload variants (local `file://` for win.ini/`/etc/passwd`
+  and `http://127.0.0.1:31313-4` OOB entities).
+- **Verdict:** the endpoint is a **live, real WLS-WSAT RCE candidate** whose
+  exploit path is currently gated by an edge-WAF keyword filter. Remaining
+  bypass avenues for a human-led pass: HTTP request smuggling (CL/TE),
+  HTTP/2 pseudo-header framing, XML-escaping the DOCTYPE via namespace
+  tricks, or a version-specific WLS-WSAT RCE that does not need `<!DOCTYPE`
+  at all. Keep on the watch list; re-test after any WAF config drift.
+
 ---
 
 ### 1.2 `gwmportal.chase.com` and `gwmuiportal.chase.com` — Spring Boot **Actuator `/health`** exposed (parent: chase.com)
@@ -154,7 +175,36 @@ requested path repeated in the body is a WAF, not the app.
 
 ---
 
-## 4. Reproduce
+## 4. Wave B sweep (20 mega-corp parents) — 0 real findings
+
+A second sweep (2026-10-10) covered 20 mega-corp parents across ecommerce /
+gaming / tech / infra (Amazon, eBay, Shopify, Etsy, Walmart, Flipkart, Steam,
+PlayStation, Xbox, GitHub, Dropbox, Adobe, Cloudflare, Akamai, Netflix, Reddit,
+LinkedIn, GoDaddy, Indeed, Epic Games). **Net: 0 real RCE-surface findings.**
+The mega-corp consumer domains are almost entirely CDN/SSO-fronted, and the
+only raw "hit" was a new false-positive class:
+
+- **`jirap.corp.ebay.com`** — returned `200` + title `Redirecting` on *every*
+  probed path (even a random one), all from the same Microsoft
+  "Copyright (C) Microsoft Corporation" SSO/Azure catch-all page that **echoes
+  the requested path**. This is a **200-version of the WAF path-echo FP**: the
+  Jenkins/Solr/SonarQube markers "matched" only because the URL string appears
+  in the MS-SSO redirect page. **Removed.**
+
+**Lesson (adds to §2):** treat `200` + generic title `Redirecting` /
+`Redirecting…` / `Redirecting to…` with a Microsoft/IIS catch-all body as a
+**false positive** — it is an SSO/front redirect, not the app. A panel hit is
+only real if it is a `200` with a matching *application* body (JSON key or app
+title) that is *not* a path-echoing WAF/SSO page.
+
+**Conclusion:** the high-value RCE-surface signal concentrates on **bank /
+SaaS / AI** parents (wave A), not mega-corp consumer domains (wave B). Future
+effort should re-sweep the bank/SaaS/AI set with deeper app-specific
+endpoints, plus re-test the Wells Fargo WLS-WSAT host on any WAF drift.
+
+---
+
+## 5. Reproduce
 
 Scanner: `scan/subscan3.py` (CT discovery via Cert Spotter, cached per parent in
 `results/ct_cache/`). Full raw output: `results/subscan.json` + `results/subscan.md`.
