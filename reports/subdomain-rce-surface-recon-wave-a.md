@@ -40,10 +40,19 @@ exploitable RCE candidate if the underlying WebLogic is in an affected version.
 - Service answers identically over **`http://` and `https://`** (both 200,
   `text/xml`), and the context root `/console/` also routes into the same
   WLS-WSAT envelope — a broad, permissive mapping.
+- **Every** path on the host — `/console/login/LoginForm.jsp`,
+  `/bea_wls_internal/HTTPClntListen.port`, `/images/404.png`, `/_async/`, etc. —
+  returns the *same* 200 WLS-WSAT SOAP envelope. This means the host is a
+  **dedicated WLS-WSAT service endpoint** (a reverse proxy / context that maps
+  the whole domain into the WebLogic WLS-WSAT servlet), not a full WebLogic
+  admin console. No JSP login page, no `HTTPClntListen.port` value leaked —
+  just the SOAP fault.
 - `POST` SOAP body to `RegistrationPortType` → 200 but an **edge WAF**
   (Akamai-style "Request Rejected" / support-ID page) intercepts the request
   before it reaches the SOAP stack. So the WLS-WSAT service is live and reachable,
   but a modern edge WAF sits in front of the *write* path.
+- No version string leaked from any GET path (the `version='1.0'` hint was the
+  XML declaration, not a WebLogic banner).
 
 **Why it matters:** unauthenticated, network-reachable WebLogic WLS-WSAT on a
 first-tier bank domain. Even with an edge WAF on POST, the exposed service is
@@ -60,12 +69,23 @@ with `200 {"groups":["liveness","readiness"],"status":"UP"}` — a live Spring B
 application exposing its management/actuator health endpoint to the internet.
 
 Full actuator index (`/actuator`) also returns 200 and enumerates `self` +
-`keepalive` + `health` + `health/{*path}`. The higher-value actuator endpoints
-(`env`, `mappings`, `beans`, `threaddump`, `heapdump`, `configprops`, `loggers`,
-`info`) were individually probed: they return **500** (i.e. present in the
-registry but erroring/protected) rather than 404, and `/heapdump` returns 403 —
-a mix that suggests the actuator is more exposed than a bare `health` would imply
-and worth a deeper, authenticated-context probe.
+`keepalive` + `health` (+ on `gwmuiportal`: `info`, `metrics`).
+
+**Confirmed info disclosure (re-verified):**
+- `gwmuiportal.chase.com/actuator/info` → 200, leaks internal build metadata:
+  `group: com.jpmorgan.connectinvestortools`, `artifact/name: cp-gateway`,
+  `version: 1.3.0-SNAPSHOT`, `monetaBoot: 4.0.9` (JPMorgan's Spring-Boot fork),
+  git `branch: release/Aug_06_2026`, `commit: c1c3954` (2026-08-06), plus
+  `application.seal: 102169` and `startTime`. `/actuator/metrics` also returns 200.
+  This is a clean, reproducible unauthenticated info-disclosure on a first-tier
+  bank asset — it confirms a live Spring (monetaBoot) gateway and hands an
+  attacker the exact artifact, framework, and build to target.
+- `gwmportal.chase.com/actuator` exposes `health` + `keepalive` only; the
+  higher-value endpoints (`env`, `beans`, `heapdump`, `mappings`, `threaddump`,
+  `configprops`, `info`) were individually probed and return **500** (present in
+  the registry but erroring/protected), with `/heapdump` returning **403** —
+  a mix that suggests more surface than the index advertises, worth a deeper,
+  authenticated-context probe.
 
 **Why it matters:** an internet-exposed Spring Boot management surface on a Chase
 subdomain. `env`/`beans`/`heapdump` exposure is the usual path to credential and
@@ -78,8 +98,11 @@ but a clean, reproducible signal.
 
 `https://…/actuator/health` and `http://…/actuator/health` → `200
 {"groups":["liveness","readiness"],"status":"UP"}`. Same exposed-Spring-Boot-actuator
-profile as the Chase hosts, on an HSBC "business" asset. Same follow-up logic
-(enumerate `env`/`beans`/`heapdump`, check for an older exposed actuator build).
+profile as the Chase hosts, on an HSBC "business" asset. Note: the `/actuator`
+*index* itself returns 403 here (only `/health` is openly reachable), so the
+useful endpoint is the bare `/health`; `/info`/`env`/`heapdump` should be
+probed individually as on the Chase hosts. Same follow-up logic (enumerate
+`env`/`beans`/`heapdump`, check for an older exposed actuator build).
 
 ---
 
@@ -124,9 +147,9 @@ requested path repeated in the body is a WAF, not the app.
 | # | Target | Surface | Priority | Next step |
 |---|--------|---------|----------|-----------|
 | 1 | `ccasalerts-gateway.wellsfargo.com` | WebLogic WLS-WSAT | **High** | Version fingerprint; CVE-2019-2725 XXE + WLS-WSAT RCE test against the edge WAF |
-| 2 | `gwmportal.chase.com` | Spring Actuator | Med | Enumerate `env`/`beans`/`heapdump`; secret/cred leak |
-| 3 | `gwmuiportal.chase.com` | Spring Actuator | Med | Same as above |
-| 4 | `buildingsassessment.business.hsbc.com` | Spring Actuator | Med | Same as above |
+| 2 | `gwmuiportal.chase.com` | Spring actuator `/info` **info disclosure** (artifact/git/monetaBoot) | **Med-High** | Confirmed info leak; hunt `env`/`beans`/`heapdump` + framework-specific CVEs (monetaBoot 4.0.9) |
+| 3 | `gwmportal.chase.com` | Spring Actuator | Med | Enumerate `env`/`beans`/`heapdump` (500/403 pattern); secret/cred leak |
+| 4 | `buildingsassessment.business.hsbc.com` | Spring actuator `/health` | Med | `/info`/`env`/`heapdump` individual probes (index 403s) |
 | 5 | `uat.csmsuppliers.citi.com` | ServiceNow | Low-Med | ServiceNow enumeration / known RCE+auth-bypass checks |
 
 ---
