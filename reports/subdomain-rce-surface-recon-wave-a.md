@@ -377,6 +377,14 @@ Net: vendor apex/subdomain surfaces are overwhelmingly CDN- or
 SPA-fronted; the two best *direct* candidates remain **Wells Fargo WLS-WSAT**
 (WAF-gated) and the **Chase/ADP/Atlassian 401-walls**.
 
+### 5.4 Wave F sweep (SaaS / dev-tool domains, 2026-10-10)
+
+Sweep of **10 major SaaS/dev-tool domains** (GitHub, Cloudflare, Datadog,
+Netflix, Uber, Spotify, Discord, Notion, Figma, Hubspot): 532 CT subs, 21
+survived live + server filtering, **0 hits** — as expected, these are
+fully managed SaaS front-ends (CDN + SPA, no self-hosted panel exposure).
+No new candidate surface.
+
 ---
 
 ## 6. Reproduce
